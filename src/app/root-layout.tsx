@@ -7,7 +7,7 @@ import { paths } from '@/config/paths';
 import { cn } from '@/lib/utils/cn';
 
 const navItems = [
-  { to: paths.home, label: 'Home', end: true },
+  { to: paths.dashboard, label: 'Home', end: true },
   { to: paths.users.list, label: 'Users', end: false },
 ];
 
