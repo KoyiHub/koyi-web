@@ -4,6 +4,10 @@
  */
 export const paths = {
   dashboard: '/',
+  auth: {
+    login: '/login',
+    signup: '/signup',
+  },
   assessment: {
     setup: '/assessment',
     session: '/assessment/session',

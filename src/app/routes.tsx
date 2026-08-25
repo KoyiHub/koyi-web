@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router';
 
 import { AssessmentLayout } from '@/app/assessment-layout';
+import { AuthLayout } from '@/app/auth-layout';
 import { RootErrorBoundary } from '@/app/root-error-boundary';
 import { TeacherLayout } from '@/app/teacher-layout';
 
@@ -113,6 +114,24 @@ export const routes: RouteObject[] = [
       {
         path: '*',
         lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
+      },
+    ],
+  },
+  {
+    Component: AuthLayout,
+    ErrorBoundary: RootErrorBoundary,
+    children: [
+      {
+        path: 'login',
+        lazy: async () => ({
+          Component: (await import('@/features/auth/routes/login-page')).LoginPage,
+        }),
+      },
+      {
+        path: 'signup',
+        lazy: async () => ({
+          Component: (await import('@/features/auth/routes/signup-page')).SignupPage,
+        }),
       },
     ],
   },
