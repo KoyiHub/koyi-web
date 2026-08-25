@@ -1,23 +1,27 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { paths } from '@/config/paths';
+import { useRegister } from '@/features/auth/api/mutations';
 import { type SignupFormValues, signupSchema } from '@/features/auth/schemas';
+import { ApiError } from '@/lib/api/errors';
 
 /**
- * Frontend-only, provisional: no signup endpoint is confirmed yet. A valid
- * submit simulates a brief request and returns to /login — creating an
- * account does not imply an authenticated session without a real backend,
- * so this deliberately does not skip straight to the dashboard. Revisit
- * once account creation is API-backed.
+ * The backend stores first/last name separately, but the form (matching the
+ * approved design) collects one "Full Name" field. Split on the first space —
+ * `last_name` is blank-allowed on the backend, so a single-word name is fine.
  */
+function splitFullName(fullName: string): { first_name: string; last_name: string } {
+  const [first_name = '', ...rest] = fullName.trim().split(/\s+/);
+  return { first_name, last_name: rest.join(' ') };
+}
+
 export function SignupPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const register_ = useRegister();
 
   const {
     register,
@@ -25,11 +29,31 @@ export function SignupPage() {
     formState: { errors },
   } = useForm<SignupFormValues>({ resolver: zodResolver(signupSchema) });
 
-  async function onSubmit() {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    void navigate(paths.auth.login);
+  // Registration never authenticates the caller (confirmed against
+  // `RegisterView`, which returns only the created user, no tokens) — send
+  // them to /login to sign in for real.
+  async function onSubmit(values: SignupFormValues) {
+    try {
+      await register_.mutateAsync({
+        email: values.email,
+        password: values.password,
+        password_confirm: values.confirmPassword,
+        ...splitFullName(values.fullName),
+      });
+      void navigate(paths.auth.login, {
+        state: { successMessage: 'Account created. You can now log in.' },
+      });
+    } catch {
+      // Surfaced via register_.error below.
+    }
   }
+
+  const errorMessage =
+    register_.error instanceof ApiError
+      ? register_.error.message
+      : register_.isError
+        ? 'Account creation failed.'
+        : null;
 
   return (
     <div className="w-full max-w-sm">
@@ -77,7 +101,18 @@ export function SignupPage() {
           {...register('confirmPassword')}
         />
 
-        <Button type="submit" className="mt-2 w-full" isLoading={isSubmitting}>
+        {errorMessage && (
+          <p role="alert" className="text-koyi-danger text-sm">
+            {errorMessage}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          className="mt-2 w-full"
+          isLoading={register_.isPending}
+          disabled={register_.isPending}
+        >
           Sign up
         </Button>
       </form>

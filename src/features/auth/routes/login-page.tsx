@@ -1,21 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/text-field';
 import { paths } from '@/config/paths';
+import { useLogin } from '@/features/auth/api/mutations';
 import { type LoginFormValues, loginSchema } from '@/features/auth/schemas';
+import { ApiError } from '@/lib/api/errors';
 
-/**
- * Frontend-only, provisional: no login endpoint is confirmed yet. A valid
- * submit simulates a brief request and navigates straight to the dashboard.
- * No token is issued or stored — see CURRENT.md.
- */
 export function LoginPage() {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const location = useLocation();
+  const login = useLogin();
+  const successMessage = (location.state as { successMessage?: string } | null)?.successMessage;
 
   const {
     register,
@@ -23,11 +21,17 @@ export function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormValues>({ resolver: zodResolver(loginSchema) });
 
-  async function onSubmit() {
-    setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    void navigate(paths.dashboard);
+  async function onSubmit(values: LoginFormValues) {
+    try {
+      await login.mutateAsync(values);
+      void navigate(paths.dashboard);
+    } catch {
+      // Surfaced via login.error below — nothing further to do here.
+    }
   }
+
+  const errorMessage =
+    login.error instanceof ApiError ? login.error.message : login.isError ? 'Log in failed.' : null;
 
   return (
     <div className="w-full max-w-sm">
@@ -38,6 +42,12 @@ export function LoginPage() {
         <h1 className="text-koyi-text mt-2 text-2xl font-semibold">Welcome back</h1>
         <p className="text-koyi-muted mt-1 text-sm">Log in to your Koyi teacher account</p>
       </div>
+
+      {successMessage && (
+        <p role="status" className="text-koyi-primary mb-4 text-sm">
+          {successMessage}
+        </p>
+      )}
 
       <form
         noValidate
@@ -71,7 +81,18 @@ export function LoginPage() {
           </span>
         </div>
 
-        <Button type="submit" className="mt-2 w-full" isLoading={isSubmitting}>
+        {errorMessage && (
+          <p role="alert" className="text-koyi-danger text-sm">
+            {errorMessage}
+          </p>
+        )}
+
+        <Button
+          type="submit"
+          className="mt-2 w-full"
+          isLoading={login.isPending}
+          disabled={login.isPending}
+        >
           Log in
         </Button>
       </form>

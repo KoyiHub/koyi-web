@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { z } from 'zod';
 
 /**
  * A normalized error every layer above the API client can rely on, regardless
@@ -8,13 +9,18 @@ export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly details: unknown;
+  readonly requestId: string | undefined;
 
-  constructor(message: string, options: { status: number; code: string; details?: unknown }) {
+  constructor(
+    message: string,
+    options: { status: number; code: string; details?: unknown; requestId?: string },
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = options.status;
     this.code = options.code;
     this.details = options.details;
+    this.requestId = options.requestId;
   }
 
   get isUnauthorized(): boolean {
@@ -35,19 +41,27 @@ export class ApiError extends Error {
   }
 }
 
-interface ServerErrorBody {
-  message?: string;
-  detail?: string;
-  code?: string;
-  errors?: unknown;
-}
+/**
+ * The Django backend's global exception handler (`apps.common.exceptions`)
+ * wraps every non-2xx response in this envelope — never a bare DRF
+ * `{detail: "..."}`. `detail` carries either field-level validation errors
+ * (an object/array) or is absent when `message` already summarizes a single
+ * DRF `detail` string.
+ */
+export const apiErrorEnvelopeSchema = z.object({
+  error: z.object({
+    type: z.string(),
+    message: z.string(),
+    detail: z.unknown().nullish(),
+    request_id: z.string().optional(),
+  }),
+});
 
 export function toApiError(error: unknown): ApiError {
   if (error instanceof ApiError) return error;
 
-  if (axios.isAxiosError<ServerErrorBody>(error)) {
+  if (axios.isAxiosError(error)) {
     const status = error.response?.status ?? 0;
-    const body = error.response?.data;
 
     if (!error.response) {
       return new ApiError('Network unavailable. Check your connection and try again.', {
@@ -56,10 +70,20 @@ export function toApiError(error: unknown): ApiError {
       });
     }
 
-    return new ApiError(body?.message ?? body?.detail ?? defaultMessageFor(status), {
+    const parsed = apiErrorEnvelopeSchema.safeParse(error.response.data);
+    if (parsed.success) {
+      const { error: envelope } = parsed.data;
+      return new ApiError(envelope.message || defaultMessageFor(status), {
+        status,
+        code: envelope.type,
+        details: envelope.detail,
+        ...(envelope.request_id ? { requestId: envelope.request_id } : {}),
+      });
+    }
+
+    return new ApiError(defaultMessageFor(status), {
       status,
-      code: body?.code ?? `HTTP_${String(status)}`,
-      details: body?.errors ?? body,
+      code: `HTTP_${String(status)}`,
     });
   }
 
