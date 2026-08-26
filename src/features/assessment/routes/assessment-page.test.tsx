@@ -21,20 +21,37 @@ describe('AssessmentPage', () => {
     expect(screen.getByLabelText('Daniel Okafor')).toBeInTheDocument();
   });
 
-  it('shows a selected count reflecting the default full selection', async () => {
+  it('shows a selected count reflecting the default full selection (PDF p36: all 4 selected)', async () => {
     renderRoute('/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
-    expect(screen.getByText('4 of 4 selected')).toBeInTheDocument();
+    expect(screen.getByText('4 selected')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select all')).toBeChecked();
   });
 
-  it('updates the selected count when a student is unchecked', async () => {
+  it('updates the selected count immediately as individual students are deselected', async () => {
     const { user } = renderRoute('/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     await user.click(screen.getByLabelText('Amina Yusuf'));
+    expect(screen.getByText('3 selected')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select all')).not.toBeChecked();
 
-    expect(screen.getByText('3 of 4 selected')).toBeInTheDocument();
+    await user.click(screen.getByLabelText('Ibrahim Musa'));
+    expect(screen.getByText('2 selected')).toBeInTheDocument();
+  });
+
+  it('reaches 0 selected when every student is deselected one at a time', async () => {
+    const { user } = renderRoute('/assessment');
+    await screen.findByRole('heading', { name: 'New Assessment Session' });
+
+    await user.click(screen.getByLabelText('Amina Yusuf'));
+    await user.click(screen.getByLabelText('Ibrahim Musa'));
+    await user.click(screen.getByLabelText('Fatima Bello'));
+    await user.click(screen.getByLabelText('Daniel Okafor'));
+
+    expect(screen.getByText('0 selected')).toBeInTheDocument();
+    expect(screen.getByLabelText('Select all')).not.toBeChecked();
   });
 
   it('toggles the entire visible roster with Select all', async () => {
@@ -44,10 +61,12 @@ describe('AssessmentPage', () => {
     const selectAll = screen.getByLabelText('Select all');
 
     await user.click(selectAll);
-    expect(screen.getByText('0 of 4 selected')).toBeInTheDocument();
+    expect(screen.getByText('0 selected')).toBeInTheDocument();
+    expect(selectAll).not.toBeChecked();
 
     await user.click(selectAll);
-    expect(screen.getByText('4 of 4 selected')).toBeInTheDocument();
+    expect(screen.getByText('4 selected')).toBeInTheDocument();
+    expect(selectAll).toBeChecked();
   });
 
   it('disables Start Assessment once zero students are selected', async () => {

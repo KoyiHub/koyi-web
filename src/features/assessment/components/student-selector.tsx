@@ -22,9 +22,11 @@ export function StudentSelector({
 
   return (
     <fieldset>
-      <legend className="text-koyi-text text-base font-semibold">Select Students</legend>
+      {/* Visible "2 Select Students" heading is rendered by the parent page
+          (`SectionHeading`); this legend stays for fieldset a11y only. */}
+      <legend className="sr-only">Select Students</legend>
 
-      <div className="mt-3 flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <label className="text-koyi-text flex h-11 items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"
@@ -35,9 +37,7 @@ export function StudentSelector({
           Select all
         </label>
 
-        <span className="text-koyi-muted text-sm">
-          {selectedIds.size} of {students.length} selected
-        </span>
+        <span className="text-koyi-muted text-sm">{selectedIds.size} selected</span>
       </div>
 
       <ul className="divide-koyi-border mt-2 divide-y">

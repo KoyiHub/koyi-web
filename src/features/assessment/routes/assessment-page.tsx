@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { paths } from '@/config/paths';
@@ -60,7 +60,7 @@ export function AssessmentPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           <section className="rounded-koyi-lg border-koyi-border bg-koyi-card border p-5">
-            <h2 className="text-koyi-text text-base font-semibold">Class Context</h2>
+            <SectionHeading step={1} title="Select Class Context" />
             <div className="mt-3 max-w-sm">
               <ClassSelector
                 classes={classOptions}
@@ -71,20 +71,24 @@ export function AssessmentPage() {
           </section>
 
           <section className="rounded-koyi-lg border-koyi-border bg-koyi-card border p-5">
-            <StudentSelector
-              students={studentRoster}
-              selectedIds={selectedStudentIds}
-              onToggle={toggleStudent}
-              onToggleAll={toggleAll}
-            />
+            <SectionHeading step={2} title="Select Students" />
+            <div className="mt-3">
+              <StudentSelector
+                students={studentRoster}
+                selectedIds={selectedStudentIds}
+                onToggle={toggleStudent}
+                onToggleAll={toggleAll}
+              />
+            </div>
           </section>
         </div>
 
         <div className="space-y-6">
           <section className="rounded-koyi-lg border-koyi-border bg-koyi-card border p-5">
-            <fieldset>
-              <legend className="text-koyi-text text-base font-semibold">Choose Assessment</legend>
-              <div className="mt-3 space-y-3">
+            <SectionHeading step={3} title="Choose Assessment" />
+            <fieldset className="mt-3">
+              <legend className="sr-only">Choose Assessment</legend>
+              <div className="space-y-3">
                 {assessmentTypeOptions.map((option) => (
                   <AssessmentOption
                     key={option.id}
@@ -97,6 +101,14 @@ export function AssessmentPage() {
                 ))}
               </div>
             </fieldset>
+
+            <Link
+              to={paths.questionBank}
+              className="rounded-koyi-lg border-koyi-primary/30 bg-koyi-primary/5 text-koyi-primary hover:bg-koyi-primary/10 mt-4 flex h-11 items-center justify-between gap-2 border px-3.5 text-sm font-medium transition-colors"
+            >
+              Browse the Question Bank
+              <span aria-hidden="true">&rarr;</span>
+            </Link>
           </section>
 
           <Button
@@ -111,5 +123,20 @@ export function AssessmentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+/** Numbered section indicator matching PDF p36's "1 / 2 / 3" step markers. */
+function SectionHeading({ step, title }: { step: number; title: string }) {
+  return (
+    <h2 className="text-koyi-text flex items-center gap-2.5 text-base font-semibold">
+      <span
+        aria-hidden="true"
+        className="bg-koyi-primary flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
+      >
+        {step}
+      </span>
+      {title}
+    </h2>
   );
 }
