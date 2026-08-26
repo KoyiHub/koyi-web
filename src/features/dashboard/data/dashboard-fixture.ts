@@ -14,30 +14,55 @@ export interface PerformanceSegment {
   percentage: number;
 }
 
-export interface LearningGap {
-  skill: string;
-  strugglingStudents: number;
+export interface StudentNeedingAttention {
+  studentId: string;
+  name: string;
+  primaryGap: string;
+  lastAssessed: string;
 }
 
 export interface ClassDashboard {
   className: string;
   totalStudents: number;
+  /** Students with at least one completed assessment this term. */
+  assessedCount: number;
+  /** Students flagged as needing attention (a subset of `assessedCount`). */
+  attentionCount: number;
+  /** Provisional trend label shown next to the attention count. */
+  attentionTrend: string;
   performance: PerformanceSegment[];
-  learningGaps: LearningGap[];
+  studentsNeedingAttention: StudentNeedingAttention[];
 }
 
 export const dashboardFixture: ClassDashboard = {
   className: 'Primary 4 — Class A',
   totalStudents: 32,
+  assessedCount: 28,
+  attentionCount: 12,
+  attentionTrend: '+2%',
   performance: [
-    { band: 'strong', label: 'Strong', students: 10, percentage: 31 },
-    { band: 'intermediate', label: 'Intermediate', students: 14, percentage: 44 },
-    { band: 'struggling', label: 'Struggling', students: 8, percentage: 25 },
+    { band: 'strong', label: 'Strong', students: 12, percentage: 43 },
+    { band: 'intermediate', label: 'Intermediate', students: 10, percentage: 36 },
+    { band: 'struggling', label: 'Struggling', students: 6, percentage: 21 },
   ],
-  learningGaps: [
-    { skill: 'Word Reading', strugglingStudents: 12 },
-    { skill: 'Reading Comprehension', strugglingStudents: 9 },
-    { skill: 'Subtraction', strugglingStudents: 7 },
-    { skill: 'Letter Sounds', strugglingStudents: 5 },
+  studentsNeedingAttention: [
+    {
+      studentId: 'stu-fatima-bello',
+      name: 'Fatima Bello',
+      primaryGap: 'Word Reading',
+      lastAssessed: 'Aug 18, 2026',
+    },
+    {
+      studentId: 'stu-samuel-ojo',
+      name: 'Samuel Ojo',
+      primaryGap: 'Subtraction',
+      lastAssessed: 'Aug 18, 2026',
+    },
+    {
+      studentId: 'stu-amina-yusuf',
+      name: 'Amina Yusuf',
+      primaryGap: 'Reading Comprehension',
+      lastAssessed: 'Aug 18, 2026',
+    },
   ],
 };

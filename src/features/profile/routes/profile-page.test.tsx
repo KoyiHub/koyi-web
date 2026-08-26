@@ -38,7 +38,7 @@ describe('ProfilePage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Log Out' }));
 
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome Back' })).toBeInTheDocument();
   });
 
   it('shows Edit Profile as disabled', async () => {
