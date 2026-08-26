@@ -2,6 +2,7 @@ import type { RouteObject } from 'react-router';
 
 import { AssessmentLayout } from '@/app/assessment-layout';
 import { AuthLayout } from '@/app/auth-layout';
+import { RedirectIfAuthenticated, RequireAuth } from '@/app/require-auth';
 import { RootErrorBoundary } from '@/app/root-error-boundary';
 import { TeacherLayout } from '@/app/teacher-layout';
 
@@ -18,120 +19,172 @@ import { TeacherLayout } from '@/app/teacher-layout';
 export const routes: RouteObject[] = [
   {
     path: '/',
-    Component: TeacherLayout,
+    ErrorBoundary: RootErrorBoundary,
+    lazy: async () => ({
+      Component: (await import('@/features/welcome/routes/welcome-page')).WelcomePage,
+    }),
+  },
+  {
+    path: 'onboarding',
     ErrorBoundary: RootErrorBoundary,
     children: [
       {
-        index: true,
+        path: 'role',
         lazy: async () => ({
-          Component: (await import('@/features/dashboard/routes/dashboard-page')).DashboardPage,
+          Component: (await import('@/features/onboarding/routes/role-selection-page'))
+            .RoleSelectionPage,
         }),
       },
       {
-        path: 'assessment',
-        children: [
-          {
-            index: true,
-            lazy: async () => ({
-              Component: (await import('@/features/assessment/routes/assessment-page'))
-                .AssessmentPage,
-            }),
-          },
-          {
-            path: 'results',
-            lazy: async () => ({
-              Component: (await import('@/features/assessment/routes/assessment-results-page'))
-                .AssessmentResultsPage,
-            }),
-          },
-        ],
+        path: 'features',
+        lazy: async () => ({
+          Component: (await import('@/features/onboarding/routes/features-page')).FeaturesPage,
+        }),
       },
       {
-        path: 'students',
+        path: 'school-setup',
+        lazy: async () => ({
+          Component: (await import('@/features/onboarding/routes/school-setup-page'))
+            .SchoolSetupPage,
+        }),
+      },
+    ],
+  },
+  {
+    Component: RequireAuth,
+    ErrorBoundary: RootErrorBoundary,
+    children: [
+      {
+        Component: TeacherLayout,
         children: [
           {
-            index: true,
+            path: 'dashboard',
             lazy: async () => ({
-              Component: (await import('@/features/students/routes/students-page')).StudentsPage,
+              Component: (await import('@/features/dashboard/routes/dashboard-page')).DashboardPage,
             }),
           },
           {
-            path: 'groups',
+            path: 'assessment',
             children: [
               {
                 index: true,
                 lazy: async () => ({
-                  Component: (await import('@/features/students/routes/groups-page')).GroupsPage,
+                  Component: (await import('@/features/assessment/routes/assessment-page'))
+                    .AssessmentPage,
                 }),
               },
               {
-                path: ':groupId',
+                path: 'results',
                 lazy: async () => ({
-                  Component: (await import('@/features/students/routes/group-detail-page'))
-                    .GroupDetailPage,
+                  Component: (await import('@/features/assessment/routes/assessment-results-page'))
+                    .AssessmentResultsPage,
                 }),
               },
             ],
           },
           {
-            path: ':studentId',
+            path: 'students',
+            children: [
+              {
+                index: true,
+                lazy: async () => ({
+                  Component: (await import('@/features/students/routes/students-page'))
+                    .StudentsPage,
+                }),
+              },
+              {
+                path: 'groups',
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/features/students/routes/groups-page'))
+                        .GroupsPage,
+                    }),
+                  },
+                  {
+                    path: ':groupId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/students/routes/group-detail-page'))
+                        .GroupDetailPage,
+                    }),
+                  },
+                ],
+              },
+              {
+                path: ':studentId',
+                lazy: async () => ({
+                  Component: (await import('@/features/students/routes/student-detail-page'))
+                    .StudentDetailPage,
+                }),
+              },
+            ],
+          },
+          {
+            path: 'progress',
             lazy: async () => ({
-              Component: (await import('@/features/students/routes/student-detail-page'))
-                .StudentDetailPage,
+              Component: (await import('@/features/progress/routes/progress-page')).ProgressPage,
             }),
+          },
+          {
+            path: 'question-bank',
+            lazy: async () => ({
+              Component: (await import('@/features/question-bank/routes/question-bank-page'))
+                .QuestionBankPage,
+            }),
+          },
+          {
+            path: 'profile',
+            lazy: async () => ({
+              Component: (await import('@/features/profile/routes/profile-page')).ProfilePage,
+            }),
+          },
+          {
+            path: 'users',
+            children: [
+              {
+                index: true,
+                lazy: async () => ({
+                  Component: (await import('@/features/users/routes/users-page')).UsersPage,
+                }),
+              },
+              {
+                path: ':userId',
+                lazy: async () => ({
+                  Component: (await import('@/features/users/routes/user-detail-page'))
+                    .UserDetailPage,
+                }),
+              },
+            ],
+          },
+          {
+            path: '*',
+            lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
           },
         ],
-      },
-      {
-        path: 'progress',
-        lazy: async () => ({
-          Component: (await import('@/features/progress/routes/progress-page')).ProgressPage,
-        }),
-      },
-      {
-        path: 'profile',
-        lazy: async () => ({
-          Component: (await import('@/features/profile/routes/profile-page')).ProfilePage,
-        }),
-      },
-      {
-        path: 'users',
-        children: [
-          {
-            index: true,
-            lazy: async () => ({
-              Component: (await import('@/features/users/routes/users-page')).UsersPage,
-            }),
-          },
-          {
-            path: ':userId',
-            lazy: async () => ({
-              Component: (await import('@/features/users/routes/user-detail-page')).UserDetailPage,
-            }),
-          },
-        ],
-      },
-      {
-        path: '*',
-        lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
       },
     ],
   },
   {
-    Component: AuthLayout,
+    Component: RedirectIfAuthenticated,
     ErrorBoundary: RootErrorBoundary,
     children: [
       {
-        path: 'login',
-        lazy: async () => ({
-          Component: (await import('@/features/auth/routes/login-page')).LoginPage,
-        }),
-      },
-      {
-        path: 'signup',
-        lazy: async () => ({
-          Component: (await import('@/features/auth/routes/signup-page')).SignupPage,
-        }),
+        Component: AuthLayout,
+        children: [
+          {
+            path: 'login',
+            lazy: async () => ({
+              Component: (await import('@/features/auth/routes/login-page')).LoginPage,
+            }),
+          },
+          {
+            path: 'signup',
+            lazy: async () => ({
+              Component: (await import('@/features/auth/routes/signup-page')).SignupPage,
+            }),
+          },
+        ],
       },
     ],
   },

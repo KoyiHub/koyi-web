@@ -4,40 +4,37 @@ import { Outlet } from 'react-router';
 import { PageSpinner } from '@/components/ui/page-spinner';
 
 /**
- * Minimal public shell for /login and /signup. Deliberately excludes the
- * teacher sidebar/topbar — this is a separate, unauthenticated experience,
- * not a page nested inside the teacher shell.
+ * Public shell for /login and /signup: light background, a shared header
+ * with the wordmark and non-interactive role context, then a single
+ * centered card wrapping the routed form. "School Admin" is shown only as
+ * context — Koyi web is teacher-only, so it isn't a real, clickable tab.
  */
 export function AuthLayout() {
   return (
-    <div className="bg-koyi-surface flex min-h-dvh">
-      <div className="bg-koyi-primary relative hidden w-[40%] max-w-md flex-col justify-between overflow-hidden px-10 py-12 lg:flex">
-        <span className="text-lg font-semibold tracking-tight text-white">Koyi</span>
-
-        <div>
-          <p className="text-2xl leading-snug font-semibold text-white">
-            Every child can read, write, and count with confidence.
-          </p>
-          <p className="mt-3 text-sm text-white/70">
-            Koyi gives teachers a clear, class-by-class picture of foundational literacy and
-            numeracy — no guesswork, just evidence.
-          </p>
-        </div>
-
-        <span className="text-xs text-white/50">Foundational literacy &amp; numeracy</span>
-      </div>
-
-      <div className="flex flex-1 flex-col">
-        <header className="px-4 py-6 lg:hidden">
+    <div className="bg-koyi-surface flex min-h-dvh flex-col">
+      <header className="border-koyi-border bg-koyi-card border-b">
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
           <span className="text-koyi-primary text-lg font-semibold tracking-tight">Koyi</span>
-        </header>
 
-        <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
+          <div className="text-koyi-muted flex items-center gap-4 text-sm font-medium">
+            <span aria-disabled="true" className="cursor-not-allowed opacity-60">
+              School Admin
+            </span>
+            <span className="text-koyi-border" aria-hidden="true">
+              |
+            </span>
+            <span className="text-koyi-primary">School Teacher</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
+        <div className="rounded-koyi-lg border-koyi-border bg-koyi-card w-full max-w-sm border p-8 shadow-sm">
           <Suspense fallback={<PageSpinner />}>
             <Outlet />
           </Suspense>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

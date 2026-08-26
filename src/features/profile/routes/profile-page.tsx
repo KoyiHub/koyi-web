@@ -1,18 +1,30 @@
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { paths } from '@/config/paths';
+import { useLogout } from '@/features/auth/api/mutations';
+import { meQuery } from '@/features/auth/api/queries';
 import { teacherProfileFixture } from '@/features/profile/data/profile-fixture';
-import { clearAuthToken } from '@/lib/auth/token-store';
+import { ApiError } from '@/lib/api/errors';
 
 /**
- * PROVISIONAL: identity data is a fixture, not a Profile API. Log Out clears
- * whatever local token exists (a safe no-op today, since no login flow
- * issues one yet) and returns to /login — see CURRENT.md.
+ * Account Information is real, from `GET /me/`. Teaching Context (school,
+ * class) has no backend model yet, so it stays a clearly-labelled fixture —
+ * never presented as if it came from the API. See CURRENT.md.
  */
 export function ProfilePage() {
   const navigate = useNavigate();
-  const profile = teacherProfileFixture;
+  const logout = useLogout();
+  const me = useQuery(meQuery());
+
+  function handleLogout() {
+    logout.mutate(undefined, {
+      onSettled: () => {
+        void navigate(paths.auth.login);
+      },
+    });
+  }
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -22,13 +34,7 @@ export function ProfilePage() {
           <Button variant="secondary" disabled title="Coming soon">
             Edit Profile
           </Button>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              clearAuthToken();
-              void navigate(paths.auth.login);
-            }}
-          >
+          <Button variant="ghost" onClick={handleLogout} isLoading={logout.isPending}>
             Log Out
           </Button>
         </div>
@@ -36,36 +42,56 @@ export function ProfilePage() {
 
       <section className="rounded-koyi-lg border-koyi-border bg-koyi-card border p-6">
         <h2 className="text-koyi-text text-sm font-semibold tracking-wide uppercase">
-          Personal Information
+          Account Information
         </h2>
-        <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <dt className="text-koyi-muted text-xs">Name</dt>
-            <dd className="text-koyi-text mt-1 text-sm font-medium">{profile.name}</dd>
-          </div>
-          <div>
-            <dt className="text-koyi-muted text-xs">Role</dt>
-            <dd className="text-koyi-text mt-1 text-sm font-medium">{profile.role}</dd>
-          </div>
-          <div className="sm:col-span-2">
-            <dt className="text-koyi-muted text-xs">Email</dt>
-            <dd className="text-koyi-text mt-1 text-sm font-medium">{profile.email}</dd>
-          </div>
-        </dl>
+
+        {me.isLoading && <p className="text-koyi-muted mt-4 text-sm">Loading account details…</p>}
+
+        {me.isError && (
+          <p role="alert" className="text-koyi-danger mt-4 text-sm">
+            {me.error instanceof ApiError ? me.error.message : 'Could not load account details.'}
+          </p>
+        )}
+
+        {me.data && (
+          <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <dt className="text-koyi-muted text-xs">Name</dt>
+              <dd className="text-koyi-text mt-1 text-sm font-medium">{me.data.full_name}</dd>
+            </div>
+            <div>
+              <dt className="text-koyi-muted text-xs">Email verified</dt>
+              <dd className="text-koyi-text mt-1 text-sm font-medium">
+                {me.data.email_verified ? 'Yes' : 'No'}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-koyi-muted text-xs">Email</dt>
+              <dd className="text-koyi-text mt-1 text-sm font-medium">{me.data.email}</dd>
+            </div>
+          </dl>
+        )}
       </section>
 
       <section className="rounded-koyi-lg border-koyi-border bg-koyi-card mt-4 border p-6">
         <h2 className="text-koyi-text text-sm font-semibold tracking-wide uppercase">
-          School/Class Information
+          Teaching Context
         </h2>
+        <p className="text-koyi-muted mt-1 text-xs">
+          Provisional — not yet backed by a school/class API.
+        </p>
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-koyi-muted text-xs">School</dt>
-            <dd className="text-koyi-text mt-1 text-sm font-medium">{profile.school}</dd>
+            <dd className="text-koyi-text mt-1 text-sm font-medium">
+              {teacherProfileFixture.school}
+            </dd>
           </div>
           <div>
             <dt className="text-koyi-muted text-xs">Class</dt>
-            <dd className="text-koyi-text mt-1 text-sm font-medium">{profile.className}</dd>
+            <dd className="text-koyi-text mt-1 text-sm font-medium">
+              {teacherProfileFixture.className}
+            </dd>
           </div>
         </dl>
       </section>

@@ -1,9 +1,15 @@
-import axios, { type AxiosRequestConfig } from 'axios';
+import axios, { type AxiosRequestConfig, type InternalAxiosRequestConfig } from 'axios';
 import type { z } from 'zod';
 
 import { env } from '@/config/env';
+import { refreshResponseSchema } from '@/features/auth/api/auth.schema';
 import { ApiError, toApiError } from '@/lib/api/errors';
-import { clearAuthToken, getAuthToken } from '@/lib/auth/token-store';
+import {
+  clearAuthToken,
+  getAuthToken,
+  getRefreshToken,
+  setAuthTokens,
+} from '@/lib/auth/token-store';
 
 export const axiosClient = axios.create({
   baseURL: env.VITE_API_URL,
@@ -21,10 +27,61 @@ axiosClient.interceptors.request.use((config) => {
   return config;
 });
 
+// The auth endpoints themselves must never trigger a refresh-and-retry —
+// a failed login/register/refresh call is a terminal failure, not a stale
+// session.
+const AUTH_ENDPOINTS = ['/v1/auth/login/', '/v1/auth/register/', '/v1/auth/token/refresh/'];
+
+function isAuthEndpoint(url: string | undefined): boolean {
+  return Boolean(url && AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint)));
+}
+
+type RetriableConfig = InternalAxiosRequestConfig & { _retried?: boolean };
+
+// Concurrent 401s share one in-flight refresh instead of each firing their
+// own — avoids racing SimpleJWT's rotate-and-blacklist behaviour into a
+// corrupted token pair.
+let refreshPromise: Promise<string> | null = null;
+
+async function refreshAccessToken(): Promise<string> {
+  const refresh = getRefreshToken();
+  if (!refresh) throw new Error('No refresh token available.');
+
+  const response = await axios.post<unknown>(
+    `${env.VITE_API_URL}/v1/auth/token/refresh/`,
+    { refresh },
+    { headers: { 'Content-Type': 'application/json' } },
+  );
+  const parsed = refreshResponseSchema.parse(response.data);
+  setAuthTokens(parsed);
+  return parsed.access;
+}
+
 axiosClient.interceptors.response.use(
   (response) => response,
-  (error: unknown) => {
+  async (error: unknown) => {
     const apiError = toApiError(error);
+    const config = axios.isAxiosError(error)
+      ? (error.config as RetriableConfig | undefined)
+      : undefined;
+
+    const canAttemptRefresh =
+      apiError.isUnauthorized && config && !config._retried && !isAuthEndpoint(config.url);
+
+    if (canAttemptRefresh) {
+      config._retried = true;
+      try {
+        refreshPromise ??= refreshAccessToken().finally(() => {
+          refreshPromise = null;
+        });
+        const access = await refreshPromise;
+        config.headers.setAuthorization(`Bearer ${access}`);
+        return await axiosClient.request(config);
+      } catch {
+        clearAuthToken();
+        return Promise.reject(apiError);
+      }
+    }
 
     // A dead session is global state, not a per-caller concern: clear it once
     // here so every screen sees a consistent logged-out world.

@@ -1,38 +1,58 @@
 import { describe, expect, it } from 'vitest';
 
+import { mockAuthUser } from '@/mocks/handlers';
 import { renderRoute, screen } from '@/test/test-utils';
 
 describe('DashboardPage', () => {
-  it('renders the dashboard heading and class context', async () => {
-    renderRoute('/');
+  it('renders a greeting using the authenticated teacher name', async () => {
+    renderRoute('/dashboard');
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
-    expect(screen.getByText('Overview of Primary 4 — Class A')).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        'heading',
+        { name: `Good morning, ${mockAuthUser.first_name}` },
+        { timeout: 5000 },
+      ),
+    ).toBeInTheDocument();
   });
 
-  it('renders the four summary metrics', async () => {
-    renderRoute('/');
-    await screen.findByRole('heading', { name: 'Dashboard' });
+  it('renders the three summary stats', async () => {
+    renderRoute('/dashboard');
+    await screen.findByRole('heading', { name: `Good morning, ${mockAuthUser.first_name}` });
 
     expect(screen.getByText('Total Students')).toBeInTheDocument();
     expect(screen.getByText('32')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument();
-    expect(screen.getByText('14')).toBeInTheDocument();
-    expect(screen.getByText('8')).toBeInTheDocument();
+    expect(screen.getByText('Assessed')).toBeInTheDocument();
+    expect(screen.getByText('Needs Attention')).toBeInTheDocument();
+    expect(screen.getByText('12')).toBeInTheDocument();
   });
 
-  it('renders the common learning gaps', async () => {
-    renderRoute('/');
-    await screen.findByRole('heading', { name: 'Dashboard' });
+  it('renders the class distribution breakdown', async () => {
+    renderRoute('/dashboard');
+    await screen.findByRole('heading', { name: `Good morning, ${mockAuthUser.first_name}` });
 
-    expect(screen.getByText('Word Reading')).toBeInTheDocument();
-    expect(screen.getByText('12 students struggling')).toBeInTheDocument();
-    expect(screen.getByText('Subtraction')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Class Distribution' })).toBeInTheDocument();
+    expect(screen.getByText('Strong')).toBeInTheDocument();
+    expect(screen.getByText(/43% \(\d+ students\)/)).toBeInTheDocument();
   });
 
-  it('shows the Create Assessment action', async () => {
-    renderRoute('/');
+  it('renders students needing attention with a link to their profile', async () => {
+    renderRoute('/dashboard');
+    await screen.findByRole('heading', { name: `Good morning, ${mockAuthUser.first_name}` });
 
-    expect(await screen.findByRole('button', { name: 'Create Assessment' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Students Needing Attention' })).toBeInTheDocument();
+    expect(screen.getByText('Fatima Bello')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'View' })[0]).toHaveAttribute(
+      'href',
+      '/students/stu-fatima-bello',
+    );
+  });
+
+  it('shows the Start Assessment quick action', async () => {
+    renderRoute('/dashboard');
+
+    expect(
+      await screen.findByRole('link', { name: /^Start Assessment/ }, { timeout: 5000 }),
+    ).toBeInTheDocument();
   });
 });

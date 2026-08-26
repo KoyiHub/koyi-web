@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router';
 
-import { teacherNavItems, teacherProfileNavItem } from '@/config/teacher-nav';
+import { GearIcon, HelpIcon } from '@/components/ui/icons';
+import { teacherNavItems } from '@/config/teacher-nav';
 import { cn } from '@/lib/utils/cn';
 
 interface TeacherSidebarProps {
@@ -12,6 +13,10 @@ interface TeacherSidebarProps {
 /**
  * Persistent on desktop; becomes an off-canvas drawer below the `lg` breakpoint.
  * The same markup renders in both cases — only the transform/visibility change.
+ *
+ * Profile and logout live solely behind the topbar avatar (see
+ * `TeacherTopbar`) so there is exactly one route into the profile screen —
+ * this footer only carries Settings and Help.
  */
 export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
   return (
@@ -30,9 +35,11 @@ export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
           open ? 'translate-x-0' : '-translate-x-full',
         )}
       >
-        <div className="border-koyi-border flex h-14 items-center gap-2 border-b px-5">
+        <div className="border-koyi-border flex h-16 flex-col justify-center gap-0.5 border-b px-5">
           <span className="text-koyi-primary text-lg font-semibold tracking-tight">Koyi</span>
-          <span className="text-koyi-muted text-xs font-medium">FLN Assessment Platform</span>
+          <span className="text-koyi-muted text-[11px] font-semibold tracking-wide uppercase">
+            FLN Assessment Platform
+          </span>
         </div>
 
         <nav aria-label="Teacher" className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
@@ -44,8 +51,10 @@ export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
               onClick={onClose}
               className={({ isActive }) =>
                 cn(
-                  'flex h-11 items-center rounded-md px-3 text-sm font-medium transition-colors',
-                  isActive ? 'bg-koyi-primary text-white' : 'text-koyi-text hover:bg-koyi-surface',
+                  'flex h-11 items-center rounded-md border-l-4 px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-koyi-primary border-koyi-accent text-white'
+                    : 'text-koyi-text hover:bg-koyi-surface border-transparent',
                 )
               }
             >
@@ -54,25 +63,24 @@ export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
           ))}
         </nav>
 
-        <div className="border-koyi-border border-t p-3">
-          <NavLink
-            to={teacherProfileNavItem.to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              cn(
-                'flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-                isActive ? 'bg-koyi-primary text-white' : 'text-koyi-text hover:bg-koyi-surface',
-              )
-            }
+        <div className="border-koyi-border space-y-1 border-t p-3">
+          <span
+            aria-disabled="true"
+            title="Settings is not available yet"
+            className="text-koyi-muted flex h-11 cursor-not-allowed items-center gap-3 rounded-md px-3 text-sm font-medium"
           >
-            <span
-              aria-hidden="true"
-              className="bg-koyi-surface text-koyi-primary flex size-8 items-center justify-center rounded-full text-xs font-semibold"
-            >
-              T
-            </span>
-            Teacher profile
-          </NavLink>
+            <GearIcon aria-hidden="true" />
+            Settings
+          </span>
+
+          <span
+            aria-disabled="true"
+            title="Help center is not available yet"
+            className="text-koyi-muted flex h-11 cursor-not-allowed items-center gap-3 rounded-md px-3 text-sm font-medium"
+          >
+            <HelpIcon aria-hidden="true" />
+            Help
+          </span>
         </div>
       </aside>
     </>

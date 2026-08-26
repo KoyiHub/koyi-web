@@ -21,6 +21,11 @@
   --radius-koyi-sm: 0.375rem;
   --radius-koyi-md: 0.5rem;
   --radius-koyi-lg: 0.75rem;
+
+  /* Dashboard stat figures (~28px per the design reference) — the one size in
+     this pass reused across multiple sibling cards, so it earns a token
+     rather than a repeated arbitrary value. */
+  --text-koyi-stat: 1.75rem;
 }
 
 @layer base {

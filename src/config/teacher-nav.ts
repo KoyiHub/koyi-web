@@ -9,8 +9,8 @@ export interface TeacherNavItem {
 /**
  * Single source of truth for teacher shell navigation. Sidebar (and any
  * future breadcrumb/mobile menu) reads from here instead of each hard-coding
- * its own link list. Profile is rendered separately, pinned near the bottom
- * of the sidebar, so it is not repeated here.
+ * its own link list. Profile is reached solely via the topbar avatar, so it
+ * is not listed here.
  */
 export const teacherNavItems: TeacherNavItem[] = [
   { label: 'Dashboard', to: paths.dashboard, end: true },
@@ -18,9 +18,3 @@ export const teacherNavItems: TeacherNavItem[] = [
   { label: 'Students/Groups', to: paths.students.list, end: false },
   { label: 'Progress', to: paths.progress, end: false },
 ];
-
-export const teacherProfileNavItem: TeacherNavItem = {
-  label: 'Profile',
-  to: paths.profile,
-  end: false,
-};

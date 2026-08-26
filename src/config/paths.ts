@@ -3,7 +3,13 @@
  * here, so changing a path is one edit instead of a grep-and-pray.
  */
 export const paths = {
-  dashboard: '/',
+  welcome: '/',
+  dashboard: '/dashboard',
+  onboarding: {
+    role: '/onboarding/role',
+    features: '/onboarding/features',
+    schoolSetup: '/onboarding/school-setup',
+  },
   auth: {
     login: '/login',
     signup: '/signup',
@@ -21,6 +27,7 @@ export const paths = {
     groupDetail: (groupId: string) => `/students/groups/${groupId}`,
   },
   progress: '/progress',
+  questionBank: '/question-bank',
   profile: '/profile',
   users: {
     list: '/users',

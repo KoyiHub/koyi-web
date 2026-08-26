@@ -6,6 +6,7 @@ import type { ReactElement, ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 
 import { routes } from '@/app/routes';
+import { setAuthTokens } from '@/lib/auth/token-store';
 
 /** Retries and caching make tests slow and flaky — turn both off. */
 function createTestQueryClient(): QueryClient {
@@ -35,8 +36,16 @@ export function renderWithProviders(
 /**
  * Mount the real route table at a given URL — the way to test navigation,
  * route params and layouts without stubbing the router.
+ *
+ * Seeds an authenticated session by default so existing teacher-route tests
+ * don't need to know about the auth guard; pass `authenticated: false` for
+ * the tests that specifically exercise the unauthenticated redirect.
  */
-export function renderRoute(initialPath = '/') {
+export function renderRoute(initialPath = '/', options?: { authenticated?: boolean }) {
+  if (options?.authenticated ?? true) {
+    setAuthTokens({ access: 'test-access-token', refresh: 'test-refresh-token' });
+  }
+
   const router = createMemoryRouter(routes, { initialEntries: [initialPath] });
 
   return {
