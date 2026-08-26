@@ -9,14 +9,14 @@ describe('LoginPage', () => {
   it('renders the welcome back heading', async () => {
     renderRoute('/login', { authenticated: false });
 
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome Back' })).toBeInTheDocument();
   });
 
   it('validates required fields', async () => {
     const { user } = renderRoute('/login', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Welcome Back' });
 
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.click(screen.getByRole('button', { name: 'Log In' }));
 
     expect(await screen.findByText('Email is required')).toBeInTheDocument();
     expect(screen.getByText('Password is required')).toBeInTheDocument();
@@ -24,40 +24,40 @@ describe('LoginPage', () => {
 
   it('rejects an invalid email', async () => {
     const { user } = renderRoute('/login', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Welcome Back' });
 
     await user.type(screen.getByLabelText('Email'), 'not-an-email');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.click(screen.getByRole('button', { name: 'Log In' }));
 
     expect(await screen.findByText('Enter a valid email address')).toBeInTheDocument();
   });
 
   it('stores tokens and navigates to the dashboard on a successful login', async () => {
     const { user } = renderRoute('/login', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Welcome Back' });
 
     await user.type(screen.getByLabelText('Email'), 'teacher@koyi.ng');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.click(screen.getByRole('button', { name: 'Log In' }));
 
-    expect(await screen.findByRole('heading', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByText(/Good morning/)).toBeInTheDocument();
     expect(getAuthToken()).toBe('mock-access-token');
     expect(getRefreshToken()).toBe('mock-refresh-token');
   });
 
   it('shows the backend error on invalid credentials and does not navigate', async () => {
     const { user } = renderRoute('/login', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Welcome Back' });
 
     await user.type(screen.getByLabelText('Email'), 'teacher@koyi.ng');
     await user.type(screen.getByLabelText('Password'), 'wrong-password');
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.click(screen.getByRole('button', { name: 'Log In' }));
 
     expect(
       await screen.findByText('No active account found with the given credentials'),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Welcome Back' })).toBeInTheDocument();
     expect(getAuthToken()).toBeNull();
   });
 
@@ -89,19 +89,19 @@ describe('LoginPage', () => {
     );
 
     const { user } = renderRoute('/login', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Welcome Back' });
 
     await user.type(screen.getByLabelText('Email'), 'teacher@koyi.ng');
     await user.type(screen.getByLabelText('Password'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Log in' }));
+    await user.click(screen.getByRole('button', { name: 'Log In' }));
 
-    expect(screen.getByRole('button', { name: 'Log in' })).toBeDisabled();
-    await screen.findByRole('heading', { name: 'Dashboard' });
+    expect(screen.getByRole('button', { name: 'Log In' })).toBeDisabled();
+    await screen.findByText(/Good morning/);
   });
 
   it('links to the signup page', async () => {
     renderRoute('/login', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Welcome back' });
+    await screen.findByRole('heading', { name: 'Welcome Back' });
 
     expect(screen.getByRole('link', { name: 'Sign up' })).toHaveAttribute('href', '/signup');
   });

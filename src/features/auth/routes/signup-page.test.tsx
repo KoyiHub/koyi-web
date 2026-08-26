@@ -9,14 +9,16 @@ describe('SignupPage', () => {
   it('renders the create account heading', async () => {
     renderRoute('/signup', { authenticated: false });
 
-    expect(await screen.findByRole('heading', { name: 'Create your account' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Create Your Teacher Account' }),
+    ).toBeInTheDocument();
   });
 
   it('validates required fields', async () => {
     const { user } = renderRoute('/signup', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Create your account' });
+    await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
-    await user.click(screen.getByRole('button', { name: 'Sign up' }));
+    await user.click(screen.getByRole('button', { name: 'Create Account' }));
 
     expect(await screen.findByText('Full name is required')).toBeInTheDocument();
     expect(screen.getByText('Email address is required')).toBeInTheDocument();
@@ -24,28 +26,28 @@ describe('SignupPage', () => {
 
   it('rejects mismatched passwords', async () => {
     const { user } = renderRoute('/signup', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Create your account' });
+    await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.type(screen.getByLabelText('Full Name'), 'Amina Yusuf');
     await user.type(screen.getByLabelText('Email Address'), 'amina@koyi.ng');
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.type(screen.getByLabelText('Confirm Password'), 'password456');
-    await user.click(screen.getByRole('button', { name: 'Sign up' }));
+    await user.click(screen.getByRole('button', { name: 'Create Account' }));
 
     expect(await screen.findByText('Passwords do not match')).toBeInTheDocument();
   });
 
   it('navigates to /login on a successful registration, without creating fake auth state', async () => {
     const { user } = renderRoute('/signup', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Create your account' });
+    await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.type(screen.getByLabelText('Full Name'), 'Amina Yusuf');
     await user.type(screen.getByLabelText('Email Address'), 'amina@koyi.ng');
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.type(screen.getByLabelText('Confirm Password'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Sign up' }));
+    await user.click(screen.getByRole('button', { name: 'Create Account' }));
 
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome Back' })).toBeInTheDocument();
     expect(screen.getByText('Account created. You can now log in.')).toBeInTheDocument();
     expect(getAuthToken()).toBeNull();
   });
@@ -68,15 +70,17 @@ describe('SignupPage', () => {
     );
 
     const { user } = renderRoute('/signup', { authenticated: false });
-    await screen.findByRole('heading', { name: 'Create your account' });
+    await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.type(screen.getByLabelText('Full Name'), 'Amina Yusuf');
     await user.type(screen.getByLabelText('Email Address'), 'amina@koyi.ng');
     await user.type(screen.getByLabelText('Password'), 'password123');
     await user.type(screen.getByLabelText('Confirm Password'), 'password123');
-    await user.click(screen.getByRole('button', { name: 'Sign up' }));
+    await user.click(screen.getByRole('button', { name: 'Create Account' }));
 
     expect(await screen.findByText('Request could not be processed.')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Create your account' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Create Your Teacher Account' }),
+    ).toBeInTheDocument();
   });
 });

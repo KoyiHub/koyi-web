@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
+import { LockIcon, MailIcon, UserIcon } from '@/components/ui/icons';
 import { TextField } from '@/components/ui/text-field';
 import { paths } from '@/config/paths';
 import { useRegister } from '@/features/auth/api/mutations';
@@ -56,13 +57,12 @@ export function SignupPage() {
         : null;
 
   return (
-    <div className="w-full max-w-sm">
-      <div className="mb-8">
-        <span className="text-koyi-primary text-lg font-semibold tracking-tight lg:hidden">
-          Koyi
-        </span>
-        <h1 className="text-koyi-text mt-2 text-2xl font-semibold">Create your account</h1>
-        <p className="text-koyi-muted mt-1 text-sm">Set up your Koyi teacher account</p>
+    <div>
+      <div className="mb-8 text-center">
+        <h1 className="text-koyi-text text-2xl font-semibold">Create Your Teacher Account</h1>
+        <p className="text-koyi-muted mt-1 text-sm">
+          Start helping your students learn and grow with Koyi.
+        </p>
       </div>
 
       <form
@@ -76,6 +76,7 @@ export function SignupPage() {
           label="Full Name"
           type="text"
           autoComplete="name"
+          icon={<UserIcon />}
           error={errors.fullName?.message}
           {...register('fullName')}
         />
@@ -83,6 +84,7 @@ export function SignupPage() {
           label="Email Address"
           type="email"
           autoComplete="email"
+          icon={<MailIcon />}
           error={errors.email?.message}
           {...register('email')}
         />
@@ -90,6 +92,7 @@ export function SignupPage() {
           label="Password"
           type="password"
           autoComplete="new-password"
+          icon={<LockIcon />}
           error={errors.password?.message}
           {...register('password')}
         />
@@ -97,6 +100,7 @@ export function SignupPage() {
           label="Confirm Password"
           type="password"
           autoComplete="new-password"
+          icon={<LockIcon />}
           error={errors.confirmPassword?.message}
           {...register('confirmPassword')}
         />
@@ -113,7 +117,7 @@ export function SignupPage() {
           isLoading={register_.isPending}
           disabled={register_.isPending}
         >
-          Sign up
+          Create Account
         </Button>
       </form>
 

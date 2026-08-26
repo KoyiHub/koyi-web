@@ -19,6 +19,38 @@ import { TeacherLayout } from '@/app/teacher-layout';
 export const routes: RouteObject[] = [
   {
     path: '/',
+    ErrorBoundary: RootErrorBoundary,
+    lazy: async () => ({
+      Component: (await import('@/features/welcome/routes/welcome-page')).WelcomePage,
+    }),
+  },
+  {
+    path: 'onboarding',
+    ErrorBoundary: RootErrorBoundary,
+    children: [
+      {
+        path: 'role',
+        lazy: async () => ({
+          Component: (await import('@/features/onboarding/routes/role-selection-page'))
+            .RoleSelectionPage,
+        }),
+      },
+      {
+        path: 'features',
+        lazy: async () => ({
+          Component: (await import('@/features/onboarding/routes/features-page')).FeaturesPage,
+        }),
+      },
+      {
+        path: 'school-setup',
+        lazy: async () => ({
+          Component: (await import('@/features/onboarding/routes/school-setup-page'))
+            .SchoolSetupPage,
+        }),
+      },
+    ],
+  },
+  {
     Component: RequireAuth,
     ErrorBoundary: RootErrorBoundary,
     children: [
@@ -26,7 +58,7 @@ export const routes: RouteObject[] = [
         Component: TeacherLayout,
         children: [
           {
-            index: true,
+            path: 'dashboard',
             lazy: async () => ({
               Component: (await import('@/features/dashboard/routes/dashboard-page')).DashboardPage,
             }),
@@ -92,6 +124,13 @@ export const routes: RouteObject[] = [
             path: 'progress',
             lazy: async () => ({
               Component: (await import('@/features/progress/routes/progress-page')).ProgressPage,
+            }),
+          },
+          {
+            path: 'question-bank',
+            lazy: async () => ({
+              Component: (await import('@/features/question-bank/routes/question-bank-page'))
+                .QuestionBankPage,
             }),
           },
           {
