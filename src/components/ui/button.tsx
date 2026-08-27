@@ -1,24 +1,15 @@
 import type { ButtonHTMLAttributes } from 'react';
 
+import {
+  buttonClasses,
+  type ButtonSize,
+  type ButtonVariant,
+} from '@/components/ui/button-variants';
 import { cn } from '@/lib/utils/cn';
 
-type Variant = 'primary' | 'secondary' | 'ghost';
-type Size = 'sm' | 'md';
-
-const variants: Record<Variant, string> = {
-  primary: 'bg-koyi-primary text-white hover:bg-koyi-primary-hover',
-  secondary: 'border border-koyi-border bg-koyi-card text-koyi-text hover:bg-koyi-surface',
-  ghost: 'text-koyi-text hover:bg-koyi-surface',
-};
-
-const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-sm',
-  md: 'h-11 px-4 text-sm',
-};
-
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  size?: Size;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
   isLoading?: boolean;
 }
 
@@ -36,13 +27,7 @@ export function Button({
       type="button"
       disabled={disabled ?? isLoading}
       aria-busy={isLoading}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors',
-        'disabled:pointer-events-none disabled:opacity-50',
-        variants[variant],
-        sizes[size],
-        className,
-      )}
+      className={cn(buttonClasses(variant, size), className)}
       {...props}
     >
       {isLoading && (

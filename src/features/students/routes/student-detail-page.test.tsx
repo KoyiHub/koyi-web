@@ -4,7 +4,7 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('StudentDetailPage', () => {
   it("renders Amina Yusuf's identity block", async () => {
-    renderRoute('/students/stu-amina-yusuf');
+    renderRoute('/teacher/students/stu-amina-yusuf');
 
     const nameHeading = await screen.findByRole('heading', { name: 'Amina Yusuf' });
     const identity = nameHeading.closest('header')!;
@@ -17,7 +17,7 @@ describe('StudentDetailPage', () => {
   });
 
   it('renders latest assessment values and assessment history', async () => {
-    renderRoute('/students/stu-amina-yusuf');
+    renderRoute('/teacher/students/stu-amina-yusuf');
     const nameHeading = await screen.findByRole('heading', { name: 'Amina Yusuf' });
     const page = nameHeading.closest('header')!.parentElement!;
 
@@ -41,7 +41,7 @@ describe('StudentDetailPage', () => {
   });
 
   it('navigates to assessment setup when Start New Assessment is clicked', async () => {
-    const { user } = renderRoute('/students/stu-amina-yusuf');
+    const { user } = renderRoute('/teacher/students/stu-amina-yusuf');
     await screen.findByRole('heading', { name: 'Amina Yusuf' });
 
     await user.click(screen.getByRole('button', { name: 'Start New Assessment' }));
@@ -52,7 +52,7 @@ describe('StudentDetailPage', () => {
   });
 
   it('shows a safe not-found state for an unknown student ID', async () => {
-    renderRoute('/students/does-not-exist');
+    renderRoute('/teacher/students/does-not-exist');
 
     expect(await screen.findByRole('heading', { name: 'Student not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Back to Students/ })).toBeInTheDocument();

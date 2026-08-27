@@ -41,7 +41,7 @@ export function SignupPage() {
         password_confirm: values.confirmPassword,
         ...splitFullName(values.fullName),
       });
-      void navigate(paths.auth.login, {
+      void navigate(paths.login.teacher, {
         state: { successMessage: 'Account created. You can now log in.' },
       });
     } catch {
@@ -123,7 +123,7 @@ export function SignupPage() {
 
       <p className="text-koyi-muted mt-6 text-center text-sm">
         Already have an account?{' '}
-        <Link to={paths.auth.login} className="text-koyi-primary font-medium hover:underline">
+        <Link to={paths.login.teacher} className="text-koyi-primary font-medium hover:underline">
           Log in
         </Link>
       </p>

@@ -103,7 +103,7 @@ export function AssessmentPage() {
             </fieldset>
 
             <Link
-              to={paths.questionBank}
+              to={paths.teacher.questionBank}
               className="rounded-koyi-lg border-koyi-primary/30 bg-koyi-primary/5 text-koyi-primary hover:bg-koyi-primary/10 mt-4 flex h-11 items-center justify-between gap-2 border px-3.5 text-sm font-medium transition-colors"
             >
               Browse the Question Bank
@@ -115,7 +115,7 @@ export function AssessmentPage() {
             className="w-full"
             disabled={!canStartAssessment}
             onClick={() => {
-              void navigate(paths.assessment.session);
+              void navigate(paths.teacher.assessment.session);
             }}
           >
             Start Assessment

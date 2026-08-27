@@ -4,7 +4,7 @@ import { renderRoute, screen } from '@/test/test-utils';
 
 describe('AssessmentPage', () => {
   it('renders the assessment setup heading', async () => {
-    renderRoute('/assessment');
+    renderRoute('/teacher/assessment');
 
     expect(
       await screen.findByRole('heading', { name: 'New Assessment Session' }),
@@ -12,7 +12,7 @@ describe('AssessmentPage', () => {
   });
 
   it('renders the fixture student roster', async () => {
-    renderRoute('/assessment');
+    renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     expect(screen.getByLabelText('Amina Yusuf')).toBeInTheDocument();
@@ -22,7 +22,7 @@ describe('AssessmentPage', () => {
   });
 
   it('shows a selected count reflecting the default full selection (PDF p36: all 4 selected)', async () => {
-    renderRoute('/assessment');
+    renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     expect(screen.getByText('4 selected')).toBeInTheDocument();
@@ -30,7 +30,7 @@ describe('AssessmentPage', () => {
   });
 
   it('updates the selected count immediately as individual students are deselected', async () => {
-    const { user } = renderRoute('/assessment');
+    const { user } = renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     await user.click(screen.getByLabelText('Amina Yusuf'));
@@ -42,7 +42,7 @@ describe('AssessmentPage', () => {
   });
 
   it('reaches 0 selected when every student is deselected one at a time', async () => {
-    const { user } = renderRoute('/assessment');
+    const { user } = renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     await user.click(screen.getByLabelText('Amina Yusuf'));
@@ -55,7 +55,7 @@ describe('AssessmentPage', () => {
   });
 
   it('toggles the entire visible roster with Select all', async () => {
-    const { user } = renderRoute('/assessment');
+    const { user } = renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     const selectAll = screen.getByLabelText('Select all');
@@ -70,7 +70,7 @@ describe('AssessmentPage', () => {
   });
 
   it('disables Start Assessment once zero students are selected', async () => {
-    const { user } = renderRoute('/assessment');
+    const { user } = renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     expect(screen.getByRole('button', { name: 'Start Assessment' })).toBeEnabled();
@@ -81,7 +81,7 @@ describe('AssessmentPage', () => {
   });
 
   it('shows Custom Quiz as disabled with a coming soon indicator', async () => {
-    renderRoute('/assessment');
+    renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     expect(screen.getByText('Coming soon')).toBeInTheDocument();
@@ -89,7 +89,7 @@ describe('AssessmentPage', () => {
   });
 
   it('navigates to the assessment session when Start Assessment is clicked', async () => {
-    const { user } = renderRoute('/assessment');
+    const { user } = renderRoute('/teacher/assessment');
     await screen.findByRole('heading', { name: 'New Assessment Session' });
 
     await user.click(screen.getByRole('button', { name: 'Start Assessment' }));

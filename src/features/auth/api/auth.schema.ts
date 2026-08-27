@@ -53,9 +53,26 @@ export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 /** `RegisterView` returns the created user, with no tokens — registration does not log the user in. */
 export const registerResponseSchema = authUserSchema;
 
-export const loginRequestSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-  password: z.string().min(1, 'Password is required'),
+/**
+ * Teacher sign-in request. PROVISIONAL — teachers identify themselves with the
+ * Teacher ID their school issued plus that school's ID, not an email address,
+ * and no Django contract for this exists yet (see `api/endpoints.ts`).
+ */
+export const teacherLoginRequestSchema = z.object({
+  teacher_id: z.string().min(1),
+  school_id: z.string().min(1),
+  password: z.string().min(1),
 });
 
-export type LoginRequest = z.infer<typeof loginRequestSchema>;
+export type TeacherLoginRequest = z.infer<typeof teacherLoginRequestSchema>;
+
+/**
+ * Teacher sign-in response. PROVISIONAL. Shaped as the confirmed SimpleJWT
+ * pair plus the school the teacher belongs to, so the app can remember the
+ * School ID the backend actually accepted rather than the typed one.
+ */
+export const teacherLoginResponseSchema = tokenPairResponseSchema.extend({
+  school_id: z.string(),
+});
+
+export type TeacherLoginResponse = z.infer<typeof teacherLoginResponseSchema>;

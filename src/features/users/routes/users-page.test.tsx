@@ -6,7 +6,7 @@ import { renderRoute, screen, waitFor } from '@/test/test-utils';
 
 describe('UsersPage', () => {
   it('renders the users returned by the API', async () => {
-    renderRoute('/users');
+    renderRoute('/teacher/users');
 
     expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();
     expect(await screen.findByText('Ada Lovelace')).toBeInTheDocument();
@@ -14,7 +14,7 @@ describe('UsersPage', () => {
   });
 
   it('navigates to a user detail page', async () => {
-    const { user } = renderRoute('/users');
+    const { user } = renderRoute('/teacher/users');
 
     await user.click(await screen.findByRole('link', { name: /Ada Lovelace/ }));
 
@@ -25,7 +25,7 @@ describe('UsersPage', () => {
   it('shows a recoverable error when the request fails', async () => {
     server.use(http.get('*/api/users', () => new HttpResponse(null, { status: 500 })));
 
-    renderRoute('/users');
+    renderRoute('/teacher/users');
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toBeInTheDocument();

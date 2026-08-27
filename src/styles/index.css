@@ -4,6 +4,11 @@
   --font-sans:
     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
+  /* Heavy geometric display face used for page titles and card headings in the
+     School Admin design reference. Falls back to the system stack, so a blocked
+     or slow webfont only costs the tighter letterforms, never the layout. */
+  --font-display: 'Plus Jakarta Sans', var(--font-sans);
+
   /* Provisional Koyi tokens, derived from the current logo reference (deep royal blue
      ~#0B35BE, light blue ~#4196FC). Pending final Figma/brand sign-off. */
   --color-koyi-primary: #0b35be;
@@ -11,6 +16,9 @@
   --color-koyi-accent: #4196fc;
   --color-koyi-surface: #f8fafc;
   --color-koyi-card: #ffffff;
+  /* Public landing canvas — the faint violet cast in the design reference,
+     distinct from the neutral slate `surface` used inside the apps. */
+  --color-koyi-canvas: #f9f8ff;
   --color-koyi-text: #0f172a;
   --color-koyi-muted: #64748b;
   --color-koyi-border: #e2e8f0;
@@ -18,14 +26,40 @@
   --color-koyi-warning: #d97706;
   --color-koyi-danger: #dc2626;
 
+  /* App shell chrome (School Admin design reference, pages 9-12). The sidebar
+     sits a shade cooler than the canvas and the active nav item is a pale
+     lavender pill rather than a solid fill. */
+  --color-koyi-sidebar: #fafaff;
+  --color-koyi-nav-active: #ecebfb;
+
+  /* FLN performance bands. `*-soft` is the chart/pill fill, the base colour is
+     the legend marker and text. Band THRESHOLDS are still unconfirmed — these
+     are presentation colours only, never a scoring rule. */
+  --color-koyi-band-strong: #22c55e;
+  --color-koyi-band-strong-soft: #d7f5e0;
+  --color-koyi-band-intermediate: #38bdf8;
+  --color-koyi-band-intermediate-soft: #d3e9fd;
+  --color-koyi-band-struggling: #f87171;
+  --color-koyi-band-struggling-soft: #fbdcdc;
+
+  /* Darkened band colours for text and small icons. The base band colours are
+     tuned for large chart fills and fail contrast as label text on their own
+     `*-soft` tint, so chips use these instead. */
+  --color-koyi-band-strong-ink: #15803d;
+  --color-koyi-band-intermediate-ink: #0369a1;
+  --color-koyi-band-struggling-ink: #b91c1c;
+
   --radius-koyi-sm: 0.375rem;
   --radius-koyi-md: 0.5rem;
   --radius-koyi-lg: 0.75rem;
+  --radius-koyi-xl: 1rem;
 
   /* Dashboard stat figures (~28px per the design reference) — the one size in
      this pass reused across multiple sibling cards, so it earns a token
      rather than a repeated arbitrary value. */
   --text-koyi-stat: 1.75rem;
+  /* The oversized page title on every School Admin screen. */
+  --text-koyi-page-title: 2.25rem;
 }
 
 @layer base {

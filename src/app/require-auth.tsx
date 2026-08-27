@@ -12,7 +12,7 @@ export function RequireAuth() {
   const location = useLocation();
 
   if (!getAuthToken()) {
-    return <Navigate to={paths.auth.login} replace state={{ from: location }} />;
+    return <Navigate to={paths.login.teacher} replace state={{ from: location }} />;
   }
 
   return <Outlet />;
@@ -21,7 +21,7 @@ export function RequireAuth() {
 /** Keeps an already-authenticated teacher off /login and /signup. */
 export function RedirectIfAuthenticated() {
   if (getAuthToken()) {
-    return <Navigate to={paths.dashboard} replace />;
+    return <Navigate to={paths.teacher.dashboard} replace />;
   }
 
   return <Outlet />;

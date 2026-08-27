@@ -4,7 +4,7 @@ import { renderRoute, screen } from '@/test/test-utils';
 
 describe('TeacherLayout', () => {
   it('renders the teacher navigation destinations', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
 
     expect(await screen.findByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Assessment' })).toBeInTheDocument();
@@ -13,7 +13,7 @@ describe('TeacherLayout', () => {
   });
 
   it('shows Settings and Help in the sidebar footer, with no sidebar logout or profile row', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
 
     await screen.findByRole('link', { name: 'Dashboard' });
     expect(screen.getByText('Settings')).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe('TeacherLayout', () => {
   });
 
   it('marks the current route as active via aria-current', async () => {
-    renderRoute('/assessment');
+    renderRoute('/teacher/assessment');
 
     expect(await screen.findByRole('link', { name: 'Assessment' })).toHaveAttribute(
       'aria-current',
@@ -33,7 +33,7 @@ describe('TeacherLayout', () => {
   });
 
   it('opens and closes the mobile navigation drawer', async () => {
-    const { user } = renderRoute('/dashboard');
+    const { user } = renderRoute('/teacher/dashboard');
 
     await user.click(await screen.findByRole('button', { name: 'Open navigation menu' }));
     expect(screen.getByRole('link', { name: 'Dashboard' })).toBeVisible();
@@ -45,14 +45,14 @@ describe('TeacherLayout', () => {
   });
 
   it('does not list Question Bank in the primary sidebar nav', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
 
     await screen.findByRole('link', { name: 'Dashboard' });
     expect(screen.queryByRole('link', { name: 'Question Bank' })).not.toBeInTheDocument();
   });
 
   it('navigates to the profile route from the topbar avatar', async () => {
-    const { user } = renderRoute('/dashboard');
+    const { user } = renderRoute('/teacher/dashboard');
 
     await user.click(await screen.findByRole('link', { name: 'Go to your teacher profile' }));
 

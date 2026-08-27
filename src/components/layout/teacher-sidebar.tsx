@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router';
 
 import { GearIcon, HelpIcon } from '@/components/ui/icons';
+import { Logo } from '@/components/ui/logo';
 import { teacherNavItems } from '@/config/teacher-nav';
 import { cn } from '@/lib/utils/cn';
 
@@ -36,7 +37,9 @@ export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
         )}
       >
         <div className="border-koyi-border flex h-16 flex-col justify-center gap-0.5 border-b px-5">
-          <span className="text-koyi-primary text-lg font-semibold tracking-tight">Koyi</span>
+          {/* Smaller than the bare header lockup: here it stacks above a caption
+              inside the same 64px band. */}
+          <Logo className="h-7" />
           <span className="text-koyi-muted text-[11px] font-semibold tracking-wide uppercase">
             FLN Assessment Platform
           </span>

@@ -23,10 +23,10 @@ export function StudentsGroupsNav() {
       aria-label="Students section"
       className="bg-koyi-surface rounded-koyi-md inline-flex gap-1 p-1"
     >
-      <NavLink to={paths.students.list} end className={linkClasses}>
+      <NavLink to={paths.teacher.students.list} end className={linkClasses}>
         Students
       </NavLink>
-      <NavLink to={paths.students.groups} className={linkClasses}>
+      <NavLink to={paths.teacher.students.groups} className={linkClasses}>
         Groups
       </NavLink>
     </nav>

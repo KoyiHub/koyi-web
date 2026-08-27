@@ -4,13 +4,13 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('GroupsPage', () => {
   it('renders the Groups Overview heading', async () => {
-    renderRoute('/students/groups');
+    renderRoute('/teacher/students/groups');
 
     expect(await screen.findByRole('heading', { name: 'Groups Overview' })).toBeInTheDocument();
   });
 
   it('renders the three group fixtures', async () => {
-    renderRoute('/students/groups');
+    renderRoute('/teacher/students/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
     expect(screen.getByRole('heading', { name: 'Phonics Focus' })).toBeInTheDocument();
@@ -19,7 +19,7 @@ describe('GroupsPage', () => {
   });
 
   it("renders each group's student count, primary need and status", async () => {
-    renderRoute('/students/groups');
+    renderRoute('/teacher/students/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
     const phonics = screen.getByRole('heading', { name: 'Phonics Focus' }).closest('article')!;

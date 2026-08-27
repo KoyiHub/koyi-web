@@ -7,7 +7,7 @@ import { renderRoute, screen } from '@/test/test-utils';
 
 describe('SignupPage', () => {
   it('renders the create account heading', async () => {
-    renderRoute('/signup', { authenticated: false });
+    renderRoute('/teacher/signup', { authenticated: false });
 
     expect(
       await screen.findByRole('heading', { name: 'Create Your Teacher Account' }),
@@ -15,7 +15,7 @@ describe('SignupPage', () => {
   });
 
   it('validates required fields', async () => {
-    const { user } = renderRoute('/signup', { authenticated: false });
+    const { user } = renderRoute('/teacher/signup', { authenticated: false });
     await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.click(screen.getByRole('button', { name: 'Create Account' }));
@@ -25,7 +25,7 @@ describe('SignupPage', () => {
   });
 
   it('rejects mismatched passwords', async () => {
-    const { user } = renderRoute('/signup', { authenticated: false });
+    const { user } = renderRoute('/teacher/signup', { authenticated: false });
     await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.type(screen.getByLabelText('Full Name'), 'Amina Yusuf');
@@ -38,7 +38,7 @@ describe('SignupPage', () => {
   });
 
   it('navigates to /login on a successful registration, without creating fake auth state', async () => {
-    const { user } = renderRoute('/signup', { authenticated: false });
+    const { user } = renderRoute('/teacher/signup', { authenticated: false });
     await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.type(screen.getByLabelText('Full Name'), 'Amina Yusuf');
@@ -69,7 +69,7 @@ describe('SignupPage', () => {
       ),
     );
 
-    const { user } = renderRoute('/signup', { authenticated: false });
+    const { user } = renderRoute('/teacher/signup', { authenticated: false });
     await screen.findByRole('heading', { name: 'Create Your Teacher Account' });
 
     await user.type(screen.getByLabelText('Full Name'), 'Amina Yusuf');

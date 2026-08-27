@@ -5,7 +5,7 @@ import { renderRoute, screen } from '@/test/test-utils';
 
 describe('AssessmentSessionPage', () => {
   it('does not render the teacher sidebar', async () => {
-    renderRoute('/assessment/session');
+    renderRoute('/teacher/assessment/session');
 
     await screen.findByRole('heading', { name: 'Amina Yusuf' });
 
@@ -14,7 +14,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('renders the first question and progress indicator', async () => {
-    renderRoute('/assessment/session');
+    renderRoute('/teacher/assessment/session');
 
     expect(await screen.findByText('Question 1 of 5')).toBeInTheDocument();
     expect(
@@ -25,21 +25,21 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('disables Previous on the first question', async () => {
-    renderRoute('/assessment/session');
+    renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     expect(screen.getByRole('button', { name: 'Previous' })).toBeDisabled();
   });
 
   it('disables Next until the current question has a response', async () => {
-    renderRoute('/assessment/session');
+    renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
   });
 
   it('enables Next once an answer is selected', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -48,7 +48,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('moves to question 2 when Next is clicked', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -61,7 +61,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('returns to question 1 when Previous is clicked', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -74,7 +74,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('keeps the previous answer selected when returning to a question', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -87,7 +87,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('updates the progress indicator as questions are answered', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -100,7 +100,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('shows Finish Assessment on the final question', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -123,7 +123,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('navigates to the completion screen when Finish Assessment is clicked', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));
@@ -149,7 +149,7 @@ describe('AssessmentSessionPage', () => {
   });
 
   it('shows the expected actions on the completion screen', async () => {
-    const { user } = renderRoute('/assessment/session');
+    const { user } = renderRoute('/teacher/assessment/session');
     await screen.findByText('Question 1 of 5');
 
     await user.click(screen.getByLabelText('meaning/relationship in the sentence'));

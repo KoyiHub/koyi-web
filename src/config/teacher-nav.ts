@@ -13,8 +13,8 @@ export interface TeacherNavItem {
  * is not listed here.
  */
 export const teacherNavItems: TeacherNavItem[] = [
-  { label: 'Dashboard', to: paths.dashboard, end: true },
-  { label: 'Assessment', to: paths.assessment.setup, end: false },
-  { label: 'Students/Groups', to: paths.students.list, end: false },
-  { label: 'Progress', to: paths.progress, end: false },
+  { label: 'Dashboard', to: paths.teacher.dashboard, end: true },
+  { label: 'Assessment', to: paths.teacher.assessment.setup, end: false },
+  { label: 'Students/Groups', to: paths.teacher.students.list, end: false },
+  { label: 'Progress', to: paths.teacher.progress, end: false },
 ];

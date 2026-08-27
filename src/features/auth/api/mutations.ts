@@ -2,19 +2,37 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
 import {
-  type LoginRequest,
   type RegisterRequest,
   registerResponseSchema,
-  tokenPairResponseSchema,
+  teacherLoginResponseSchema,
 } from '@/features/auth/api/auth.schema';
+import { authEndpoints, provisionalAuthEndpoints } from '@/features/auth/api/endpoints';
 import { api } from '@/lib/api/client';
 import { clearAuthToken, getRefreshToken, setAuthTokens } from '@/lib/auth/token-store';
 
-/** `LoginView` — a SimpleJWT `TokenObtainPairView` subclass, so it accepts `email`/`password` and returns `{access, refresh, user}`. */
-export function useLogin() {
+export interface TeacherLoginInput {
+  teacherId: string;
+  schoolId: string;
+  password: string;
+}
+
+/**
+ * Teacher sign-in. Teachers are issued a Teacher ID by their school rather
+ * than registering an email themselves, so the credential pair is
+ * (Teacher ID, School ID) plus a password.
+ *
+ * PROVISIONAL endpoint — see `api/endpoints.ts`. In development MSW answers
+ * it; in a build without mocks it fails loudly rather than pretending to sign
+ * anyone in.
+ */
+export function useTeacherLogin() {
   return useMutation({
-    mutationFn: (input: LoginRequest) =>
-      api.post('/v1/auth/login/', tokenPairResponseSchema, input),
+    mutationFn: (input: TeacherLoginInput) =>
+      api.post(provisionalAuthEndpoints.teacherLogin, teacherLoginResponseSchema, {
+        teacher_id: input.teacherId,
+        school_id: input.schoolId,
+        password: input.password,
+      }),
     onSuccess: (data) => {
       setAuthTokens({ access: data.access, refresh: data.refresh });
     },
@@ -25,7 +43,7 @@ export function useLogin() {
 export function useRegister() {
   return useMutation({
     mutationFn: (input: RegisterRequest) =>
-      api.post('/v1/auth/register/', registerResponseSchema, input),
+      api.post(authEndpoints.register, registerResponseSchema, input),
   });
 }
 
@@ -44,7 +62,7 @@ export function useLogout() {
     mutationFn: async () => {
       const refresh = getRefreshToken();
       if (refresh) {
-        await api.post('/v1/auth/logout/', logoutResponseSchema, { refresh });
+        await api.post(authEndpoints.logout, logoutResponseSchema, { refresh });
       }
     },
     onSettled: () => {

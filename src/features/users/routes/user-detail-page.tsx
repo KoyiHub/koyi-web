@@ -25,7 +25,7 @@ export function UserDetailPage() {
 
   return (
     <article>
-      <Link to={paths.users.list} className="text-sm text-slate-500 hover:text-slate-900">
+      <Link to={paths.teacher.users.list} className="text-sm text-slate-500 hover:text-slate-900">
         &larr; Back to users
       </Link>
 

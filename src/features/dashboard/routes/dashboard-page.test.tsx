@@ -5,7 +5,7 @@ import { renderRoute, screen } from '@/test/test-utils';
 
 describe('DashboardPage', () => {
   it('renders a greeting using the authenticated teacher name', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
 
     expect(
       await screen.findByRole(
@@ -17,7 +17,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders the three summary stats', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
     await screen.findByRole('heading', { name: `Good morning, ${mockAuthUser.first_name}` });
 
     expect(screen.getByText('Total Students')).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders the class distribution breakdown', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
     await screen.findByRole('heading', { name: `Good morning, ${mockAuthUser.first_name}` });
 
     expect(screen.getByRole('heading', { name: 'Class Distribution' })).toBeInTheDocument();
@@ -37,19 +37,19 @@ describe('DashboardPage', () => {
   });
 
   it('renders students needing attention with a link to their profile', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
     await screen.findByRole('heading', { name: `Good morning, ${mockAuthUser.first_name}` });
 
     expect(screen.getByRole('heading', { name: 'Students Needing Attention' })).toBeInTheDocument();
     expect(screen.getByText('Fatima Bello')).toBeInTheDocument();
     expect(screen.getAllByRole('link', { name: 'View' })[0]).toHaveAttribute(
       'href',
-      '/students/stu-fatima-bello',
+      '/teacher/students/stu-fatima-bello',
     );
   });
 
   it('shows the Start Assessment quick action', async () => {
-    renderRoute('/dashboard');
+    renderRoute('/teacher/dashboard');
 
     expect(
       await screen.findByRole('link', { name: /^Start Assessment/ }, { timeout: 5000 }),

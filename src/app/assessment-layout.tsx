@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import { Outlet } from 'react-router';
 
+import { Logo } from '@/components/ui/logo';
 import { PageSpinner } from '@/components/ui/page-spinner';
 
 /**
@@ -12,7 +13,7 @@ export function AssessmentLayout() {
   return (
     <div className="bg-koyi-surface text-koyi-text flex min-h-dvh flex-col">
       <header className="border-koyi-border bg-koyi-card border-b px-4 py-4 lg:px-8">
-        <span className="text-koyi-primary text-lg font-semibold tracking-tight">Koyi</span>
+        <Logo />
       </header>
 
       <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8 lg:px-8">

@@ -21,7 +21,7 @@ export function StudentsNeedingAttention({ dashboard }: StudentsNeedingAttention
           Students Needing Attention
         </h2>
         <Link
-          to={paths.students.list}
+          to={paths.teacher.students.list}
           className="text-koyi-primary text-sm font-medium hover:underline"
         >
           View All
@@ -46,7 +46,7 @@ export function StudentsNeedingAttention({ dashboard }: StudentsNeedingAttention
                 <td className="text-koyi-muted py-3 pr-4">{student.lastAssessed}</td>
                 <td className="py-3 pr-0">
                   <Link
-                    to={paths.students.detail(student.studentId)}
+                    to={paths.teacher.students.detail(student.studentId)}
                     className="text-koyi-primary font-medium hover:underline"
                   >
                     View

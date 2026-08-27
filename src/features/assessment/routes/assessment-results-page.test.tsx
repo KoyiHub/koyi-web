@@ -4,7 +4,7 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('AssessmentResultsPage', () => {
   it('renders the Assessment Results heading and assessment context', async () => {
-    renderRoute('/assessment/results');
+    renderRoute('/teacher/assessment/results');
 
     expect(await screen.findByRole('heading', { name: 'Assessment Results' })).toBeInTheDocument();
     expect(
@@ -14,7 +14,7 @@ describe('AssessmentResultsPage', () => {
   });
 
   it('renders the Strong/Intermediate/Struggling summary', async () => {
-    renderRoute('/assessment/results');
+    renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     const summary = screen.getByRole('heading', { name: 'Summary' }).closest('section')!;
@@ -24,7 +24,7 @@ describe('AssessmentResultsPage', () => {
   });
 
   it('renders skill performance', async () => {
-    renderRoute('/assessment/results');
+    renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     const skills = screen.getByRole('heading', { name: 'Skill Performance' }).closest('section')!;
@@ -37,7 +37,7 @@ describe('AssessmentResultsPage', () => {
   });
 
   it('renders common learning gaps', async () => {
-    renderRoute('/assessment/results');
+    renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     const gaps = screen.getByRole('heading', { name: 'Common Learning Gaps' }).closest('section')!;
@@ -48,7 +48,7 @@ describe('AssessmentResultsPage', () => {
   });
 
   it('renders student results with score and level', async () => {
-    renderRoute('/assessment/results');
+    renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     const table = screen.getByRole('table');
@@ -62,17 +62,17 @@ describe('AssessmentResultsPage', () => {
   });
 
   it('navigates to the matching student detail route from View Student', async () => {
-    renderRoute('/assessment/results');
+    renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     const table = screen.getByRole('table');
     const aminaRow = within(table).getByText('Amina Yusuf').closest('tr')!;
     const link = within(aminaRow).getByRole('link', { name: 'View Student' });
-    expect(link).toHaveAttribute('href', '/students/stu-amina-yusuf');
+    expect(link).toHaveAttribute('href', '/teacher/students/stu-amina-yusuf');
   });
 
   it('navigates to Class Progress when View Class Progress is clicked', async () => {
-    const { user } = renderRoute('/assessment/results');
+    const { user } = renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     await user.click(screen.getByRole('button', { name: 'View Class Progress' }));
@@ -81,7 +81,7 @@ describe('AssessmentResultsPage', () => {
   });
 
   it('navigates to Assessment Setup when New Assessment is clicked', async () => {
-    const { user } = renderRoute('/assessment/results');
+    const { user } = renderRoute('/teacher/assessment/results');
     await screen.findByRole('heading', { name: 'Assessment Results' });
 
     await user.click(screen.getByRole('button', { name: 'New Assessment' }));

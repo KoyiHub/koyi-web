@@ -4,13 +4,13 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('StudentsPage', () => {
   it('renders the Students heading', async () => {
-    renderRoute('/students');
+    renderRoute('/teacher/students');
 
     expect(await screen.findByRole('heading', { name: 'Students' })).toBeInTheDocument();
   });
 
   it('renders the fixture student roster', async () => {
-    renderRoute('/students');
+    renderRoute('/teacher/students');
     await screen.findByRole('heading', { name: 'Students' });
 
     expect(screen.getByRole('heading', { name: 'Amina Yusuf' })).toBeInTheDocument();
@@ -24,7 +24,7 @@ describe('StudentsPage', () => {
   });
 
   it('shows the full roster by default under the All filter', async () => {
-    renderRoute('/students');
+    renderRoute('/teacher/students');
     await screen.findByRole('heading', { name: 'Students' });
 
     expect(screen.getByRole('button', { name: 'All' })).toHaveAttribute('aria-pressed', 'true');
@@ -32,7 +32,7 @@ describe('StudentsPage', () => {
   });
 
   it('filters to only Intermediate students when Intermediate is selected', async () => {
-    const { user } = renderRoute('/students');
+    const { user } = renderRoute('/teacher/students');
     await screen.findByRole('heading', { name: 'Students' });
 
     await user.click(screen.getByRole('button', { name: 'Intermediate' }));
@@ -45,7 +45,7 @@ describe('StudentsPage', () => {
   });
 
   it('filters to only Struggling students when Struggling is selected', async () => {
-    const { user } = renderRoute('/students');
+    const { user } = renderRoute('/teacher/students');
     await screen.findByRole('heading', { name: 'Students' });
 
     await user.click(screen.getByRole('button', { name: 'Struggling' }));
@@ -57,7 +57,7 @@ describe('StudentsPage', () => {
   });
 
   it('does not show the empty-state message while a filter still has matches', async () => {
-    const { user } = renderRoute('/students');
+    const { user } = renderRoute('/teacher/students');
     await screen.findByRole('heading', { name: 'Students' });
 
     await user.click(screen.getByRole('button', { name: 'Strong' }));
@@ -67,7 +67,7 @@ describe('StudentsPage', () => {
   });
 
   it('navigates to the selected student when View details is clicked', async () => {
-    const { user } = renderRoute('/students');
+    const { user } = renderRoute('/teacher/students');
     await screen.findByRole('heading', { name: 'Students' });
 
     const aminaCard = screen.getByRole('heading', { name: 'Amina Yusuf' }).closest('article');

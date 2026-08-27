@@ -21,7 +21,7 @@ export function ProfilePage() {
   function handleLogout() {
     logout.mutate(undefined, {
       onSettled: () => {
-        void navigate(paths.auth.login);
+        void navigate(paths.login.teacher);
       },
     });
   }

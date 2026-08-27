@@ -4,14 +4,14 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('ProgressPage', () => {
   it('renders the Class Progress heading', async () => {
-    renderRoute('/progress');
+    renderRoute('/teacher/progress');
 
     expect(await screen.findByRole('heading', { name: 'Class Progress' })).toBeInTheDocument();
     expect(screen.getByText('Primary 4 - Class A')).toBeInTheDocument();
   });
 
   it('renders previous assessment values', async () => {
-    renderRoute('/progress');
+    renderRoute('/teacher/progress');
     await screen.findByRole('heading', { name: 'Class Progress' });
 
     const comparison = screen
@@ -24,7 +24,7 @@ describe('ProgressPage', () => {
   });
 
   it('renders latest assessment values', async () => {
-    renderRoute('/progress');
+    renderRoute('/teacher/progress');
     await screen.findByRole('heading', { name: 'Class Progress' });
 
     const comparison = screen
@@ -37,7 +37,7 @@ describe('ProgressPage', () => {
   });
 
   it("renders Amina Yusuf's movement", async () => {
-    renderRoute('/progress');
+    renderRoute('/teacher/progress');
     await screen.findByRole('heading', { name: 'Class Progress' });
 
     const movements = screen
@@ -51,7 +51,7 @@ describe('ProgressPage', () => {
   });
 
   it("renders Chidi Okoro's movement", async () => {
-    renderRoute('/progress');
+    renderRoute('/teacher/progress');
     await screen.findByRole('heading', { name: 'Class Progress' });
 
     const movements = screen
@@ -64,7 +64,7 @@ describe('ProgressPage', () => {
   });
 
   it('renders skill progress support areas', async () => {
-    renderRoute('/progress');
+    renderRoute('/teacher/progress');
     await screen.findByRole('heading', { name: 'Class Progress' });
 
     const skillProgress = screen
