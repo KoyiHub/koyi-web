@@ -1,20 +1,24 @@
 import { Suspense } from 'react';
 import { Outlet } from 'react-router';
 
+import { Logo } from '@/components/ui/logo';
 import { PageSpinner } from '@/components/ui/page-spinner';
 
 /**
- * Public shell for /login and /signup: light background, a shared header
- * with the wordmark and non-interactive role context, then a single
- * centered card wrapping the routed form. "School Admin" is shown only as
- * context — Koyi web is teacher-only, so it isn't a real, clickable tab.
+ * Public shell for /teacher/signup: light background, a shared header with the
+ * wordmark and non-interactive role context, then a single centered card
+ * wrapping the routed form. "School Admin" is shown only as context — there is
+ * no admin signup screen, so it isn't a real, clickable tab.
+ *
+ * Sign-in has its own shell (`@/app/login-layout`) because /login/* needs the
+ * roles to be real links and lets each page choose its own width.
  */
 export function AuthLayout() {
   return (
     <div className="bg-koyi-surface flex min-h-dvh flex-col">
       <header className="border-koyi-border bg-koyi-card border-b">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-          <span className="text-koyi-primary text-lg font-semibold tracking-tight">Koyi</span>
+          <Logo />
 
           <div className="text-koyi-muted flex items-center gap-4 text-sm font-medium">
             <span aria-disabled="true" className="cursor-not-allowed opacity-60">

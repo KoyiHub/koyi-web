@@ -32,7 +32,7 @@ export function UsersPage() {
         {users.map((user) => (
           <li key={user.id}>
             <Link
-              to={paths.users.detail(user.id)}
+              to={paths.teacher.users.detail(user.id)}
               className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
             >
               <span className="font-medium text-slate-900">{user.name}</span>

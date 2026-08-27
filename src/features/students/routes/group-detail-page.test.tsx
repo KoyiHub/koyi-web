@@ -4,13 +4,13 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('GroupDetailPage', () => {
   it('renders the Phonics Focus heading', async () => {
-    renderRoute('/students/groups/grp-phonics-focus');
+    renderRoute('/teacher/students/groups/grp-phonics-focus');
 
     expect(await screen.findByRole('heading', { name: 'Phonics Focus' })).toBeInTheDocument();
   });
 
   it('renders the group metrics', async () => {
-    renderRoute('/students/groups/grp-phonics-focus');
+    renderRoute('/teacher/students/groups/grp-phonics-focus');
     await screen.findByRole('heading', { name: 'Phonics Focus' });
 
     expect(screen.getByText('42%')).toBeInTheDocument();
@@ -21,7 +21,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('renders the students preview', async () => {
-    renderRoute('/students/groups/grp-phonics-focus');
+    renderRoute('/teacher/students/groups/grp-phonics-focus');
     await screen.findByRole('heading', { name: 'Phonics Focus' });
 
     const roster = screen
@@ -37,7 +37,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('renders common skill gaps', async () => {
-    renderRoute('/students/groups/grp-phonics-focus');
+    renderRoute('/teacher/students/groups/grp-phonics-focus');
     await screen.findByRole('heading', { name: 'Phonics Focus' });
 
     const gaps = screen.getByRole('heading', { name: 'Common Skill Gaps' }).closest('section')!;
@@ -48,7 +48,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('renders recent assessments', async () => {
-    renderRoute('/students/groups/grp-phonics-focus');
+    renderRoute('/teacher/students/groups/grp-phonics-focus');
     await screen.findByRole('heading', { name: 'Phonics Focus' });
 
     const recent = screen.getByRole('heading', { name: 'Recent Assessments' }).closest('section')!;
@@ -61,7 +61,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('navigates to assessment setup when Reassess Group is clicked', async () => {
-    const { user } = renderRoute('/students/groups/grp-phonics-focus');
+    const { user } = renderRoute('/teacher/students/groups/grp-phonics-focus');
     await screen.findByRole('heading', { name: 'Phonics Focus' });
 
     await user.click(screen.getByRole('button', { name: 'Reassess Group' }));
@@ -72,7 +72,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('shows a safe not-found state for an unknown group ID', async () => {
-    renderRoute('/students/groups/does-not-exist');
+    renderRoute('/teacher/students/groups/does-not-exist');
 
     expect(await screen.findByRole('heading', { name: 'Group not found' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Back to Groups/ })).toBeInTheDocument();

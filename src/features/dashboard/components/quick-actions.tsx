@@ -18,7 +18,7 @@ export function QuickActions() {
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <li>
           <Link
-            to={paths.assessment.setup}
+            to={paths.teacher.assessment.setup}
             className="rounded-koyi-lg border-koyi-border bg-koyi-card hover:border-koyi-primary hover:bg-koyi-primary/5 text-koyi-text flex min-h-18 flex-col justify-center gap-0.5 border p-4 text-sm font-medium transition-colors"
           >
             Start Assessment

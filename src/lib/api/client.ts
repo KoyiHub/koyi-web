@@ -30,7 +30,13 @@ axiosClient.interceptors.request.use((config) => {
 // The auth endpoints themselves must never trigger a refresh-and-retry —
 // a failed login/register/refresh call is a terminal failure, not a stale
 // session.
-const AUTH_ENDPOINTS = ['/v1/auth/login/', '/v1/auth/register/', '/v1/auth/token/refresh/'];
+const AUTH_ENDPOINTS = [
+  '/v1/auth/teacher/login/',
+  '/v1/auth/school-admin/login/',
+  '/v1/auth/school-admin/verify-device/',
+  '/v1/auth/register/',
+  '/v1/auth/token/refresh/',
+];
 
 function isAuthEndpoint(url: string | undefined): boolean {
   return Boolean(url && AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint)));

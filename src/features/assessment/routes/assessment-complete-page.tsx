@@ -36,14 +36,16 @@ export function AssessmentCompletePage() {
         <Button
           variant="secondary"
           onClick={() => {
-            void navigate(paths.assessment.setup);
+            void navigate(paths.teacher.assessment.setup);
           }}
         >
           Return to Assessment Setup
         </Button>
         <Button
           onClick={() => {
-            void navigate(paths.assessment.session, { state: { studentIndex: nextStudentIndex } });
+            void navigate(paths.teacher.assessment.session, {
+              state: { studentIndex: nextStudentIndex },
+            });
           }}
         >
           Assess Next Student

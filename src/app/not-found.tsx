@@ -11,7 +11,7 @@ export function NotFound() {
         The page you are looking for does not exist or has moved.
       </p>
       <Link
-        to={paths.dashboard}
+        to={paths.landing.welcome}
         className="mt-6 inline-block text-sm font-medium text-slate-900 underline underline-offset-4"
       >
         Go home

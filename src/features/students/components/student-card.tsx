@@ -37,7 +37,7 @@ export function StudentCard({ student }: StudentCardProps) {
       </dl>
 
       <Link
-        to={paths.students.detail(student.id)}
+        to={paths.teacher.students.detail(student.id)}
         className="text-koyi-primary mt-auto flex h-11 items-center text-sm font-semibold hover:underline"
       >
         View details{' '}

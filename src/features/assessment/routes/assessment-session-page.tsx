@@ -56,7 +56,7 @@ export function AssessmentSessionPage() {
 
   function goToNext() {
     if (isLastQuestion) {
-      void navigate(paths.assessment.complete, { state: { studentIndex } });
+      void navigate(paths.teacher.assessment.complete, { state: { studentIndex } });
       return;
     }
     setCurrentIndex((index) => Math.min(totalQuestions - 1, index + 1));

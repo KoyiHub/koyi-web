@@ -4,12 +4,14 @@ import { z } from 'zod';
  * Validation only — no API contract exists yet, so these schemas describe
  * the shape of the local mock submit flow, not a confirmed backend payload.
  */
-export const loginSchema = z.object({
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
+export const teacherLoginSchema = z.object({
+  teacherId: z.string().trim().min(1, 'Teacher ID is required'),
+  schoolId: z.string().trim().min(1, 'School ID is required'),
   password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional(),
 });
 
-export type LoginFormValues = z.infer<typeof loginSchema>;
+export type TeacherLoginFormValues = z.infer<typeof teacherLoginSchema>;
 
 export const signupSchema = z
   .object({

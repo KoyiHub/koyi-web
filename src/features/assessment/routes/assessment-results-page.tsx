@@ -140,7 +140,7 @@ export function AssessmentResultsPage() {
                   </td>
                   <td className="py-3">
                     <Link
-                      to={paths.students.detail(result.studentId)}
+                      to={paths.teacher.students.detail(result.studentId)}
                       className="text-koyi-primary text-sm font-semibold hover:underline"
                     >
                       View Student
@@ -162,7 +162,7 @@ export function AssessmentResultsPage() {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-koyi-muted text-sm">{result.percentage}%</span>
                 <Link
-                  to={paths.students.detail(result.studentId)}
+                  to={paths.teacher.students.detail(result.studentId)}
                   className="text-koyi-primary text-sm font-semibold hover:underline"
                 >
                   View Student
@@ -177,7 +177,7 @@ export function AssessmentResultsPage() {
         <Button
           variant="secondary"
           onClick={() => {
-            void navigate(paths.dashboard);
+            void navigate(paths.teacher.dashboard);
           }}
         >
           Back to Dashboard
@@ -185,14 +185,14 @@ export function AssessmentResultsPage() {
         <Button
           variant="secondary"
           onClick={() => {
-            void navigate(paths.progress);
+            void navigate(paths.teacher.progress);
           }}
         >
           View Class Progress
         </Button>
         <Button
           onClick={() => {
-            void navigate(paths.assessment.setup);
+            void navigate(paths.teacher.assessment.setup);
           }}
         >
           New Assessment

@@ -47,7 +47,7 @@ export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
         </button>
 
         <Link
-          to={paths.profile}
+          to={paths.teacher.profile}
           aria-label="Go to your teacher profile"
           title="Teacher profile"
           className="hover:bg-koyi-surface ml-1 flex size-11 items-center justify-center rounded-full"

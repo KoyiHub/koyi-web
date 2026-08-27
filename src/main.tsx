@@ -14,7 +14,17 @@ async function enableMocking(): Promise<void> {
   if (!import.meta.env.DEV || !env.VITE_ENABLE_MOCKS) return;
 
   const { worker } = await import('@/mocks/browser');
-  await worker.start({ onUnhandledRequest: 'bypass' });
+  await worker.start({
+    // With mocks on there is no backend to fall back to, so an unmatched
+    // `/api` call would silently reach the dev proxy and surface as a bare
+    // 502 that says nothing about the real cause. Fail loudly here instead
+    // and name the request. Everything else (assets, HMR) still passes through.
+    onUnhandledRequest(request, print) {
+      if (new URL(request.url).pathname.startsWith('/api')) {
+        print.error();
+      }
+    },
+  });
 }
 
 const rootElement = document.getElementById('root');

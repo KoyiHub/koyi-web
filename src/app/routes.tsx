@@ -2,8 +2,11 @@ import type { RouteObject } from 'react-router';
 
 import { AssessmentLayout } from '@/app/assessment-layout';
 import { AuthLayout } from '@/app/auth-layout';
+import { LandingLayout } from '@/app/landing-layout';
+import { LoginLayout } from '@/app/login-layout';
 import { RedirectIfAuthenticated, RequireAuth } from '@/app/require-auth';
 import { RootErrorBoundary } from '@/app/root-error-boundary';
+import { SchoolAdminLayout } from '@/app/school-admin-layout';
 import { TeacherLayout } from '@/app/teacher-layout';
 
 /**
@@ -13,71 +16,161 @@ import { TeacherLayout } from '@/app/teacher-layout';
  * Route paths live in `@/config/paths` — never hand-write a URL string in a
  * component, so renames stay a one-file change.
  *
- * The dashboard is the development landing screen; unbuilt sections resolve
- * to minimal placeholders so sidebar navigation always has somewhere to go.
+ * Four areas, in order:
+ *   1. `/` — the public landing journey a visitor meets first.
+ *   2. `/login/*` — the shared sign-in journey for both applications.
+ *   3. `/school-admin/*` — the school administrator app.
+ *   4. `/teacher/*` — the teacher app (formerly mounted at the root).
  */
 export const routes: RouteObject[] = [
   {
-    path: '/',
-    ErrorBoundary: RootErrorBoundary,
-    lazy: async () => ({
-      Component: (await import('@/features/welcome/routes/welcome-page')).WelcomePage,
-    }),
-  },
-  {
-    path: 'onboarding',
+    Component: LandingLayout,
     ErrorBoundary: RootErrorBoundary,
     children: [
       {
-        path: 'role',
+        index: true,
         lazy: async () => ({
-          Component: (await import('@/features/onboarding/routes/role-selection-page'))
-            .RoleSelectionPage,
+          Component: (await import('@/features/landing/routes/welcome-page')).WelcomePage,
+        }),
+      },
+      {
+        path: 'how-it-works',
+        lazy: async () => ({
+          Component: (await import('@/features/landing/routes/how-it-works-page')).HowItWorksPage,
         }),
       },
       {
         path: 'features',
         lazy: async () => ({
-          Component: (await import('@/features/onboarding/routes/features-page')).FeaturesPage,
+          Component: (await import('@/features/landing/routes/features-page')).FeaturesPage,
         }),
       },
       {
-        path: 'school-setup',
+        path: 'get-started',
         lazy: async () => ({
-          Component: (await import('@/features/onboarding/routes/school-setup-page'))
-            .SchoolSetupPage,
+          Component: (await import('@/features/landing/routes/get-started-page')).GetStartedPage,
         }),
+      },
+      {
+        path: 'verify-email',
+        lazy: async () => ({
+          Component: (await import('@/features/landing/routes/verify-email-page')).VerifyEmailPage,
+        }),
+      },
+      {
+        path: 'ready',
+        lazy: async () => ({
+          Component: (await import('@/features/landing/routes/ready-page')).ReadyPage,
+        }),
+      },
+      // Linked from the public nav; the pages themselves are not written yet.
+      {
+        path: 'about',
+        lazy: async () => ({
+          Component: (await import('@/features/landing/routes/marketing-pages')).AboutPage,
+        }),
+      },
+      {
+        path: 'contact',
+        lazy: async () => ({
+          Component: (await import('@/features/landing/routes/marketing-pages')).ContactPage,
+        }),
+      },
+      {
+        path: '*',
+        lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
+      },
+    ],
+  },
+  // Both applications sign in from here: `/login` asks which role you are, and
+  // each form lives one segment below. `RedirectIfAuthenticated` guards the
+  // individual forms rather than the whole branch — wrapping the branch would
+  // bounce a signed-in admin off the chooser before they could pick a role.
+  {
+    path: 'login',
+    ErrorBoundary: RootErrorBoundary,
+    Component: LoginLayout,
+    children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('@/features/auth/routes/login-role-page')).LoginRolePage,
+        }),
+      },
+      {
+        Component: RedirectIfAuthenticated,
+        children: [
+          {
+            path: 'school-admin',
+            lazy: async () => ({
+              Component: (
+                await import('@/features/school-admin/auth/routes/school-admin-login-page')
+              ).SchoolAdminLoginPage,
+            }),
+          },
+          {
+            path: 'teacher',
+            lazy: async () => ({
+              Component: (await import('@/features/auth/routes/teacher-login-page'))
+                .TeacherLoginPage,
+            }),
+          },
+        ],
+      },
+      // Not guarded: an admin reaching this step holds no tokens yet, and the
+      // page sends anyone without a live challenge back to the form.
+      {
+        path: 'verify-device',
+        lazy: async () => ({
+          Component: (
+            await import('@/features/school-admin/auth/routes/school-admin-verify-device-page')
+          ).SchoolAdminVerifyDevicePage,
+        }),
+      },
+      {
+        path: '*',
+        lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
       },
     ],
   },
   {
-    Component: RequireAuth,
+    path: 'school-admin',
     ErrorBoundary: RootErrorBoundary,
     children: [
       {
-        Component: TeacherLayout,
+        Component: SchoolAdminLayout,
         children: [
           {
             path: 'dashboard',
             lazy: async () => ({
-              Component: (await import('@/features/dashboard/routes/dashboard-page')).DashboardPage,
+              Component: (await import('@/features/school-admin/dashboard/routes/dashboard-page'))
+                .SchoolAdminDashboardPage,
             }),
           },
           {
-            path: 'assessment',
+            path: 'teachers',
             children: [
               {
                 index: true,
                 lazy: async () => ({
-                  Component: (await import('@/features/assessment/routes/assessment-page'))
-                    .AssessmentPage,
+                  Component: (await import('@/features/school-admin/teachers/routes/teachers-page'))
+                    .TeachersPage,
                 }),
               },
               {
-                path: 'results',
+                path: 'new',
                 lazy: async () => ({
-                  Component: (await import('@/features/assessment/routes/assessment-results-page'))
-                    .AssessmentResultsPage,
+                  Component: (
+                    await import('@/features/school-admin/teachers/routes/add-teacher-page')
+                  ).AddTeacherPage,
+                }),
+              },
+              {
+                path: ':teacherId',
+                lazy: async () => ({
+                  Component: (
+                    await import('@/features/school-admin/teachers/routes/teacher-detail-page')
+                  ).TeacherDetailPage,
                 }),
               },
             ],
@@ -88,74 +181,68 @@ export const routes: RouteObject[] = [
               {
                 index: true,
                 lazy: async () => ({
-                  Component: (await import('@/features/students/routes/students-page'))
+                  Component: (await import('@/features/school-admin/students/routes/students-page'))
                     .StudentsPage,
                 }),
               },
               {
-                path: 'groups',
-                children: [
-                  {
-                    index: true,
-                    lazy: async () => ({
-                      Component: (await import('@/features/students/routes/groups-page'))
-                        .GroupsPage,
-                    }),
-                  },
-                  {
-                    path: ':groupId',
-                    lazy: async () => ({
-                      Component: (await import('@/features/students/routes/group-detail-page'))
-                        .GroupDetailPage,
-                    }),
-                  },
-                ],
+                path: 'new',
+                lazy: async () => ({
+                  Component: (
+                    await import('@/features/school-admin/students/routes/add-student-page')
+                  ).AddStudentPage,
+                }),
               },
               {
                 path: ':studentId',
                 lazy: async () => ({
-                  Component: (await import('@/features/students/routes/student-detail-page'))
-                    .StudentDetailPage,
+                  Component: (
+                    await import('@/features/school-admin/students/routes/student-detail-page')
+                  ).StudentDetailPage,
                 }),
               },
             ],
           },
           {
-            path: 'progress',
-            lazy: async () => ({
-              Component: (await import('@/features/progress/routes/progress-page')).ProgressPage,
-            }),
-          },
-          {
-            path: 'question-bank',
-            lazy: async () => ({
-              Component: (await import('@/features/question-bank/routes/question-bank-page'))
-                .QuestionBankPage,
-            }),
-          },
-          {
-            path: 'profile',
-            lazy: async () => ({
-              Component: (await import('@/features/profile/routes/profile-page')).ProfilePage,
-            }),
-          },
-          {
-            path: 'users',
+            path: 'classes',
             children: [
               {
                 index: true,
                 lazy: async () => ({
-                  Component: (await import('@/features/users/routes/users-page')).UsersPage,
+                  Component: (await import('@/features/school-admin/classes/routes/classes-page'))
+                    .ClassesPage,
                 }),
               },
               {
-                path: ':userId',
+                path: 'new',
                 lazy: async () => ({
-                  Component: (await import('@/features/users/routes/user-detail-page'))
-                    .UserDetailPage,
+                  Component: (await import('@/features/school-admin/classes/routes/add-class-page'))
+                    .AddClassPage,
+                }),
+              },
+              {
+                path: ':classId',
+                lazy: async () => ({
+                  Component: (
+                    await import('@/features/school-admin/classes/routes/class-detail-page')
+                  ).ClassDetailPage,
                 }),
               },
             ],
+          },
+          {
+            path: 'settings',
+            lazy: async () => ({
+              Component: (await import('@/features/school-admin/settings/routes/settings-page'))
+                .SchoolAdminSettingsPage,
+            }),
+          },
+          {
+            path: 'help',
+            lazy: async () => ({
+              Component: (await import('@/features/school-admin/help/routes/help-page'))
+                .SchoolAdminHelpPage,
+            }),
           },
           {
             path: '*',
@@ -166,46 +253,164 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    Component: RedirectIfAuthenticated,
+    path: 'teacher',
     ErrorBoundary: RootErrorBoundary,
     children: [
       {
-        Component: AuthLayout,
+        Component: RedirectIfAuthenticated,
         children: [
           {
-            path: 'login',
+            Component: AuthLayout,
+            children: [
+              {
+                path: 'signup',
+                lazy: async () => ({
+                  Component: (await import('@/features/auth/routes/signup-page')).SignupPage,
+                }),
+              },
+            ],
+          },
+        ],
+      },
+      // The live assessment runs full-screen in its own layout, so it sits
+      // beside the teacher shell rather than inside it. A static path outranks
+      // the `*` fallback below, so this still wins the match.
+      {
+        path: 'assessment/session',
+        Component: AssessmentLayout,
+        children: [
+          {
+            index: true,
             lazy: async () => ({
-              Component: (await import('@/features/auth/routes/login-page')).LoginPage,
+              Component: (await import('@/features/assessment/routes/assessment-session-page'))
+                .AssessmentSessionPage,
             }),
           },
           {
-            path: 'signup',
+            path: 'complete',
             lazy: async () => ({
-              Component: (await import('@/features/auth/routes/signup-page')).SignupPage,
+              Component: (await import('@/features/assessment/routes/assessment-complete-page'))
+                .AssessmentCompletePage,
             }),
           },
         ],
       },
-    ],
-  },
-  {
-    path: '/assessment/session',
-    Component: AssessmentLayout,
-    ErrorBoundary: RootErrorBoundary,
-    children: [
       {
-        index: true,
-        lazy: async () => ({
-          Component: (await import('@/features/assessment/routes/assessment-session-page'))
-            .AssessmentSessionPage,
-        }),
-      },
-      {
-        path: 'complete',
-        lazy: async () => ({
-          Component: (await import('@/features/assessment/routes/assessment-complete-page'))
-            .AssessmentCompletePage,
-        }),
+        Component: RequireAuth,
+        children: [
+          {
+            Component: TeacherLayout,
+            children: [
+              {
+                path: 'dashboard',
+                lazy: async () => ({
+                  Component: (await import('@/features/dashboard/routes/dashboard-page'))
+                    .DashboardPage,
+                }),
+              },
+              {
+                path: 'assessment',
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/features/assessment/routes/assessment-page'))
+                        .AssessmentPage,
+                    }),
+                  },
+                  {
+                    path: 'results',
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/assessment/routes/assessment-results-page')
+                      ).AssessmentResultsPage,
+                    }),
+                  },
+                ],
+              },
+              {
+                path: 'students',
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/features/students/routes/students-page'))
+                        .StudentsPage,
+                    }),
+                  },
+                  {
+                    path: 'groups',
+                    children: [
+                      {
+                        index: true,
+                        lazy: async () => ({
+                          Component: (await import('@/features/students/routes/groups-page'))
+                            .GroupsPage,
+                        }),
+                      },
+                      {
+                        path: ':groupId',
+                        lazy: async () => ({
+                          Component: (await import('@/features/students/routes/group-detail-page'))
+                            .GroupDetailPage,
+                        }),
+                      },
+                    ],
+                  },
+                  {
+                    path: ':studentId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/students/routes/student-detail-page'))
+                        .StudentDetailPage,
+                    }),
+                  },
+                ],
+              },
+              {
+                path: 'progress',
+                lazy: async () => ({
+                  Component: (await import('@/features/progress/routes/progress-page'))
+                    .ProgressPage,
+                }),
+              },
+              {
+                path: 'question-bank',
+                lazy: async () => ({
+                  Component: (await import('@/features/question-bank/routes/question-bank-page'))
+                    .QuestionBankPage,
+                }),
+              },
+              {
+                path: 'profile',
+                lazy: async () => ({
+                  Component: (await import('@/features/profile/routes/profile-page')).ProfilePage,
+                }),
+              },
+              {
+                path: 'users',
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/features/users/routes/users-page')).UsersPage,
+                    }),
+                  },
+                  {
+                    path: ':userId',
+                    lazy: async () => ({
+                      Component: (await import('@/features/users/routes/user-detail-page'))
+                        .UserDetailPage,
+                    }),
+                  },
+                ],
+              },
+              {
+                path: '*',
+                lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
+              },
+            ],
+          },
+        ],
       },
     ],
   },

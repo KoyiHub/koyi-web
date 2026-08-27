@@ -4,13 +4,13 @@ import { renderRoute, screen, within } from '@/test/test-utils';
 
 describe('QuestionBankPage', () => {
   it('renders the Question Bank heading', async () => {
-    renderRoute('/question-bank');
+    renderRoute('/teacher/question-bank');
 
     expect(await screen.findByRole('heading', { name: 'Question Bank' })).toBeInTheDocument();
   });
 
   it('renders Subject, Category and Difficulty filters', async () => {
-    renderRoute('/question-bank');
+    renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     expect(screen.getByLabelText('Subject')).toBeInTheDocument();
@@ -19,7 +19,7 @@ describe('QuestionBankPage', () => {
   });
 
   it('renders questions from the fixture', async () => {
-    renderRoute('/question-bank');
+    renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     expect(screen.getByText('KOYI-0117')).toBeInTheDocument();
@@ -29,7 +29,7 @@ describe('QuestionBankPage', () => {
   });
 
   it('clicking + Add on a question updates the Selected Assessment count', async () => {
-    const { user } = renderRoute('/question-bank');
+    const { user } = renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     const panel = screen.getByRole('complementary', { name: 'Selected Assessment' });
@@ -42,7 +42,7 @@ describe('QuestionBankPage', () => {
   });
 
   it('removing a selected question works', async () => {
-    const { user } = renderRoute('/question-bank');
+    const { user } = renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     const panel = screen.getByRole('complementary', { name: 'Selected Assessment' });
@@ -55,7 +55,7 @@ describe('QuestionBankPage', () => {
   });
 
   it('Clear All empties the selection', async () => {
-    const { user } = renderRoute('/question-bank');
+    const { user } = renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     const panel = screen.getByRole('complementary', { name: 'Selected Assessment' });
@@ -70,7 +70,7 @@ describe('QuestionBankPage', () => {
   });
 
   it('shows a Needs review marker on a known needs-review fixture record', async () => {
-    renderRoute('/question-bank');
+    renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     expect(screen.getByText('KOYI-0450')).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('QuestionBankPage', () => {
   });
 
   it('never renders a correct-answer, is_correct, or answer-key field', async () => {
-    renderRoute('/question-bank');
+    renderRoute('/teacher/question-bank');
     await screen.findByRole('heading', { name: 'Question Bank' });
 
     expect(screen.queryByText(/correct answer/i)).not.toBeInTheDocument();

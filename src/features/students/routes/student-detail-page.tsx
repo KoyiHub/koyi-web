@@ -26,7 +26,7 @@ export function StudentDetailPage() {
     return (
       <div className="mx-auto w-full max-w-[1600px] space-y-6">
         <Link
-          to={paths.students.list}
+          to={paths.teacher.students.list}
           className="text-koyi-primary flex h-11 w-fit items-center text-sm font-semibold"
         >
           <span aria-hidden="true" className="mr-1">
@@ -50,7 +50,7 @@ export function StudentDetailPage() {
   return (
     <div className="mx-auto w-full max-w-[1600px] space-y-6">
       <Link
-        to={paths.students.list}
+        to={paths.teacher.students.list}
         className="text-koyi-primary flex h-11 w-fit items-center text-sm font-semibold"
       >
         <span aria-hidden="true" className="mr-1">
@@ -84,7 +84,7 @@ export function StudentDetailPage() {
         <div className="flex shrink-0 flex-col gap-2 sm:items-end">
           <Button
             onClick={() => {
-              void navigate(paths.assessment.setup);
+              void navigate(paths.teacher.assessment.setup);
             }}
           >
             Start New Assessment

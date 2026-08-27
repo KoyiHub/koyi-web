@@ -6,7 +6,7 @@ import { renderRoute, screen } from '@/test/test-utils';
 
 describe('ProfilePage', () => {
   it('renders account information from /me/', async () => {
-    renderRoute('/profile');
+    renderRoute('/teacher/profile');
 
     expect(await screen.findByRole('heading', { name: 'Teacher Profile' })).toBeInTheDocument();
     expect(await screen.findByText(mockAuthUser.full_name)).toBeInTheDocument();
@@ -15,14 +15,14 @@ describe('ProfilePage', () => {
   });
 
   it('shows a loading state before /me/ resolves', async () => {
-    renderRoute('/profile');
+    renderRoute('/teacher/profile');
 
     expect(await screen.findByText('Loading account details…')).toBeInTheDocument();
     await screen.findByText(mockAuthUser.full_name);
   });
 
   it('renders provisional school and class context, clearly labelled as not backend data', async () => {
-    renderRoute('/profile');
+    renderRoute('/teacher/profile');
     await screen.findByText(mockAuthUser.full_name);
 
     expect(
@@ -33,7 +33,7 @@ describe('ProfilePage', () => {
   });
 
   it('navigates to login on Log Out', async () => {
-    const { user } = renderRoute('/profile');
+    const { user } = renderRoute('/teacher/profile');
     await screen.findByText(mockAuthUser.full_name);
 
     await user.click(screen.getByRole('button', { name: 'Log Out' }));
@@ -42,7 +42,7 @@ describe('ProfilePage', () => {
   });
 
   it('shows Edit Profile as disabled', async () => {
-    renderRoute('/profile');
+    renderRoute('/teacher/profile');
     await screen.findByRole('heading', { name: 'Teacher Profile' });
 
     expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeDisabled();

@@ -18,7 +18,7 @@ const studentStatusTone = {
 
 const backLink = (
   <Link
-    to={paths.students.groups}
+    to={paths.teacher.students.groups}
     className="text-koyi-primary flex h-11 w-fit items-center text-sm font-semibold"
   >
     <span aria-hidden="true" className="mr-1">
@@ -79,7 +79,7 @@ export function GroupDetailPage() {
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-start lg:items-end">
           <Button
             onClick={() => {
-              void navigate(paths.assessment.setup);
+              void navigate(paths.teacher.assessment.setup);
             }}
           >
             Reassess Group
