@@ -8,7 +8,7 @@ describe('TeacherLayout', () => {
 
     expect(await screen.findByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Assessment' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Students/Groups' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Students' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Progress' })).toBeInTheDocument();
   });
 
@@ -23,7 +23,7 @@ describe('TeacherLayout', () => {
   });
 
   it('marks the current route as active via aria-current', async () => {
-    renderRoute('/teacher/assessment');
+    renderRoute('/teacher/assessments');
 
     expect(await screen.findByRole('link', { name: 'Assessment' })).toHaveAttribute(
       'aria-current',
