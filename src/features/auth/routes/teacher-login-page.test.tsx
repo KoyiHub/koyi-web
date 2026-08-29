@@ -64,7 +64,7 @@ describe('TeacherLoginPage', () => {
       password: 'password123',
     });
 
-    expect(await screen.findByText('Total Students')).toBeInTheDocument();
+    expect(await screen.findByText('Total students')).toBeInTheDocument();
     expect(getAuthToken()).toBe('mock-access-token');
     // The value the backend echoed back, not the lowercase one that was typed.
     expect(getRememberedSchoolId()).toBe('KOY-SCH-0042');
@@ -81,7 +81,7 @@ describe('TeacherLoginPage', () => {
       password: 'password123',
     });
 
-    expect(await screen.findByText('Total Students')).toBeInTheDocument();
+    expect(await screen.findByText('Total students')).toBeInTheDocument();
     expect(getRememberedSchoolId()).toBeNull();
   });
 

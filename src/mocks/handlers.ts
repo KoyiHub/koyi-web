@@ -3,6 +3,7 @@ import { http, HttpResponse } from 'msw';
 import type { AuthUser } from '@/features/auth/api/auth.schema';
 import type { User } from '@/features/users/api/user.schema';
 import { schoolAdminHandlers } from '@/mocks/school-admin-handlers';
+import { teacherHandlers } from '@/mocks/teacher-handlers';
 
 export const mockUsers: User[] = [
   { id: 1, name: 'Ada Lovelace', email: 'ada@example.com', username: 'ada' },
@@ -55,6 +56,7 @@ const mockSchools = new Map<string, { schoolName: string; schoolEmail: string }>
  */
 export const handlers = [
   ...schoolAdminHandlers,
+  ...teacherHandlers,
 
   http.post('*/api/v1/schools/register/', async ({ request }) => {
     const body = (await request.json()) as { schoolName: string; schoolEmail: string };

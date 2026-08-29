@@ -12,7 +12,7 @@ describe('route auth guards', () => {
   it('renders a teacher route for an authenticated visitor', async () => {
     renderRoute('/teacher/dashboard', { authenticated: true });
 
-    expect(await screen.findByText('Total Students')).toBeInTheDocument();
+    expect(await screen.findByText('Total students')).toBeInTheDocument();
   });
 
   // `/` is the public landing journey, outside both guards: it must render the
@@ -32,7 +32,7 @@ describe('route auth guards', () => {
   it('redirects an authenticated visitor away from /login/teacher to the dashboard', async () => {
     renderRoute('/login/teacher', { authenticated: true });
 
-    expect(await screen.findByText('Total Students')).toBeInTheDocument();
+    expect(await screen.findByText('Total students')).toBeInTheDocument();
   });
 
   it('lets an unauthenticated visitor reach /login/teacher', async () => {

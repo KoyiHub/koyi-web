@@ -1,5 +1,3 @@
-import type { ComponentType, SVGProps } from 'react';
-
 import {
   GearIcon,
   GridIcon,
@@ -8,15 +6,10 @@ import {
   UserGroupIcon,
   UsersIcon,
 } from '@/components/ui/icons';
+import type { AppNav, AppNavItem } from '@/config/app-nav';
 import { paths } from '@/config/paths';
 
-export interface AppNavItem {
-  label: string;
-  to: string;
-  /** `true` for index-style destinations that must not stay active on child routes. */
-  end: boolean;
-  Icon: ComponentType<SVGProps<SVGSVGElement>>;
-}
+export type { AppNavItem };
 
 /**
  * Single source of truth for the School Admin shell sidebar (design reference
@@ -26,7 +19,7 @@ export interface AppNavItem {
  * The sidebar renders whatever these arrays contain, so the same component can
  * later drive the Teacher shell from its own nav config — no shell rewrite.
  */
-export const schoolAdminNav: { primary: AppNavItem[]; footer: AppNavItem[] } = {
+export const schoolAdminNav: AppNav = {
   primary: [
     { label: 'Dashboard', to: paths.schoolAdmin.dashboard, end: true, Icon: GridIcon },
     { label: 'Teachers', to: paths.schoolAdmin.teachers.list, end: false, Icon: UsersIcon },

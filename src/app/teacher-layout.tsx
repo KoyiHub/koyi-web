@@ -26,7 +26,7 @@ export function TeacherLayout() {
   }, [menuOpen]);
 
   return (
-    <div className="bg-koyi-surface text-koyi-text flex min-h-dvh">
+    <div className="bg-koyi-canvas text-koyi-text flex min-h-dvh">
       <TeacherSidebar
         open={menuOpen}
         onClose={() => {
