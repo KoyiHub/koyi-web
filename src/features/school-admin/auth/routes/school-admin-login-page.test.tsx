@@ -32,9 +32,14 @@ describe('SchoolAdminLoginPage', () => {
 
     // Assert the redirect, not the dashboard's contents: that route is a heavy
     // lazy chunk, and rendering it here would only re-test `dashboard-page`.
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/school-admin/dashboard');
-    });
+    await waitFor(
+      () => {
+        expect(router.state.location.pathname).toBe('/school-admin/dashboard');
+      },
+      // The dashboard chunk loads before the redirect commits, which is slower
+      // than waitFor's 1s default when the suite runs files in parallel.
+      { timeout: 10_000 },
+    );
     expect(getAuthToken()).toBe('mock-access-token');
   });
 

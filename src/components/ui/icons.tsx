@@ -653,3 +653,361 @@ export function SaveIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function FilterIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M4 5h16l-6 7v6l-4 2v-8L4 5Z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function PrinterIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M7 9V4h10v5" strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="4" y="9" width="16" height="7" rx="2" />
+      <path d="M7 14h10v6H7z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function DownloadIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M12 4v11m0 0 4-4m-4 4-4-4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M4 19h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M4 7h16M10 7V5h4v2m-7 0 1 13h8l1-13" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function CopyIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M15 5H6a1 1 0 0 0-1 1v9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function MicIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function VideoIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <rect x="3" y="6" width="12" height="12" rx="2" />
+      <path d="m15 11 6-3v8l-6-3z" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ImageIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <circle cx="9" cy="10" r="1.5" />
+      <path d="m4 17 5-5 4 4 2-2 5 5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function TextIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M5 6h14M5 12h14M5 18h9" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function HashIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M9 4 7 20M17 4l-2 16M4 9h16M3 15h16" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ToggleIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <rect x="2" y="7" width="20" height="10" rx="5" />
+      <circle cx="16" cy="12" r="2.5" />
+    </svg>
+  );
+}
+
+export function PaperclipIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path
+        d="M20 11.5 12.5 19a5 5 0 0 1-7-7l8-8a3.5 3.5 0 1 1 5 5l-8 8a2 2 0 0 1-3-3l7-7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function ClockIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function DragHandleIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-current stroke-none"
+      {...props}
+    >
+      <circle cx="9" cy="6" r="1.5" />
+      <circle cx="15" cy="6" r="1.5" />
+      <circle cx="9" cy="12" r="1.5" />
+      <circle cx="15" cy="12" r="1.5" />
+      <circle cx="9" cy="18" r="1.5" />
+      <circle cx="15" cy="18" r="1.5" />
+    </svg>
+  );
+}
+
+export function MoreIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-current stroke-none"
+      {...props}
+    >
+      <circle cx="5" cy="12" r="1.75" />
+      <circle cx="12" cy="12" r="1.75" />
+      <circle cx="19" cy="12" r="1.75" />
+    </svg>
+  );
+}
+
+export function LightbulbIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M9 18h6M10 21h4" strokeLinecap="round" />
+      <path
+        d="M12 3a6 6 0 0 0-3.5 10.9c.6.4.9 1 .9 1.7V16h5.2v-.4c0-.7.3-1.3.9-1.7A6 6 0 0 0 12 3Z"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function TargetIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="1" />
+    </svg>
+  );
+}
+
+export function ChevronUpIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="m6 15 6-6 6 6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function ListIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ColumnsIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M12 5v14" />
+    </svg>
+  );
+}
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M8 5.5v13l11-6.5-11-6.5Z" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function PencilIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M4 20h4L20 8l-4-4L4 16v4Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="m14 6 4 4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function ArrowUpRightIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M7 17 17 7m0 0H8m9 0v9" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function MessageIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path
+        d="M21 12a8 8 0 0 1-8 8H4l2-3a8 8 0 1 1 15-5Z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="m5 12 5 5 9-10" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}

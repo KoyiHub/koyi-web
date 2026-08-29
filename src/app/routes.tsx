@@ -303,10 +303,107 @@ export const routes: RouteObject[] = [
             children: [
               {
                 path: 'dashboard',
-                lazy: async () => ({
-                  Component: (await import('@/features/dashboard/routes/dashboard-page'))
-                    .DashboardPage,
-                }),
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/dashboard/routes/teacher-dashboard-page')
+                      ).TeacherDashboardPage,
+                    }),
+                  },
+                  // Each drill-down is one dashboard card's full story, so it
+                  // nests under `dashboard` and the sidebar stays highlighted.
+                  {
+                    path: 'activity',
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/dashboard/routes/recent-activity-page')
+                      ).RecentActivityPage,
+                    }),
+                  },
+                  {
+                    path: 'attention',
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/dashboard/routes/attention-page')
+                      ).AttentionPage,
+                    }),
+                  },
+                  {
+                    path: 'ai-insights',
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/dashboard/routes/ai-insights-page')
+                      ).AiInsightsPage,
+                    }),
+                  },
+                  {
+                    path: 'class-performance',
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/dashboard/routes/class-performance-page')
+                      ).ClassPerformancePage,
+                    }),
+                  },
+                ],
+              },
+              // Authoring and reviewing assessments. Distinct from
+              // `assessment` (singular) above, which runs one with a child.
+              {
+                path: 'assessments',
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/assessments/routes/assessment-library-page')
+                      ).AssessmentLibraryPage,
+                    }),
+                  },
+                  {
+                    path: 'create',
+                    children: [
+                      {
+                        index: true,
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/create-assessment-page')
+                          ).CreateAssessmentPage,
+                        }),
+                      },
+                      {
+                        path: 'assign',
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/assign-assessment-page')
+                          ).AssignAssessmentPage,
+                        }),
+                      },
+                    ],
+                  },
+                  {
+                    path: ':assessmentId',
+                    children: [
+                      {
+                        index: true,
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/assessment-detail-page')
+                          ).AssessmentDetailPage,
+                        }),
+                      },
+                      {
+                        path: 'analytics',
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/assessment-analytics-page')
+                          ).AssessmentAnalyticsPage,
+                        }),
+                      },
+                    ],
+                  },
+                ],
               },
               {
                 path: 'assessment',
@@ -334,7 +431,7 @@ export const routes: RouteObject[] = [
                   {
                     index: true,
                     lazy: async () => ({
-                      Component: (await import('@/features/students/routes/students-page'))
+                      Component: (await import('@/features/teacher/students/routes/students-page'))
                         .StudentsPage,
                     }),
                   },
@@ -360,8 +457,9 @@ export const routes: RouteObject[] = [
                   {
                     path: ':studentId',
                     lazy: async () => ({
-                      Component: (await import('@/features/students/routes/student-detail-page'))
-                        .StudentDetailPage,
+                      Component: (
+                        await import('@/features/teacher/students/routes/student-profile-page')
+                      ).StudentProfilePage,
                     }),
                   },
                 ],
@@ -376,14 +474,29 @@ export const routes: RouteObject[] = [
               {
                 path: 'question-bank',
                 lazy: async () => ({
-                  Component: (await import('@/features/question-bank/routes/question-bank-page'))
-                    .QuestionBankPage,
+                  Component: (
+                    await import('@/features/teacher/question-bank/routes/question-bank-page')
+                  ).QuestionBankPage,
                 }),
               },
               {
                 path: 'profile',
                 lazy: async () => ({
                   Component: (await import('@/features/profile/routes/profile-page')).ProfilePage,
+                }),
+              },
+              {
+                path: 'settings',
+                lazy: async () => ({
+                  Component: (await import('@/features/teacher/routes/placeholder-pages'))
+                    .TeacherSettingsPage,
+                }),
+              },
+              {
+                path: 'help',
+                lazy: async () => ({
+                  Component: (await import('@/features/teacher/routes/placeholder-pages'))
+                    .TeacherHelpPage,
                 }),
               },
               {

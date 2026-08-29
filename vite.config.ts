@@ -48,6 +48,10 @@ export default defineConfig(({ mode }) => {
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
       css: true,
+      // Route-level tests mount lazy chunks through the real router, and the
+      // suite runs them in parallel. 5s is enough in isolation but not under
+      // load, which showed up as timeouts that passed on a re-run.
+      testTimeout: 15_000,
       restoreMocks: true,
       coverage: {
         provider: 'v8',

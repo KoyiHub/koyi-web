@@ -1,24 +1,34 @@
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router';
 
-import { BellIcon } from '@/components/ui/icons';
+import { InitialsAvatar } from '@/components/ui/avatar';
+import { BellIcon, PlayIcon } from '@/components/ui/icons';
 import { paths } from '@/config/paths';
+import { teacherProfileQuery } from '@/features/teacher/api/queries';
 
 interface TeacherTopbarProps {
   onOpenMenu: () => void;
 }
 
 /**
- * Slim context bar above the routed page content, matching the recurring
- * topbar pattern in PDF p36-45 ("New Assessment Session" / "Students" /
- * "Groups Overview" / "Class Progress"): left = current class context, right
- * = notification icon plus the profile avatar. Class context is a
- * provisional placeholder — teacher/class selection is not implemented yet.
- * Notifications are presentational only. Settings lives in the sidebar
- * footer, not here, so there is only one profile entry point (this avatar).
+ * Teacher shell topbar: the menu toggle below `lg`, then Start Assessment,
+ * notifications and the profile avatar pinned right.
+ *
+ * Start Assessment lives here rather than in the sidebar because it is
+ * something a teacher *does*, not somewhere they go — and they do it from
+ * wherever they happen to be when a child sits down with them, so it stays
+ * reachable on every screen. It opens the live one-child-at-a-time session
+ * setup, which is a different flow from authoring an assessment.
+ *
+ * Notifications are presentational only: no notification endpoint is
+ * confirmed. Settings lives in the sidebar footer, so the avatar is the only
+ * entry point to the profile screen.
  */
 export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
+  const { data: profile } = useQuery(teacherProfileQuery());
+
   return (
-    <header className="border-koyi-border bg-koyi-card flex h-14 shrink-0 items-center gap-3 border-b px-4 lg:px-6">
+    <header className="border-koyi-border bg-koyi-card flex h-16 shrink-0 items-center gap-3 border-b px-4 lg:px-8">
       <button
         type="button"
         onClick={onOpenMenu}
@@ -34,14 +44,21 @@ export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
         </svg>
       </button>
 
-      <p className="text-koyi-text text-sm font-medium">Primary 4 &middot; Class A</p>
+      <div className="ml-auto flex items-center gap-3">
+        <Link
+          to={paths.teacher.assessment.setup}
+          className="bg-koyi-primary hover:bg-koyi-primary-hover focus-visible:outline-koyi-primary rounded-koyi-md flex h-10 items-center gap-2 px-4 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
+        >
+          <PlayIcon className="size-4 fill-none stroke-current stroke-2" />
+          <span className="hidden sm:inline">Start Assessment</span>
+          <span className="sm:hidden">Start</span>
+        </Link>
 
-      <div className="ml-auto flex items-center gap-1">
         <button
           type="button"
           aria-label="Notifications"
           title="Notifications"
-          className="text-koyi-text hover:bg-koyi-surface flex size-11 items-center justify-center rounded-md"
+          className="border-koyi-border text-koyi-text hover:bg-koyi-surface flex size-10 items-center justify-center rounded-full border bg-white"
         >
           <BellIcon />
         </button>
@@ -50,14 +67,9 @@ export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
           to={paths.teacher.profile}
           aria-label="Go to your teacher profile"
           title="Teacher profile"
-          className="hover:bg-koyi-surface ml-1 flex size-11 items-center justify-center rounded-full"
+          className="focus-visible:outline-koyi-primary rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <span
-            aria-hidden="true"
-            className="bg-koyi-primary/10 text-koyi-primary flex size-8 items-center justify-center rounded-full text-xs font-semibold"
-          >
-            T
-          </span>
+          <InitialsAvatar name={profile?.full_name ?? 'Koyi Teacher'} />
         </Link>
       </div>
     </header>
