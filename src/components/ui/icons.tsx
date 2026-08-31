@@ -1011,3 +1011,30 @@ export function CheckIcon(props: IconProps) {
     </svg>
   );
 }
+
+export function SpeakerIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-none stroke-current stroke-2"
+      {...props}
+    >
+      <path d="M4 9h3l5-4v14l-5-4H4Z" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function StopIcon(props: IconProps) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      className="size-4 fill-current stroke-none"
+      {...props}
+    >
+      <rect x="6" y="6" width="12" height="12" rx="2.5" />
+    </svg>
+  );
+}
