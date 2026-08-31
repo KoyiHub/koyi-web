@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
+import { buttonClasses } from '@/components/ui/button-variants';
 import { paths } from '@/config/paths';
 import { AssessmentOption } from '@/features/assessment/components/assessment-option';
 import { ClassSelector } from '@/features/assessment/components/class-selector';
@@ -14,6 +15,7 @@ import {
   defaultClassId,
   studentRoster,
 } from '@/features/assessment/data/assessment-setup-fixture';
+import { cn } from '@/lib/utils/cn';
 
 export function AssessmentPage() {
   const navigate = useNavigate();
@@ -111,15 +113,30 @@ export function AssessmentPage() {
             </Link>
           </section>
 
-          <Button
-            className="w-full"
-            disabled={!canStartAssessment}
-            onClick={() => {
-              void navigate(paths.teacher.assessment.session);
-            }}
-          >
-            Start Assessment
-          </Button>
+          <div className="space-y-3">
+            <Button
+              className="w-full"
+              disabled={!canStartAssessment}
+              onClick={() => {
+                void navigate(paths.teacher.assessment.session);
+              }}
+            >
+              Start Assessment
+            </Button>
+
+            {/* The child-facing player. Separate from the teacher session
+                above because it takes over the screen with its own chrome. */}
+            <Link
+              to={paths.assessment.session}
+              className={cn(buttonClasses('secondary'), 'w-full')}
+            >
+              Open the FLN player
+            </Link>
+            <p className="text-koyi-muted text-xs">
+              Hand the device to the child. Thirteen literacy and numeracy questions, read aloud on
+              tap.
+            </p>
+          </div>
         </div>
       </div>
     </div>

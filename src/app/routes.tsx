@@ -7,6 +7,7 @@ import { LoginLayout } from '@/app/login-layout';
 import { RedirectIfAuthenticated, RequireAuth } from '@/app/require-auth';
 import { RootErrorBoundary } from '@/app/root-error-boundary';
 import { SchoolAdminLayout } from '@/app/school-admin-layout';
+import { StudentAssessmentLayout } from '@/app/student-assessment-layout';
 import { TeacherLayout } from '@/app/teacher-layout';
 
 /**
@@ -20,7 +21,8 @@ import { TeacherLayout } from '@/app/teacher-layout';
  *   1. `/` — the public landing journey a visitor meets first.
  *   2. `/login/*` — the shared sign-in journey for both applications.
  *   3. `/school-admin/*` — the school administrator app.
- *   4. `/teacher/*` — the teacher app (formerly mounted at the root).
+ *   4. `/assessment/*` — the student FLN assessment player.
+ *   5. `/teacher/*` — the teacher app (formerly mounted at the root).
  */
 export const routes: RouteObject[] = [
   {
@@ -249,6 +251,29 @@ export const routes: RouteObject[] = [
             lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),
           },
         ],
+      },
+    ],
+  },
+  {
+    // The student FLN assessment player. Top-level rather than under `teacher`
+    // because a child sitting the assessment is not inside the teacher
+    // application — it has its own bare chrome and no sidebar. A teacher opens
+    // it from `paths.teacher.assessment.setup`.
+    path: 'assessment',
+    ErrorBoundary: RootErrorBoundary,
+    Component: StudentAssessmentLayout,
+    children: [
+      {
+        path: 'session',
+        lazy: async () => ({
+          Component: (await import('@/features/assessment/routes/fln-session-page')).FlnSessionPage,
+        }),
+      },
+      {
+        path: 'session/summary',
+        lazy: async () => ({
+          Component: (await import('@/features/assessment/routes/fln-summary-page')).FlnSummaryPage,
+        }),
       },
     ],
   },
