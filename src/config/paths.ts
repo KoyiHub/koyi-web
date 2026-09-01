@@ -43,6 +43,17 @@ export const paths = {
     verifyDevice: '/login/verify-device',
   },
 
+  /**
+   * The student-facing FLN assessment player. Deliberately outside `teacher`:
+   * a child sitting the assessment is not inside the teacher application, and
+   * the player renders its own bare "Koyi Assessment" chrome with no sidebar.
+   * A teacher launches it from `teacher.assessment.setup`.
+   */
+  assessment: {
+    session: '/assessment/session',
+    summary: '/assessment/session/summary',
+  },
+
   teacher: {
     auth: {
       signup: '/teacher/signup',
