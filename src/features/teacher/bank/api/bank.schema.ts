@@ -6,7 +6,6 @@ import {
   levelRangeSchema,
   paginatedSchema,
   questionContentTypeSchema,
-  questionLayoutSchema,
   questionTypeSchema,
 } from '@/lib/api/contracts';
 
@@ -102,7 +101,13 @@ export const bankQuestionSchema = z.object({
   id: z.string(),
   content: z.string(),
   type: questionTypeSchema,
-  layout: questionLayoutSchema.nullable(),
+  // Loosened from the closed `questionLayoutSchema` enum: the live bank has
+  // been observed returning layout values outside that set on every row.
+  // Nothing here trusts this value directly — prefilling a draft from the
+  // bank (`addFromBank` in create-assessment-page.tsx) resolves it back to a
+  // valid layout for the question's type via `resolveLayout`, falling back
+  // to that type's default when the bank's value isn't one of the five.
+  layout: z.string().nullable(),
   fln_level: flnLevelSchema,
   subskill: bankSubskillRefSchema,
   skill_name: z.string(),

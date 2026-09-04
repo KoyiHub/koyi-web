@@ -32,6 +32,7 @@ import {
   isDraftValid,
   nextKey,
   type QuestionDraft,
+  resolveLayout,
   validateQuestionDraft,
 } from '@/features/teacher/assessments/lib/question-form';
 import { findSubskill } from '@/features/teacher/assessments/lib/subskill-lookup';
@@ -328,7 +329,7 @@ function QuestionsStep({ assessmentId, sectionId }: { assessmentId: string; sect
         level_range: question.subskill.level_range,
         fln_level: question.fln_level,
         question_type: question.type,
-        layout: question.layout,
+        layout: resolveLayout(question.type, question.layout),
         text: question.content,
         description: '',
         point: '1.00',

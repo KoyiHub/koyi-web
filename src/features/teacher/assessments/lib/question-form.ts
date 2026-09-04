@@ -90,6 +90,18 @@ export function layoutsFor(type: QuestionType): QuestionLayout[] {
   ];
 }
 
+/**
+ * Narrows an arbitrary layout string (the bank's `layout` is a loose string —
+ * see `bank.schema.ts`) to one valid for `type`, falling back to that type's
+ * first allowed layout when it isn't. Used when prefilling a draft from the
+ * bank, since the draft form only ever offers `layoutsFor(type)` as options.
+ */
+export function resolveLayout(type: QuestionType, layout: string | null): QuestionLayout {
+  const allowed = layoutsFor(type);
+  const match = allowed.find((candidate) => candidate === layout);
+  return match ?? allowed[0]!;
+}
+
 export interface FieldErrors {
   fln_level?: string;
   layout?: string;
