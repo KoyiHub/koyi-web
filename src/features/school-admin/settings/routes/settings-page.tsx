@@ -2,7 +2,6 @@ import { useState } from 'react';
 
 import { PageHeader } from '@/components/ui/page-header';
 import {
-  AcademicSetupTab,
   AccountSecurityTab,
   SchoolProfileTab,
 } from '@/features/school-admin/settings/components/settings-forms';
@@ -10,19 +9,19 @@ import { cn } from '@/lib/utils/cn';
 
 const TABS = [
   { id: 'school', label: 'School profile' },
-  { id: 'academic', label: 'Academic setup' },
   { id: 'account', label: 'Admin account & security' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
 
 /**
- * School Admin settings.
+ * School Admin settings — `frontend-integration.md` §4.2.
  *
- * Three areas, matching what an administrator actually owns: the school
- * record the rest of the app reads, the academic calendar that drives terms
- * and assessment windows, and their own account and password. Each tab loads
- * its own query so opening Settings does not fetch all three.
+ * Academic-calendar settings (term dates, assessment window, an
+ * auto-baseline toggle) were dropped: no guide endpoint covers them at all,
+ * only `{name, logo, current_session}` plus the read-only `abbreviation`.
+ * Each remaining tab loads its own query so opening Settings does not fetch
+ * both at once.
  */
 export function SchoolAdminSettingsPage() {
   const [tab, setTab] = useState<TabId>('school');
@@ -74,7 +73,6 @@ export function SchoolAdminSettingsPage() {
         className="mx-auto w-full max-w-220"
       >
         {tab === 'school' && <SchoolProfileTab />}
-        {tab === 'academic' && <AcademicSetupTab />}
         {tab === 'account' && <AccountSecurityTab />}
       </div>
     </div>

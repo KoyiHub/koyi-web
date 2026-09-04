@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import { InitialsAvatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { ErrorState } from '@/components/ui/error-state';
@@ -11,6 +12,7 @@ import {
   ClipboardIcon,
   KeyIcon,
   LayersIcon,
+  TrashIcon,
   UserGroupIcon,
 } from '@/components/ui/icons';
 import { PageSpinner } from '@/components/ui/page-spinner';
@@ -22,11 +24,17 @@ import {
   formatDate,
   SUBJECT_LABEL,
 } from '@/features/school-admin/api/format';
+import { schoolAdminKeys } from '@/features/school-admin/api/queries';
+import {
+  useDisableTeacher,
+  useEnableTeacher,
+} from '@/features/school-admin/teachers/api/mutations';
 import { teacherDetailQuery } from '@/features/school-admin/teachers/api/queries';
 import type {
   TeacherDetail,
   TeacherStatus,
 } from '@/features/school-admin/teachers/api/teacher.schema';
+import { DeleteTeacherModal } from '@/features/school-admin/teachers/components/delete-teacher-modal';
 import { ResetPasswordModal } from '@/features/school-admin/teachers/components/reset-password-modal';
 import { cn } from '@/lib/utils/cn';
 
@@ -34,12 +42,14 @@ const STATUS_LABEL: Record<TeacherStatus, string> = {
   active: 'Active',
   invited: 'Invited',
   suspended: 'Suspended',
+  disabled: 'Disabled',
 };
 
 const STATUS_CLASS: Record<TeacherStatus, string> = {
   active: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
   invited: 'bg-koyi-band-intermediate-soft text-koyi-primary',
   suspended: 'bg-koyi-band-struggling-soft text-koyi-band-struggling-ink',
+  disabled: 'bg-koyi-surface text-koyi-muted',
 };
 
 function StatTile({ label, value }: { label: string; value: string }) {
@@ -61,7 +71,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function TeacherProfile({ teacher }: { teacher: TeacherDetail }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [resetOpen, setResetOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const disableTeacher = useDisableTeacher();
+  const enableTeacher = useEnableTeacher();
+
+  const isDisabled = teacher.status === 'disabled';
 
   return (
     <div className="space-y-6">
@@ -89,18 +106,59 @@ function TeacherProfile({ teacher }: { teacher: TeacherDetail }) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              setResetOpen(true);
-            }}
-            className="border-koyi-primary text-koyi-primary hover:bg-koyi-card inline-flex h-11 shrink-0 items-center gap-2 rounded-md border bg-white/70 px-4 text-sm font-bold transition-colors"
-          >
-            <KeyIcon aria-hidden="true" className="size-4" />
-            Reset Password
-          </button>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setResetOpen(true);
+              }}
+              className="border-koyi-primary text-koyi-primary hover:bg-koyi-card inline-flex h-11 items-center gap-2 rounded-md border bg-white/70 px-4 text-sm font-bold transition-colors"
+            >
+              <KeyIcon aria-hidden="true" className="size-4" />
+              Reset Password
+            </button>
+
+            <Button
+              variant="secondary"
+              isLoading={isDisabled ? enableTeacher.isPending : disableTeacher.isPending}
+              onClick={() => {
+                if (isDisabled) {
+                  enableTeacher.mutate(teacher.id);
+                } else {
+                  disableTeacher.mutate(teacher.id);
+                }
+              }}
+            >
+              {isDisabled ? 'Enable' : 'Disable'}
+            </Button>
+
+            <Button
+              variant="secondary"
+              className="text-koyi-danger"
+              onClick={() => {
+                setDeleteOpen(true);
+              }}
+            >
+              <TrashIcon aria-hidden="true" className="size-4" />
+              Delete
+            </Button>
+          </div>
         </div>
       </Card>
+
+      {deleteOpen && (
+        <DeleteTeacherModal
+          teacherId={teacher.id}
+          teacherName={teacher.full_name}
+          onClose={() => {
+            setDeleteOpen(false);
+          }}
+          onDeleted={() => {
+            void queryClient.invalidateQueries({ queryKey: schoolAdminKeys.teachers() });
+            void navigate(paths.schoolAdmin.teachers.list);
+          }}
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile label="Assessments created" value={String(teacher.stats.assessments_created)} />

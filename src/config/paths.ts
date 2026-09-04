@@ -124,6 +124,8 @@ export const paths = {
     // (`landing.getStarted`) and signed in through `login.schoolAdmin`, so
     // there are no auth routes under /school-admin/*.
     dashboard: '/school-admin/dashboard',
+    /** Server-authored feed of who-did-what — §4.6. Rendered verbatim, never reconstructed. */
+    activity: '/school-admin/activity',
     teachers: {
       list: '/school-admin/teachers',
       new: '/school-admin/teachers/new',
@@ -133,6 +135,8 @@ export const paths = {
       list: '/school-admin/students',
       new: '/school-admin/students/new',
       detail: (studentId: string) => `/school-admin/students/${studentId}`,
+      /** Multi-select and whole-class bulk moves — §4.5. */
+      transfer: '/school-admin/students/transfer',
     },
     classes: {
       list: '/school-admin/classes',

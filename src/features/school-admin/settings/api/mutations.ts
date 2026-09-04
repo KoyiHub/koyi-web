@@ -4,12 +4,12 @@ import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
 import { schoolSchema } from '@/features/school-admin/api/shared.schema';
 import {
-  academicSettingsSchema,
   adminAccountSchema,
   passwordChangeResponseSchema,
 } from '@/features/school-admin/settings/api/settings.schema';
 import { api } from '@/lib/api/client';
 
+/** §4.2 — `PATCH /v1/school/profile/`. `abbreviation` is never sent — read-only after registration. */
 export interface UpdateSchoolProfileInput {
   name: string;
   email: string;
@@ -17,6 +17,7 @@ export interface UpdateSchoolProfileInput {
   address: string;
   location: string;
   motto: string;
+  currentSessionId: string;
 }
 
 /** The school record shown across the app, including the sidebar lockup. */
@@ -25,38 +26,18 @@ export function useUpdateSchoolProfile() {
 
   return useMutation({
     mutationFn: (input: UpdateSchoolProfileInput) =>
-      api.patch(schoolAdminEndpoints.school, schoolSchema, input),
-    onSuccess: (data) => {
-      // Write straight into the cache: the shell reads this on every screen.
-      queryClient.setQueryData(schoolAdminKeys.school(), data);
-    },
-  });
-}
-
-export interface UpdateAcademicSettingsInput {
-  currentSession: string;
-  currentTerm: string;
-  termStartsOn: string;
-  termEndsOn: string;
-  assessmentWindowWeeks: number;
-  autoAssignBaseline: boolean;
-}
-
-export function useUpdateAcademicSettings() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: UpdateAcademicSettingsInput) =>
-      api.patch(schoolAdminEndpoints.settings.academic, academicSettingsSchema, {
-        current_session: input.currentSession,
-        current_term: input.currentTerm,
-        term_starts_on: input.termStartsOn,
-        term_ends_on: input.termEndsOn,
-        assessment_window_weeks: input.assessmentWindowWeeks,
-        auto_assign_baseline: input.autoAssignBaseline,
+      api.patch(schoolAdminEndpoints.profile, schoolSchema, {
+        name: input.name,
+        email: input.email,
+        phone: input.phone,
+        address: input.address,
+        location: input.location,
+        motto: input.motto,
+        current_session: input.currentSessionId,
       }),
     onSuccess: (data) => {
-      queryClient.setQueryData(schoolAdminKeys.academicSettings(), data);
+      // Write straight into the cache: the shell reads this on every screen.
+      queryClient.setQueryData(schoolAdminKeys.profile(), data);
     },
   });
 }
@@ -74,7 +55,7 @@ export function useUpdateAdminAccount() {
 
   return useMutation({
     mutationFn: (input: UpdateAdminAccountInput) =>
-      api.patch(schoolAdminEndpoints.settings.account, adminAccountSchema, {
+      api.patch(schoolAdminEndpoints.account, adminAccountSchema, {
         first_name: input.firstName,
         last_name: input.lastName,
         email: input.email,
@@ -93,11 +74,11 @@ export interface ChangeAdminPasswordInput {
   confirmPassword: string;
 }
 
-/** Password change for the signed-in administrator. Verified server-side. */
+/** Password change for the signed-in administrator — `frontend-integration.md` §4.2. */
 export function useChangeAdminPassword() {
   return useMutation({
     mutationFn: (input: ChangeAdminPasswordInput) =>
-      api.post(schoolAdminEndpoints.settings.accountPassword, passwordChangeResponseSchema, {
+      api.post(schoolAdminEndpoints.profilePassword, passwordChangeResponseSchema, {
         current_password: input.currentPassword,
         new_password: input.newPassword,
         confirm_password: input.confirmPassword,

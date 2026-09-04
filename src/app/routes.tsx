@@ -176,6 +176,13 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: 'activity',
+            lazy: async () => ({
+              Component: (await import('@/features/school-admin/activity/routes/activity-page'))
+                .ActivityPage,
+            }),
+          },
+          {
             path: 'teachers',
             children: [
               {
@@ -219,6 +226,14 @@ export const routes: RouteObject[] = [
                   Component: (
                     await import('@/features/school-admin/students/routes/add-student-page')
                   ).AddStudentPage,
+                }),
+              },
+              {
+                path: 'transfer',
+                lazy: async () => ({
+                  Component: (
+                    await import('@/features/school-admin/students/routes/transfer-students-page')
+                  ).TransferStudentsPage,
                 }),
               },
               {

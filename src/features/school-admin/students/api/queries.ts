@@ -2,6 +2,7 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
+import { studentFlnSchema } from '@/features/school-admin/students/api/fln.schema';
 import {
   studentDetailSchema,
   studentListSchema,
@@ -14,6 +15,8 @@ export interface StudentListFilters {
   page: number;
   /** Class id, or `'all'`. Used by the class detail screen and filters. */
   classId: string;
+  /** `all`, `active` or `disabled`. */
+  status: string;
 }
 
 export const studentListQuery = (filters: StudentListFilters) =>
@@ -25,6 +28,7 @@ export const studentListQuery = (filters: StudentListFilters) =>
           search: filters.search || undefined,
           page: filters.page,
           class: filters.classId === 'all' ? undefined : filters.classId,
+          status: filters.status === 'all' ? undefined : filters.status,
         },
         signal,
       }),
@@ -36,4 +40,12 @@ export const studentDetailQuery = (studentId: string) =>
     queryKey: schoolAdminKeys.studentDetail(studentId),
     queryFn: ({ signal }) =>
       api.get(schoolAdminEndpoints.students.detail(studentId), studentDetailSchema, { signal }),
+  });
+
+/** §4.5 — the school-level FLN view: two independent levels, not the teacher's full breakdown. */
+export const studentFlnQuery = (studentId: string) =>
+  queryOptions({
+    queryKey: schoolAdminKeys.studentFln(studentId),
+    queryFn: ({ signal }) =>
+      api.get(schoolAdminEndpoints.students.fln(studentId), studentFlnSchema, { signal }),
   });

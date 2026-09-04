@@ -1,26 +1,11 @@
 import { z } from 'zod';
 
 /**
- * School Admin settings. PROVISIONAL — see
- * `@/features/school-admin/api/endpoints`.
- *
- * Three areas, matching what a school administrator actually controls:
- * the school's own record, the academic calendar the rest of the app reads
- * terms and grades from, and their own account and security.
+ * School Admin settings — `frontend-integration.md` §4.2. Academic-calendar
+ * settings (term dates, assessment window, an auto-baseline toggle) had no
+ * guide anchor at all and were dropped; the real profile is just
+ * `{name, logo, current_session}` plus the read-only `abbreviation`.
  */
-
-export const academicSettingsSchema = z.object({
-  current_session: z.string(),
-  current_term: z.string(),
-  /** `YYYY-MM-DD` — bound directly to a date input. */
-  term_starts_on: z.string(),
-  term_ends_on: z.string(),
-  class_system: z.enum(['primary', 'grade']),
-  grade_levels: z.array(z.string()),
-  assessment_window_weeks: z.number(),
-  auto_assign_baseline: z.boolean(),
-});
-export type AcademicSettings = z.infer<typeof academicSettingsSchema>;
 
 /** Mirrors `apps.users.User` plus the security flags the screen shows. */
 export const adminAccountSchema = z.object({

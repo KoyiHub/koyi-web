@@ -11,10 +11,17 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { paths } from '@/config/paths';
 import { studentListQuery } from '@/features/school-admin/students/api/queries';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils/cn';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'disabled', label: 'Disabled' },
+];
 
 /**
  * Student roster (design reference page 11).
@@ -24,10 +31,13 @@ import { cn } from '@/lib/utils/cn';
  */
 export function StudentsPage() {
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search);
 
-  const listQuery = useQuery(studentListQuery({ search: debouncedSearch, page, classId: 'all' }));
+  const listQuery = useQuery(
+    studentListQuery({ search: debouncedSearch, page, classId: 'all', status }),
+  );
   const students = listQuery.data?.results ?? [];
 
   return (
@@ -46,6 +56,21 @@ export function StudentsPage() {
                 setPage(1);
               }}
             />
+            <SegmentedControl
+              label="Filter by status"
+              value={status}
+              options={STATUS_OPTIONS}
+              onChange={(value) => {
+                setStatus(value);
+                setPage(1);
+              }}
+            />
+            <Link
+              to={paths.schoolAdmin.students.transfer}
+              className={cn(buttonClasses('secondary'), 'shrink-0')}
+            >
+              Transfer Students
+            </Link>
             <Link to={paths.schoolAdmin.students.new} className={cn(buttonClasses(), 'shrink-0')}>
               <PlusIcon aria-hidden="true" />
               Add Student
@@ -106,7 +131,14 @@ export function StudentsPage() {
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
                           <InitialsAvatar name={student.full_name} />
-                          <p className="text-koyi-text truncate font-bold">{student.full_name}</p>
+                          <p className="text-koyi-text flex items-center gap-2 truncate font-bold">
+                            {student.full_name}
+                            {student.status === 'disabled' && (
+                              <span className="bg-koyi-surface text-koyi-muted rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                Disabled
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </td>
 

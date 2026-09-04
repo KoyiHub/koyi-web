@@ -53,9 +53,9 @@ export function AddStudentPage() {
       dateOfBirth: '',
       gender: '',
       classId: '',
-      studentId: '',
       guardianName: '',
       guardianPhone: '',
+      guardianEmail: '',
       triggerBaselineAssessment: true,
     },
   });
@@ -69,7 +69,7 @@ export function AddStudentPage() {
     try {
       const student = await createStudent.mutateAsync({
         ...values,
-        studentId: values.studentId,
+        guardianEmail: values.guardianEmail === '' ? undefined : values.guardianEmail,
       });
       void navigate(paths.schoolAdmin.students.detail(student.id));
     } catch {
@@ -123,13 +123,9 @@ export function AddStudentPage() {
           />
         </FormRow>
 
-        <TextField
-          label="Student ID (Optional)"
-          placeholder="Auto-generated if left blank"
-          hint="Leave empty and the system issues the next ID in sequence."
-          error={errors.studentId?.message}
-          {...register('studentId')}
-        />
+        <p className="text-koyi-muted text-xs">
+          The student ID is generated automatically and shown once the student is saved.
+        </p>
       </FormSection>
 
       <FormSection title="Academic Placement" icon={<LayersIcon className="size-4" />}>
@@ -179,7 +175,7 @@ export function AddStudentPage() {
             type="tel"
             placeholder="+234 XXX XXXX"
             autoComplete="tel"
-            hint="Used for assessment result updates."
+            hint="Informational only — never used to send an assessment link."
             error={errors.guardianPhone?.message}
             {...register('guardianPhone')}
           />
@@ -191,6 +187,16 @@ export function AddStudentPage() {
             {...register('guardianRelationship')}
           />
         </FormRow>
+
+        <TextField
+          label="Guardian Email (Optional)"
+          type="email"
+          placeholder="guardian@example.com"
+          autoComplete="email"
+          hint="Where an assessment link is sent. Many guardians won't have one — that's fine."
+          error={errors.guardianEmail?.message}
+          {...register('guardianEmail')}
+        />
       </FormSection>
     </FormPage>
   );

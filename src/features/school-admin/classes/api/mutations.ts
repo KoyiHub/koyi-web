@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
@@ -20,6 +21,19 @@ export function useCreateClass() {
         grade_id: input.gradeId,
         name: input.name,
       }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: schoolAdminKeys.classes() });
+    },
+  });
+}
+
+/** Refused with `400` while any student is still in the class — §4.3. */
+export function useDeleteClass() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (classId: string) =>
+      api.delete(schoolAdminEndpoints.classes.detail(classId), z.unknown()),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: schoolAdminKeys.classes() });
     },

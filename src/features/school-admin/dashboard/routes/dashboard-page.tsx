@@ -1,73 +1,35 @@
 import { useQuery } from '@tanstack/react-query';
-import { type ComponentType, type SVGProps, useState } from 'react';
+import type { ComponentType, SVGProps } from 'react';
 
-import { LearningLevelChart } from '@/components/charts/learning-level-chart';
-import { ProgressTrendChart } from '@/components/charts/progress-trend-chart';
 import { Card } from '@/components/ui/card';
 import { ErrorState } from '@/components/ui/error-state';
-import { GraduationCapIcon, LayersIcon, TrendingUpIcon, UsersIcon } from '@/components/ui/icons';
+import { GraduationCapIcon, LayersIcon, UsersIcon } from '@/components/ui/icons';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
-import { SegmentedControl, UnderlineTabs } from '@/components/ui/segmented-control';
-import {
-  TERM_FILTER_LABEL,
-  TERM_FILTERS,
-  type TermFilter,
-} from '@/features/school-admin/dashboard/api/dashboard.schema';
-import { dashboardSummaryQuery } from '@/features/school-admin/dashboard/api/queries';
+import { StatBar } from '@/components/ui/stat-bar';
+import { overviewQuery } from '@/features/school-admin/dashboard/api/queries';
+import { ASSESSMENT_STATUS_LABEL } from '@/lib/api/format';
+import { DOMAIN_LABEL, levelDistributionRows, levelLabel } from '@/lib/fln/level';
 import { cn } from '@/lib/utils/cn';
 
-const TERM_OPTIONS = TERM_FILTERS.map((term) => ({ value: term, label: TERM_FILTER_LABEL[term] }));
-
-type LevelBreakdown = 'by_grade' | 'by_subject';
-
-const BREAKDOWN_OPTIONS = [
-  { value: 'by_grade' as const, label: 'By Grade' },
-  { value: 'by_subject' as const, label: 'By Subject' },
-];
+const DOMAINS = ['literacy', 'numeracy'] as const;
 
 interface StatCardProps {
   label: string;
   value: number;
-  changePercentage: number | null;
   Icon: ComponentType<SVGProps<SVGSVGElement>>;
-  /** Tailwind classes for the icon chip — each card carries its own tone. */
   chipClassName: string;
-  trendClassName: string;
 }
 
-function StatCard({
-  label,
-  value,
-  changePercentage,
-  Icon,
-  chipClassName,
-  trendClassName,
-}: StatCardProps) {
+function StatCard({ label, value, Icon, chipClassName }: StatCardProps) {
   return (
     <div className="rounded-koyi-xl border-koyi-border bg-koyi-card border p-5">
-      <div className="flex items-start justify-between gap-3">
-        <span
-          aria-hidden="true"
-          className={cn('flex size-11 items-center justify-center rounded-full', chipClassName)}
-        >
-          <Icon className="size-5" />
-        </span>
-
-        {changePercentage !== null && (
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold',
-              trendClassName,
-            )}
-          >
-            <TrendingUpIcon className="size-3.5" aria-hidden="true" />
-            {changePercentage > 0 ? '+' : ''}
-            {changePercentage}%
-          </span>
-        )}
-      </div>
-
+      <span
+        aria-hidden="true"
+        className={cn('flex size-11 items-center justify-center rounded-full', chipClassName)}
+      >
+        <Icon className="size-5" />
+      </span>
       <p className="text-koyi-muted mt-5 text-sm font-medium">{label}</p>
       <p className="text-koyi-text font-display text-koyi-stat mt-1 leading-none font-extrabold">
         {value}
@@ -77,111 +39,98 @@ function StatCard({
 }
 
 /**
- * School Admin landing screen (design reference page 9) — headline counts plus
- * the two FLN analytics charts, scoped to the selected term.
+ * School Admin landing screen — `frontend-integration.md` §4.7.
  *
- * Every figure is read straight off the API response: no band thresholds,
- * averages or trends are computed in the browser.
+ * Leads with `level_distribution`, not an average: "a class with more Level
+ * 1 children is differently composed, not worse" (§9), and the guide's own
+ * design note says this screen should lead with distribution once placement
+ * lands, which it now has. Every figure is read straight off the response —
+ * no band thresholds or averages are computed in the browser.
  */
 export function SchoolAdminDashboardPage() {
-  const [term, setTerm] = useState<TermFilter>('this_term');
-  const [breakdown, setBreakdown] = useState<LevelBreakdown>('by_grade');
+  const overview = useQuery(overviewQuery());
 
-  const summaryQuery = useQuery(dashboardSummaryQuery(term));
+  if (overview.isPending) return <PageSpinner />;
+  if (overview.isError || !overview.data) {
+    return <ErrorState error={overview.error} onRetry={() => void overview.refetch()} />;
+  }
+
+  const data = overview.data;
+  const maxDistribution = Math.max(
+    1,
+    ...DOMAINS.flatMap((domain) =>
+      levelDistributionRows(data.level_distribution[domain]).map((row) => row.students),
+    ),
+  );
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="School Summary"
-        subtitle="High-level overview of Foundation Literacy and Numeracy (FLN) metrics."
-        actions={
-          <SegmentedControl
-            label="Reporting period"
-            value={term}
-            options={TERM_OPTIONS}
-            onChange={setTerm}
-          />
-        }
+        subtitle={`${data.current_session_label} — high-level overview of Foundation Literacy and Numeracy (FLN) levels.`}
       />
 
-      {summaryQuery.isPending && <PageSpinner />}
-
-      {summaryQuery.isError && (
-        <ErrorState
-          error={summaryQuery.error}
-          onRetry={() => {
-            void summaryQuery.refetch();
-          }}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <StatCard
+          label="Total Teachers"
+          value={data.teachers_count}
+          Icon={UsersIcon}
+          chipClassName="bg-koyi-primary text-white"
         />
-      )}
+        <StatCard
+          label="Total Students"
+          value={data.students_count}
+          Icon={GraduationCapIcon}
+          chipClassName="bg-koyi-band-intermediate-soft text-koyi-primary"
+        />
+        <StatCard
+          label="Active Assessments"
+          value={data.active_assessments}
+          Icon={LayersIcon}
+          chipClassName="bg-koyi-nav-active text-koyi-primary"
+        />
+      </div>
 
-      {summaryQuery.data && (
-        <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            <StatCard
-              label="Total Teachers"
-              value={summaryQuery.data.stats.total_teachers.value}
-              changePercentage={summaryQuery.data.stats.total_teachers.change_percentage}
-              Icon={UsersIcon}
-              chipClassName="bg-koyi-primary text-white"
-              trendClassName="bg-koyi-primary text-white"
-            />
-            <StatCard
-              label="Total Students"
-              value={summaryQuery.data.stats.total_students.value}
-              changePercentage={summaryQuery.data.stats.total_students.change_percentage}
-              Icon={GraduationCapIcon}
-              chipClassName="bg-koyi-band-intermediate-soft text-koyi-primary"
-              trendClassName="bg-koyi-band-intermediate-soft text-koyi-primary"
-            />
-            <StatCard
-              label="Active Classes"
-              value={summaryQuery.data.stats.active_classes.value}
-              changePercentage={summaryQuery.data.stats.active_classes.change_percentage}
-              Icon={LayersIcon}
-              chipClassName="bg-koyi-nav-active text-koyi-primary"
-              trendClassName="bg-koyi-nav-active text-koyi-primary"
-            />
-          </div>
-
-          <div className="grid gap-4 xl:grid-cols-3">
-            <Card
-              title="Learning Level Distribution"
-              className="xl:col-span-2"
-              action={
-                <UnderlineTabs
-                  label="Learning level breakdown"
-                  value={breakdown}
-                  options={BREAKDOWN_OPTIONS}
-                  onChange={setBreakdown}
+      <div className="grid gap-4 xl:grid-cols-2">
+        {DOMAINS.map((domain) => (
+          <Card key={domain} title={`${DOMAIN_LABEL[domain]} — level distribution`}>
+            <div className="space-y-3">
+              {levelDistributionRows(data.level_distribution[domain]).map((row) => (
+                <StatBar
+                  key={row.level}
+                  label={levelLabel(row.level)}
+                  valueLabel={`${String(row.students)} ${row.students === 1 ? 'child' : 'children'}`}
+                  percentage={(row.students / maxDistribution) * 100}
                 />
-              }
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <Card
+        title="Assessments by status"
+        subtitle={`${data.assessments_count} papers created in total.`}
+      >
+        <div className="flex flex-wrap gap-3">
+          {Object.entries(data.status_breakdown).map(([status, count]) => (
+            <span
+              key={status}
+              className="bg-koyi-surface text-koyi-text rounded-full px-3 py-1.5 text-sm font-medium"
             >
-              <LearningLevelChart data={summaryQuery.data.learning_levels[breakdown]} />
-            </Card>
-
-            <Card title="Overall Progress" subtitle="Last 6 Months Trend">
-              <ProgressTrendChart data={summaryQuery.data.progress_trend.points} />
-
-              <div className="bg-koyi-sidebar border-koyi-border rounded-koyi-lg mt-5 flex items-center justify-between gap-3 border p-4">
-                <div>
-                  <p className="text-koyi-muted text-xs font-medium">Net Improvement</p>
-                  <p className="text-koyi-text font-display mt-0.5 text-xl font-extrabold">
-                    {summaryQuery.data.progress_trend.net_improvement_percentage > 0 ? '+' : ''}
-                    {summaryQuery.data.progress_trend.net_improvement_percentage}%
-                  </p>
-                </div>
-                <span
-                  aria-hidden="true"
-                  className="bg-koyi-band-strong-soft text-koyi-success flex size-9 items-center justify-center rounded-full"
-                >
-                  <TrendingUpIcon className="size-4" />
-                </span>
-              </div>
-            </Card>
-          </div>
-        </>
-      )}
+              {ASSESSMENT_STATUS_LABEL[status as keyof typeof ASSESSMENT_STATUS_LABEL] ?? status}:{' '}
+              <span className="font-bold">{count}</span>
+            </span>
+          ))}
+        </div>
+        {data.average_graded_score && (
+          <p className="text-koyi-muted mt-4 text-xs">
+            Average graded score across every completed paper: {data.average_graded_score}%. A
+            single figure across two independent domains — treat it as a rough indicator, not a
+            level.
+          </p>
+        )}
+      </Card>
     </div>
   );
 }

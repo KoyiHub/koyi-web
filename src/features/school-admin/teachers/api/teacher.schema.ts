@@ -8,11 +8,13 @@ import {
 } from '@/features/school-admin/api/shared.schema';
 
 /**
- * Teacher records and the assessments they author. PROVISIONAL — see
- * `@/features/school-admin/api/endpoints`.
+ * Teacher records — `frontend-integration.md` §4.4. `status` gains
+ * `disabled` for the guide's real disable/enable lifecycle; `invited` and
+ * `suspended` are pre-guide values with no anchor in the contract, left in
+ * place rather than guessed at (there is no invitation flow documented) —
+ * only `active ⇄ disabled` is wired to a real action.
  */
-
-export const teacherStatusSchema = z.enum(['active', 'invited', 'suspended']);
+export const teacherStatusSchema = z.enum(['active', 'invited', 'suspended', 'disabled']);
 export type TeacherStatus = z.infer<typeof teacherStatusSchema>;
 
 export const teacherListItemSchema = z.object({
@@ -42,11 +44,11 @@ export type TeacherClass = z.infer<typeof teacherClassSchema>;
 /**
  * An assessment authored by a teacher.
  *
- * The Django `Assessment` model does not exist yet, so this mirrors the shape
- * the assessment flows in this repo already imply — a titled, subject-scoped,
- * timed set of questions targeted at a class, with a lifecycle status and
- * completion counts. Answer keys and scoring rules are deliberately absent:
- * they must never reach the browser.
+ * The Django `Assessment` model on the school-admin surface does not exist
+ * yet, so this mirrors the shape the assessment flows in this repo already
+ * imply — a titled, subject-scoped, timed set of questions targeted at a
+ * class, with a lifecycle status and completion counts. Answer keys and
+ * scoring rules are deliberately absent: they must never reach the browser.
  */
 export const teacherAssessmentSchema = z.object({
   id: z.string(),
@@ -86,15 +88,14 @@ export const teacherDetailSchema = teacherListItemSchema.extend({
 export type TeacherDetail = z.infer<typeof teacherDetailSchema>;
 
 /**
- * Response to a password reset.
- *
- * `temporary_password` is populated only when the admin asked the server to
- * generate one — a password the admin typed themselves is never echoed back.
+ * `POST .../password-reset/` — "Email them a reset" (§4.4). Unlike the
+ * pre-guide version this replaces, no password or mode ever reaches the
+ * admin's screen; the server just confirms an email went out.
  */
 export const teacherPasswordResetSchema = z.object({
-  mode: z.enum(['generate', 'manual']),
-  temporary_password: z.string().nullable(),
-  must_change_on_next_login: z.boolean(),
-  updated_at: z.string(),
+  sent: z.boolean(),
 });
 export type TeacherPasswordReset = z.infer<typeof teacherPasswordResetSchema>;
+
+/** `POST .../delete/request/` — sends a 2FA code before a teacher account can be removed. */
+export const deleteRequestSchema = z.object({ sent: z.boolean() });

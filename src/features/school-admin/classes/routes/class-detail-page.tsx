@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
 
 import { InitialsAvatar } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { buttonClasses } from '@/components/ui/button-variants';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -11,13 +13,16 @@ import {
   EyeIcon,
   GraduationCapIcon,
   PlusIcon,
+  TrashIcon,
   UsersIcon,
 } from '@/components/ui/icons';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { paths } from '@/config/paths';
-import { formatDate, LEVEL_CHIP_CLASS, LEVEL_LABEL } from '@/features/school-admin/api/format';
+import { formatDate } from '@/features/school-admin/api/format';
 import type { ClassDetail } from '@/features/school-admin/classes/api/class.schema';
+import { useDeleteClass } from '@/features/school-admin/classes/api/mutations';
 import { classDetailQuery } from '@/features/school-admin/classes/api/queries';
+import { ApiError } from '@/lib/api/errors';
 import { cn } from '@/lib/utils/cn';
 
 function StatTile({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
@@ -37,13 +42,41 @@ function StatTile({ label, value, accent }: { label: string; value: string; acce
 }
 
 function ClassOverview({ schoolClass }: { schoolClass: ClassDetail }) {
+  const navigate = useNavigate();
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteClass = useDeleteClass();
+
+  function handleDelete() {
+    setDeleteError(null);
+    deleteClass.mutate(schoolClass.id, {
+      onSuccess: () => {
+        void navigate(paths.schoolAdmin.classes.list);
+      },
+      onError: (error) => {
+        setDeleteError(error instanceof ApiError ? error.message : 'Could not delete this class.');
+      },
+    });
+  }
+
   return (
     <div className="grid gap-4 xl:grid-cols-3">
       <Card className="bg-koyi-nav-active border-transparent xl:col-span-2">
-        <span className="bg-koyi-card text-koyi-primary inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold">
-          <span aria-hidden="true" className="bg-koyi-primary size-1.5 rounded-full" />
-          {schoolClass.grade_name}
-        </span>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <span className="bg-koyi-card text-koyi-primary inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold">
+            <span aria-hidden="true" className="bg-koyi-primary size-1.5 rounded-full" />
+            {schoolClass.grade_name}
+          </span>
+
+          <Button
+            variant="secondary"
+            className="text-koyi-danger"
+            isLoading={deleteClass.isPending}
+            onClick={handleDelete}
+          >
+            <TrashIcon aria-hidden="true" className="size-4" />
+            Delete class
+          </Button>
+        </div>
 
         <h1 className="text-koyi-text font-display mt-3 text-3xl font-extrabold">
           {schoolClass.display_name}
@@ -52,6 +85,18 @@ function ClassOverview({ schoolClass }: { schoolClass: ClassDetail }) {
           {schoolClass.term} &middot; {schoolClass.room ?? 'No room assigned'} &middot; Created{' '}
           {formatDate(schoolClass.created_at)}
         </p>
+
+        {deleteError && (
+          <p role="alert" className="bg-koyi-card text-koyi-danger mt-4 rounded-md p-3 text-sm">
+            {deleteError}{' '}
+            <Link
+              to={paths.schoolAdmin.students.transfer}
+              className="font-semibold underline underline-offset-2"
+            >
+              Transfer these students first →
+            </Link>
+          </p>
+        )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-4">
           <StatTile label="Students" value={String(schoolClass.student_count)} />
@@ -128,9 +173,6 @@ function ClassOverview({ schoolClass }: { schoolClass: ClassDetail }) {
                 <th scope="col" className="px-4 py-3 font-semibold">
                   Age
                 </th>
-                <th scope="col" className="px-4 py-3 font-semibold">
-                  Level
-                </th>
                 <th scope="col" className="rounded-r-md px-4 py-3 text-right font-semibold">
                   Action
                 </th>
@@ -150,16 +192,6 @@ function ClassOverview({ schoolClass }: { schoolClass: ClassDetail }) {
                     {student.student_id}
                   </td>
                   <td className="text-koyi-text px-4 py-3">{student.age}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        'inline-flex rounded-full px-2.5 py-1 text-xs font-bold',
-                        LEVEL_CHIP_CLASS[student.level],
-                      )}
-                    >
-                      {LEVEL_LABEL[student.level]}
-                    </span>
-                  </td>
                   <td className="px-4 py-3 text-right">
                     <Link
                       to={paths.schoolAdmin.students.detail(student.id)}

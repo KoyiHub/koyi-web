@@ -56,7 +56,10 @@ describe('School Admin StudentsPage', () => {
 
     await screen.findByRole('heading', { name: 'Add New Student' });
 
-    expect(screen.queryByLabelText(/email/i)).not.toBeInTheDocument();
+    // Students have no login credentials of their own — no student email or
+    // password field. The guardian's optional email (where an assessment
+    // link is sent) is a different field and is expected to be present.
     expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/guardian email/i)).toBeInTheDocument();
   });
 });

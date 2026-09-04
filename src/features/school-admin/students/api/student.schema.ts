@@ -1,16 +1,14 @@
 import { z } from 'zod';
 
-import {
-  assessmentSubjectSchema,
-  assessmentTypeSchema,
-  learningLevelSchema,
-  paginatedSchema,
-  performanceBandSchema,
-} from '@/features/school-admin/api/shared.schema';
+import { paginatedSchema } from '@/features/school-admin/api/shared.schema';
 
 /**
- * Student records and their assessment history. PROVISIONAL — see
- * `@/features/school-admin/api/endpoints`.
+ * Student records — `frontend-integration.md` §4.5. `student_id` is
+ * server-generated and never accepted as input (see `add-student-page.tsx`);
+ * levels, scores and assessment history live on the dedicated `/fln/`
+ * endpoint (`fln.schema.ts`), not embedded here — the old
+ * `level`/`domain_scores`/`strengths`/`learning_gaps`/`assessments` block
+ * this replaces was score-first vocabulary §9 rules out.
  */
 
 /**
@@ -30,6 +28,9 @@ export const GUARDIAN_RELATIONSHIPS = [
 /** Genders the enrolment form offers. */
 export const STUDENT_GENDERS = ['female', 'male'] as const;
 
+export const studentStatusSchema = z.enum(['active', 'disabled']);
+export type StudentStatus = z.infer<typeof studentStatusSchema>;
+
 export const studentListItemSchema = z.object({
   id: z.string(),
   student_id: z.string(),
@@ -37,33 +38,11 @@ export const studentListItemSchema = z.object({
   age: z.number(),
   class_name: z.string(),
   grade_name: z.string(),
-  level: learningLevelSchema,
+  status: studentStatusSchema,
 });
 export type StudentListItem = z.infer<typeof studentListItemSchema>;
 
 export const studentListSchema = paginatedSchema(studentListItemSchema);
-
-/** One FLN domain result within a sitting. The band comes from the server. */
-export const domainScoreSchema = z.object({
-  key: z.string(),
-  label: z.string(),
-  score: z.number(),
-  band: performanceBandSchema,
-});
-export type DomainScore = z.infer<typeof domainScoreSchema>;
-
-export const studentAssessmentSchema = z.object({
-  id: z.string(),
-  assessment_id: z.string(),
-  title: z.string(),
-  subject: assessmentSubjectSchema,
-  assessment_type: assessmentTypeSchema,
-  taken_on: z.string(),
-  score: z.number(),
-  band: performanceBandSchema,
-  administered_by: z.string(),
-});
-export type StudentAssessment = z.infer<typeof studentAssessmentSchema>;
 
 export const studentDetailSchema = studentListItemSchema.extend({
   first_name: z.string(),
@@ -75,17 +54,9 @@ export const studentDetailSchema = studentListItemSchema.extend({
   guardian: z.object({
     name: z.string(),
     phone: z.string(),
+    /** Optional — many guardians won't have one. Where an assessment link is sent. */
+    email: z.string().nullable(),
     relationship: z.string(),
   }),
-  /** `null` for a newly enrolled student who has not sat anything yet. */
-  latest_assessment: z
-    .object({
-      taken_on: z.string(),
-      domain_scores: z.array(domainScoreSchema),
-    })
-    .nullable(),
-  strengths: z.array(z.string()),
-  learning_gaps: z.array(z.string()),
-  assessments: z.array(studentAssessmentSchema),
 });
 export type StudentDetail = z.infer<typeof studentDetailSchema>;

@@ -11,10 +11,17 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { paths } from '@/config/paths';
 import { teacherListQuery } from '@/features/school-admin/teachers/api/queries';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils/cn';
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'disabled', label: 'Disabled' },
+];
 
 /**
  * Teacher roster (design reference page 10).
@@ -25,10 +32,11 @@ import { cn } from '@/lib/utils/cn';
  */
 export function TeachersPage() {
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search);
 
-  const listQuery = useQuery(teacherListQuery({ search: debouncedSearch, page }));
+  const listQuery = useQuery(teacherListQuery({ search: debouncedSearch, status, page }));
   const teachers = listQuery.data?.results ?? [];
 
   return (
@@ -45,6 +53,15 @@ export function TeachersPage() {
               onChange={(value) => {
                 setSearch(value);
                 // A new query invalidates the current page number.
+                setPage(1);
+              }}
+            />
+            <SegmentedControl
+              label="Filter by status"
+              value={status}
+              options={STATUS_OPTIONS}
+              onChange={(value) => {
+                setStatus(value);
                 setPage(1);
               }}
             />
@@ -104,7 +121,14 @@ export function TeachersPage() {
                         <div className="flex items-center gap-3">
                           <InitialsAvatar name={teacher.full_name} />
                           <div className="min-w-0">
-                            <p className="text-koyi-text truncate font-bold">{teacher.full_name}</p>
+                            <p className="text-koyi-text flex items-center gap-2 truncate font-bold">
+                              {teacher.full_name}
+                              {teacher.status === 'disabled' && (
+                                <span className="bg-koyi-surface text-koyi-muted rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                  Disabled
+                                </span>
+                              )}
+                            </p>
                             <p className="text-koyi-muted truncate text-xs">{teacher.email}</p>
                           </div>
                         </div>

@@ -3,28 +3,24 @@ import { http, HttpResponse } from 'msw';
 import {
   adminAccount,
   assessments,
+  type AssessmentStatus,
   classes,
   grades,
   school,
   type SeedClass,
   type SeedStudent,
   type SeedTeacher,
+  sessions,
   students,
   teachers,
 } from '@/mocks/data/school-admin-seed';
 
 /**
- * MSW handlers standing in for the School Portal API.
+ * MSW handlers for the School Portal API — `frontend-integration.md` §4.
  *
- * No School Admin endpoints are confirmed on the Django side yet — the backend
- * ships `apps.users` only — so these model what the contract is expected to
- * look like: DRF-style list envelopes, snake_case payloads, server-side
- * `search`/`page` handling, and the shared error envelope from
- * `apps.common.exceptions.api_exception_handler`.
- *
- * Writes mutate the in-memory seed so that adding a teacher, student or class
- * shows up in the lists afterwards, exactly as a real API would behave.
- * State resets on reload.
+ * Writes mutate the in-memory seed so that adding, disabling or transferring
+ * something shows up in every list afterwards, exactly as the real API would
+ * behave. State resets on reload.
  */
 
 /** Mirrors `apps.common.exceptions.api_exception_handler`. */
@@ -41,6 +37,14 @@ function validationError(detail: Record<string, string[]>) {
     errorEnvelope('validation_error', 'The data you sent is not valid.', detail),
     { status: 400 },
   );
+}
+
+/** A wrong or expired confirmation code — the message carries the whole story. */
+function invalidCodeError() {
+  const message = 'That code is incorrect or has expired.';
+  return HttpResponse.json(errorEnvelope('validation_error', message, { code: [message] }), {
+    status: 400,
+  });
 }
 
 const DEFAULT_PAGE_SIZE = 8;
@@ -103,101 +107,114 @@ function requiredFields(
   return Object.keys(detail).length > 0 ? detail : null;
 }
 
+/** The code every two-step delete flow in this mock accepts — mirrors `MOCK_VERIFICATION_CODE`. */
+const DELETE_CONFIRMATION_CODE = '123456';
+
 /* -------------------------------------------------------------------------- */
-/* Dashboard                                                                  */
+/* Activity feed — §4.6, cursor-paginated                                     */
 /* -------------------------------------------------------------------------- */
 
-/**
- * Term multipliers stand in for historical aggregates the API would compute
- * server-side. FLN band counts are returned by the server; the client never
- * derives a band from a raw score.
- */
-const TERM_FACTORS: Record<string, number> = {
-  this_term: 1,
-  last_term: 0.88,
-  ytd: 0.94,
-};
-
-function scale(value: number, factor: number): number {
-  return Math.round(value * factor);
+interface ActivityRef {
+  id: string;
+  name: string;
 }
 
-function bandCountsFor(filter: (student: SeedStudent) => boolean, factor: number) {
-  const scoped = students.filter(filter);
-
-  const count = (level: string) =>
-    scale(scoped.filter((student) => student.level === level).length, factor);
-
-  return {
-    strong: count('strong'),
-    intermediate: count('intermediate'),
-    // "Beginner" is the bottom of the same struggling band for chart purposes.
-    struggling: count('struggling') + count('beginner'),
-  };
+interface ActivityRow {
+  id: string;
+  action: string;
+  label: string;
+  description: string;
+  teacher: ActivityRef | null;
+  student: ActivityRef | null;
+  school_class: ActivityRef | null;
+  assessment: ActivityRef | null;
+  metadata: Record<string, unknown>;
+  occurred_at: string;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+let activityCounter = 0;
 
-function dashboardSummary(term: string) {
-  const factor = TERM_FACTORS[term] ?? 1;
-
-  const byGrade = grades.slice(0, 3).map((grade) => ({
-    label: grade.name,
-    ...bandCountsFor((student) => student.grade_name === grade.name, factor),
-  }));
-
-  const bySubject = [
-    { key: 'reading', label: 'Reading' },
-    { key: 'comprehension', label: 'Comprehension' },
-    { key: 'mathematics', label: 'Mathematics' },
-  ].map((domain) => {
-    const scores = students.map(
-      (student) => student.domain_scores.find((entry) => entry.key === domain.key)?.band,
-    );
-
-    const count = (band: string) => scale(scores.filter((entry) => entry === band).length, factor);
-
-    return {
-      label: domain.label,
-      strong: count('strong'),
-      intermediate: count('intermediate'),
-      struggling: count('struggling'),
-    };
-  });
-
-  const trend = MONTHS.map((month, index) => ({
-    label: month,
-    value: Math.round((52 + index * 3.2 + (index === 3 ? 4 : 0)) * factor),
-  }));
-
-  const first = trend[0]?.value ?? 0;
-  const last = trend[trend.length - 1]?.value ?? 0;
-
-  return {
-    term,
-    school_name: school.name,
-    location: school.location,
-    stats: {
-      total_teachers: {
-        value: scale(teachers.length, factor),
-        change_percentage: 5,
-      },
-      total_students: {
-        value: scale(students.length, factor),
-        change_percentage: 12,
-      },
-      active_classes: {
-        value: scale(classes.length, factor),
-        change_percentage: null,
-      },
-    },
-    learning_levels: { by_grade: byGrade, by_subject: bySubject },
-    progress_trend: {
-      points: trend,
-      net_improvement_percentage: Number((last - first).toFixed(1)),
-    },
-  };
+function nextActivityId(): string {
+  activityCounter += 1;
+  return `act-${String(activityCounter)}`;
 }
+
+function logActivity(row: Omit<ActivityRow, 'id'>) {
+  activityLog.unshift({ id: nextActivityId(), ...row });
+}
+
+function seedActivityLog(): ActivityRow[] {
+  const rows: ActivityRow[] = [];
+
+  for (const teacher of teachers) {
+    rows.push({
+      id: nextActivityId(),
+      action: 'teacher_added',
+      label: `New teacher added: ${teacher.full_name}`,
+      description: `${teacher.full_name} joined as a teacher.`,
+      teacher: { id: teacher.id, name: teacher.full_name },
+      student: null,
+      school_class: null,
+      assessment: null,
+      metadata: {},
+      occurred_at: teacher.date_joined,
+    });
+  }
+
+  for (const entry of classes) {
+    rows.push({
+      id: nextActivityId(),
+      action: 'class_created',
+      label: `Class created: ${entry.display_name}`,
+      description: `${entry.display_name} was added to the school.`,
+      teacher: null,
+      student: null,
+      school_class: { id: entry.id, name: entry.display_name },
+      assessment: null,
+      metadata: {},
+      occurred_at: entry.created_at,
+    });
+  }
+
+  for (const student of students) {
+    rows.push({
+      id: nextActivityId(),
+      action: 'student_admitted',
+      label: `Student enrolled: ${student.full_name}`,
+      description: `${student.full_name} was enrolled in ${student.class_name}.`,
+      teacher: null,
+      student: { id: student.id, name: student.full_name },
+      school_class: null,
+      assessment: null,
+      metadata: {},
+      occurred_at: student.enrolled_on,
+    });
+  }
+
+  for (const assessment of assessments) {
+    if (assessment.status === 'draft') continue;
+    const teacher = teachers.find((entry) => entry.id === assessment.created_by);
+    const action = assessment.status === 'closed' ? 'assessment_closed' : 'assessment_published';
+    const verb = assessment.status === 'closed' ? 'closed' : 'published';
+
+    rows.push({
+      id: nextActivityId(),
+      action,
+      label: `Assessment ${verb}: ${assessment.title}`,
+      description: `${teacher?.full_name ?? 'A teacher'} ${verb} "${assessment.title}" for ${assessment.class_name}.`,
+      teacher: teacher ? { id: teacher.id, name: teacher.full_name } : null,
+      student: null,
+      school_class: null,
+      assessment: { id: assessment.id, name: assessment.title },
+      metadata: {},
+      occurred_at: assessment.created_at,
+    });
+  }
+
+  return rows.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
+}
+
+const activityLog: ActivityRow[] = seedActivityLog();
 
 /* -------------------------------------------------------------------------- */
 /* Serializers                                                                */
@@ -256,13 +273,11 @@ function studentListItem(student: SeedStudent) {
     age: student.age,
     class_name: student.class_name,
     grade_name: student.grade_name,
-    level: student.level,
+    status: student.status,
   };
 }
 
 function studentDetail(student: SeedStudent) {
-  const latest = student.assessments[0] ?? null;
-
   return {
     ...studentListItem(student),
     first_name: student.first_name,
@@ -274,14 +289,21 @@ function studentDetail(student: SeedStudent) {
     guardian: {
       name: student.guardian_name,
       phone: student.guardian_phone,
+      email: student.guardian_email,
       relationship: student.guardian_relationship,
     },
-    latest_assessment: latest
-      ? { taken_on: latest.taken_on, domain_scores: student.domain_scores }
-      : null,
-    strengths: student.strengths,
-    learning_gaps: student.learning_gaps,
-    assessments: student.assessments,
+  };
+}
+
+function studentFln(student: SeedStudent) {
+  if (!student.fln) return null;
+
+  return {
+    student: { id: student.id, full_name: student.full_name, student_id: student.student_id },
+    literacy_level: student.fln.literacy_level,
+    numeracy_level: student.fln.numeracy_level,
+    last_assessed_at: student.fln.last_assessed_at,
+    recent_results: student.fln.recent_results,
   };
 }
 
@@ -323,6 +345,12 @@ function classDetail(entry: SeedClass) {
   };
 }
 
+function recountClass(classId: string) {
+  const entry = classes.find((item) => item.id === classId);
+  if (entry)
+    entry.student_count = students.filter((student) => student.class_id === classId).length;
+}
+
 /* -------------------------------------------------------------------------- */
 /* Mutable settings state                                                     */
 /* -------------------------------------------------------------------------- */
@@ -330,26 +358,30 @@ function classDetail(entry: SeedClass) {
 const schoolProfile = { ...school };
 const account = { ...adminAccount };
 
-const academicSettings = {
-  current_session: school.current_session,
-  current_term: school.current_term,
-  term_starts_on: school.term_starts_on.slice(0, 10),
-  term_ends_on: school.term_ends_on.slice(0, 10),
-  class_system: school.class_system,
-  grade_levels: grades.map((grade) => grade.name),
-  assessment_window_weeks: 2,
-  auto_assign_baseline: true,
-};
+function currentSession() {
+  return sessions.find((entry) => entry.id === schoolProfile.current_session_id) ?? sessions[0]!;
+}
 
-const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-
-/** Server-side generation only — the browser never invents a credential. */
-function generatePassword(): string {
-  let password = '';
-  for (let index = 0; index < 12; index += 1) {
-    password += PASSWORD_ALPHABET[Math.floor(Math.random() * PASSWORD_ALPHABET.length)];
-  }
-  return password;
+function profileResponse() {
+  return {
+    id: schoolProfile.id,
+    name: schoolProfile.name,
+    abbreviation: schoolProfile.abbreviation,
+    location: schoolProfile.location,
+    email: schoolProfile.email,
+    email_verified: true,
+    phone: schoolProfile.phone,
+    address: schoolProfile.address,
+    logo: null,
+    logo_url: null,
+    motto: schoolProfile.motto,
+    class_system: schoolProfile.class_system,
+    current_session: currentSession(),
+    current_term: schoolProfile.current_term,
+    term_starts_on: schoolProfile.term_starts_on,
+    term_ends_on: schoolProfile.term_ends_on,
+    timezone: schoolProfile.timezone,
+  };
 }
 
 /* -------------------------------------------------------------------------- */
@@ -359,12 +391,18 @@ function generatePassword(): string {
 const BASE = '*/api/v1/school';
 
 export const schoolAdminHandlers = [
-  http.get(`${BASE}/school/`, () => HttpResponse.json(schoolProfile)),
+  http.get(`${BASE}/profile/`, () => HttpResponse.json(profileResponse())),
 
-  http.patch(`${BASE}/school/`, async ({ request }) => {
+  http.patch(`${BASE}/profile/`, async ({ request }) => {
     const body = await readBody(request);
     const missing = requiredFields(body, ['name', 'email']);
     if (missing) return validationError(missing);
+
+    if (body.current_session !== undefined) {
+      const session = sessions.find((entry) => entry.id === asString(body.current_session));
+      if (!session) return validationError({ current_session: ['Select a valid session.'] });
+      schoolProfile.current_session_id = session.id;
+    }
 
     Object.assign(schoolProfile, {
       name: asString(body.name),
@@ -375,18 +413,107 @@ export const schoolAdminHandlers = [
       motto: asString(body.motto),
     });
 
-    return HttpResponse.json(schoolProfile);
+    return HttpResponse.json(profileResponse());
   }),
 
-  http.get(`${BASE}/dashboard/`, ({ request }) => {
-    const url = new URL(request.url);
-    const term = url.searchParams.get('term') ?? 'this_term';
+  http.post(`${BASE}/profile/password/change/`, async ({ request }) => {
+    const body = await readBody(request);
+    const missing = requiredFields(body, ['current_password', 'new_password', 'confirm_password']);
+    if (missing) return validationError(missing);
 
-    if (!(term in TERM_FACTORS)) {
-      return validationError({ term: ['Select a valid term.'] });
+    if (asString(body.new_password).length < 8) {
+      return validationError({ new_password: ['Use at least 8 characters.'] });
+    }
+    if (asString(body.new_password) !== asString(body.confirm_password)) {
+      return validationError({ confirm_password: ['Passwords do not match.'] });
+    }
+    if (asString(body.current_password) !== 'password123') {
+      return validationError({ current_password: ['That password is incorrect.'] });
     }
 
-    return HttpResponse.json(dashboardSummary(term));
+    return HttpResponse.json({ detail: 'Your password has been updated.' });
+  }),
+
+  http.get(`${BASE}/sessions/`, () => HttpResponse.json(sessions)),
+
+  http.get(`${BASE}/overview/`, () => {
+    const distribution: { literacy: Record<string, number>; numeracy: Record<string, number> } = {
+      literacy: {},
+      numeracy: {},
+    };
+
+    for (const student of students) {
+      if (student.status !== 'active' || !student.fln) continue;
+      const literacyKey = String(student.fln.literacy_level);
+      const numeracyKey = String(student.fln.numeracy_level);
+      distribution.literacy[literacyKey] = (distribution.literacy[literacyKey] ?? 0) + 1;
+      distribution.numeracy[numeracyKey] = (distribution.numeracy[numeracyKey] ?? 0) + 1;
+    }
+
+    const statusBreakdown: Record<AssessmentStatus, number> = {
+      draft: 0,
+      published: 0,
+      open: 0,
+      closed: 0,
+    };
+    for (const assessment of assessments) statusBreakdown[assessment.status] += 1;
+
+    const gradedPercentages = students.flatMap(
+      (student) =>
+        student.fln?.recent_results
+          .filter((result) => result.status === 'graded')
+          .map((result) => Number(result.percentage)) ?? [],
+    );
+    const averageGradedScore =
+      gradedPercentages.length > 0
+        ? gradedPercentages.reduce((total, value) => total + value, 0) / gradedPercentages.length
+        : 0;
+
+    return HttpResponse.json({
+      students_count: students.length,
+      teachers_count: teachers.length,
+      assessments_count: assessments.length,
+      active_assessments: statusBreakdown.open,
+      status_breakdown: statusBreakdown,
+      level_distribution: distribution,
+      average_graded_score: averageGradedScore.toFixed(2),
+      current_session_label: currentSession().label,
+    });
+  }),
+
+  http.get(`${BASE}/activity/`, ({ request }) => {
+    const url = new URL(request.url);
+    const teacherId = url.searchParams.get('teacher');
+    const studentId = url.searchParams.get('student');
+    const classId = url.searchParams.get('school_class');
+    const action = url.searchParams.get('action');
+    const from = url.searchParams.get('occurred_from');
+    const to = url.searchParams.get('occurred_to');
+
+    const filtered = activityLog.filter((row) => {
+      if (teacherId && row.teacher?.id !== teacherId) return false;
+      if (studentId && row.student?.id !== studentId) return false;
+      if (classId && row.school_class?.id !== classId) return false;
+      if (action && row.action !== action) return false;
+      if (from && row.occurred_at < from) return false;
+      if (to && row.occurred_at > to) return false;
+      return true;
+    });
+
+    const pageSize = 15;
+    const cursor = Number(url.searchParams.get('cursor') ?? 0) || 0;
+    const start = Math.max(0, cursor);
+    const page = filtered.slice(start, start + pageSize);
+    const hasNext = start + pageSize < filtered.length;
+
+    const nextUrl = new URL(url);
+    nextUrl.searchParams.set('cursor', String(start + pageSize));
+
+    return HttpResponse.json({
+      next: hasNext ? nextUrl.toString() : null,
+      previous: null,
+      results: page,
+    });
   }),
 
   http.get(`${BASE}/grades/`, () => HttpResponse.json({ count: grades.length, results: grades })),
@@ -402,7 +529,7 @@ export const schoolAdminHandlers = [
       return matches(entry.display_name, search) || matches(entry.grade_name, search);
     });
 
-    const page = paginate(filtered.map(classListItem), url, 12);
+    const page = paginate(filtered.map(classListItem), url, 24);
     return HttpResponse.json(page);
   }),
 
@@ -428,7 +555,7 @@ export const schoolAdminHandlers = [
       grade_id: grade.id,
       grade_name: grade.name,
       display_name: `${grade.name} - ${name}`,
-      term: academicSettings.current_term,
+      term: schoolProfile.current_term,
       room: asString(body.room) || null,
       capacity: Number(body.capacity) || 20,
       student_count: 0,
@@ -439,6 +566,18 @@ export const schoolAdminHandlers = [
     };
 
     classes.push(created);
+    logActivity({
+      action: 'class_created',
+      label: `Class created: ${created.display_name}`,
+      description: `${created.display_name} was added to the school.`,
+      teacher: null,
+      student: null,
+      school_class: { id: created.id, name: created.display_name },
+      assessment: null,
+      metadata: {},
+      occurred_at: created.created_at,
+    });
+
     return HttpResponse.json(classDetail(created), { status: 201 });
   }),
 
@@ -448,15 +587,34 @@ export const schoolAdminHandlers = [
     return HttpResponse.json(classDetail(entry));
   }),
 
+  /** Refused with `400` while any student is still enrolled — §4.3. */
+  http.delete(`${BASE}/classes/:classId/`, ({ params }) => {
+    const index = classes.findIndex((item) => item.id === params.classId);
+    if (index === -1) return notFound('We could not find that class.');
+
+    const entry = classes[index]!;
+    const occupied = students.some((student) => student.class_id === entry.id);
+    if (occupied) {
+      const message = 'Transfer every student out of this class before deleting it.';
+      return HttpResponse.json(errorEnvelope('validation_error', message, { class: [message] }), {
+        status: 400,
+      });
+    }
+
+    classes.splice(index, 1);
+    return HttpResponse.json({});
+  }),
+
   http.get(`${BASE}/teachers/`, ({ request }) => {
     const url = new URL(request.url);
     const search = searchTerm(url);
+    const status = url.searchParams.get('status');
 
-    // Search covers name and teacher ID, per the School Admin brief.
-    const filtered = teachers.filter(
-      (teacher) =>
-        !search || matches(teacher.full_name, search) || matches(teacher.teacher_id, search),
-    );
+    const filtered = teachers.filter((teacher) => {
+      if (status && status !== 'all' && teacher.status !== status) return false;
+      if (!search) return true;
+      return matches(teacher.full_name, search) || matches(teacher.teacher_id, search);
+    });
 
     return HttpResponse.json(paginate(filtered.map(teacherListItem), url));
   }),
@@ -502,6 +660,18 @@ export const schoolAdminHandlers = [
     };
 
     teachers.unshift(created);
+    logActivity({
+      action: 'teacher_added',
+      label: `New teacher added: ${created.full_name}`,
+      description: `${created.full_name} joined as a teacher.`,
+      teacher: { id: created.id, name: created.full_name },
+      student: null,
+      school_class: null,
+      assessment: null,
+      metadata: {},
+      occurred_at: created.date_joined,
+    });
+
     return HttpResponse.json(teacherDetail(created), { status: 201 });
   }),
 
@@ -511,50 +681,80 @@ export const schoolAdminHandlers = [
     return HttpResponse.json(teacherDetail(teacher));
   }),
 
-  http.post(`${BASE}/teachers/:teacherId/reset-password/`, async ({ params, request }) => {
+  http.post(`${BASE}/teachers/:teacherId/disable/`, ({ params }) => {
     const teacher = teachers.find((item) => item.id === params.teacherId);
     if (!teacher) return notFound('We could not find that teacher.');
+    teacher.status = 'disabled';
+    logActivity({
+      action: 'teacher_disabled',
+      label: `Teacher disabled: ${teacher.full_name}`,
+      description: `${teacher.full_name}'s account was disabled.`,
+      teacher: { id: teacher.id, name: teacher.full_name },
+      student: null,
+      school_class: null,
+      assessment: null,
+      metadata: {},
+      occurred_at: new Date().toISOString(),
+    });
+    return HttpResponse.json(teacherDetail(teacher));
+  }),
+
+  http.post(`${BASE}/teachers/:teacherId/enable/`, ({ params }) => {
+    const teacher = teachers.find((item) => item.id === params.teacherId);
+    if (!teacher) return notFound('We could not find that teacher.');
+    teacher.status = 'active';
+    return HttpResponse.json(teacherDetail(teacher));
+  }),
+
+  /** Emails a reset link — §4.4. No password or mode ever reaches this response. */
+  http.post(`${BASE}/teachers/:teacherId/password-reset/`, ({ params }) => {
+    const teacher = teachers.find((item) => item.id === params.teacherId);
+    if (!teacher) return notFound('We could not find that teacher.');
+    return HttpResponse.json({ sent: true });
+  }),
+
+  http.post(`${BASE}/teachers/:teacherId/delete/request/`, ({ params }) => {
+    const teacher = teachers.find((item) => item.id === params.teacherId);
+    if (!teacher) return notFound('We could not find that teacher.');
+    return HttpResponse.json({ sent: true });
+  }),
+
+  http.post(`${BASE}/teachers/:teacherId/delete/confirm/`, async ({ params, request }) => {
+    const index = teachers.findIndex((item) => item.id === params.teacherId);
+    if (index === -1) return notFound('We could not find that teacher.');
 
     const body = await readBody(request);
-    const mode = asString(body.mode);
-
-    if (mode !== 'generate' && mode !== 'manual') {
-      return validationError({ mode: ['Choose how the new password should be set.'] });
+    if (asString(body.code) !== DELETE_CONFIRMATION_CODE) {
+      return invalidCodeError();
     }
 
-    if (mode === 'manual') {
-      const password = asString(body.password);
-      if (password.length < 8) {
-        return validationError({ password: ['Use at least 8 characters.'] });
-      }
-      if (password !== asString(body.confirm_password)) {
-        return validationError({ confirm_password: ['Passwords do not match.'] });
-      }
-
-      // A manually set password is never echoed back to the client.
-      return HttpResponse.json({
-        mode,
-        temporary_password: null,
-        must_change_on_next_login: false,
-        updated_at: new Date().toISOString(),
+    const [removed] = teachers.splice(index, 1);
+    if (removed) {
+      logActivity({
+        action: 'teacher_removed',
+        label: `Teacher removed: ${removed.full_name}`,
+        description: `${removed.full_name}'s account was removed.`,
+        teacher: null,
+        student: null,
+        school_class: null,
+        assessment: null,
+        metadata: {},
+        occurred_at: new Date().toISOString(),
       });
     }
 
-    return HttpResponse.json({
-      mode,
-      temporary_password: generatePassword(),
-      must_change_on_next_login: true,
-      updated_at: new Date().toISOString(),
-    });
+    return HttpResponse.json({});
   }),
 
   http.get(`${BASE}/students/`, ({ request }) => {
     const url = new URL(request.url);
     const search = searchTerm(url);
     const classId = url.searchParams.get('class');
+    const status = url.searchParams.get('status');
 
     const filtered = students.filter((student) => {
       if (classId && classId !== 'all' && student.class_id !== classId) return false;
+      if (status && status !== 'all' && student.status !== status) return false;
       if (!search) return true;
       return matches(student.full_name, search) || matches(student.student_id, search);
     });
@@ -587,10 +787,12 @@ export const schoolAdminHandlers = [
 
     const firstName = asString(body.first_name);
     const lastName = asString(body.last_name);
+    const guardianEmail = asString(body.guardian_email);
 
     const created: SeedStudent = {
       id: `stu-${String(Date.now())}`,
-      student_id: asString(body.student_id) || `STU-2026-${String(students.length + 1)}`,
+      // Always server-generated — never accepted from the request body.
+      student_id: `STU-2026-${String(students.length + 1).padStart(3, '0')}`,
       first_name: firstName,
       last_name: lastName,
       full_name: `${firstName} ${lastName}`,
@@ -600,20 +802,29 @@ export const schoolAdminHandlers = [
       class_id: studentClass.id,
       class_name: studentClass.display_name,
       grade_name: studentClass.grade_name,
-      // A new student has no assessment yet, so no level is asserted.
-      level: 'beginner',
+      status: 'active',
       enrolled_on: new Date().toISOString(),
       guardian_name: asString(body.guardian_name),
       guardian_phone: asString(body.guardian_phone),
+      guardian_email: guardianEmail || null,
       guardian_relationship: asString(body.guardian_relationship),
-      domain_scores: [],
-      strengths: [],
-      learning_gaps: [],
-      assessments: [],
+      // No sitting yet — the `/fln/` endpoint 404s until this student is assessed.
+      fln: null,
     };
 
     students.unshift(created);
-    studentClass.student_count += 1;
+    recountClass(studentClass.id);
+    logActivity({
+      action: 'student_admitted',
+      label: `Student enrolled: ${created.full_name}`,
+      description: `${created.full_name} was enrolled in ${created.class_name}.`,
+      teacher: null,
+      student: { id: created.id, name: created.full_name },
+      school_class: null,
+      assessment: null,
+      metadata: {},
+      occurred_at: created.enrolled_on,
+    });
 
     return HttpResponse.json(studentDetail(created), { status: 201 });
   }),
@@ -624,23 +835,155 @@ export const schoolAdminHandlers = [
     return HttpResponse.json(studentDetail(student));
   }),
 
-  http.get(`${BASE}/settings/academic/`, () => HttpResponse.json(academicSettings)),
+  http.get(`${BASE}/students/:studentId/fln/`, ({ params }) => {
+    const student = students.find((item) => item.id === params.studentId);
+    if (!student) return notFound('We could not find that student.');
 
-  http.patch(`${BASE}/settings/academic/`, async ({ request }) => {
-    const body = await readBody(request);
-    const missing = requiredFields(body, ['current_session', 'current_term']);
-    if (missing) return validationError(missing);
+    const fln = studentFln(student);
+    if (!fln) return notFound('This student has not sat an assessment yet.');
 
-    Object.assign(academicSettings, {
-      current_session: asString(body.current_session),
-      current_term: asString(body.current_term),
-      term_starts_on: asString(body.term_starts_on),
-      term_ends_on: asString(body.term_ends_on),
-      assessment_window_weeks: Number(body.assessment_window_weeks) || 2,
-      auto_assign_baseline: Boolean(body.auto_assign_baseline),
+    return HttpResponse.json(fln);
+  }),
+
+  http.post(`${BASE}/students/:studentId/disable/`, ({ params }) => {
+    const student = students.find((item) => item.id === params.studentId);
+    if (!student) return notFound('We could not find that student.');
+    student.status = 'disabled';
+    logActivity({
+      action: 'student_disabled',
+      label: `Student disabled: ${student.full_name}`,
+      description: `${student.full_name}'s account was disabled.`,
+      teacher: null,
+      student: { id: student.id, name: student.full_name },
+      school_class: null,
+      assessment: null,
+      metadata: {},
+      occurred_at: new Date().toISOString(),
     });
+    return HttpResponse.json(studentDetail(student));
+  }),
 
-    return HttpResponse.json(academicSettings);
+  http.post(`${BASE}/students/:studentId/enable/`, ({ params }) => {
+    const student = students.find((item) => item.id === params.studentId);
+    if (!student) return notFound('We could not find that student.');
+    student.status = 'active';
+    return HttpResponse.json(studentDetail(student));
+  }),
+
+  http.post(`${BASE}/students/:studentId/delete/request/`, ({ params }) => {
+    const student = students.find((item) => item.id === params.studentId);
+    if (!student) return notFound('We could not find that student.');
+    return HttpResponse.json({ sent: true });
+  }),
+
+  http.post(`${BASE}/students/:studentId/delete/confirm/`, async ({ params, request }) => {
+    const index = students.findIndex((item) => item.id === params.studentId);
+    if (index === -1) return notFound('We could not find that student.');
+
+    const body = await readBody(request);
+    if (asString(body.code) !== DELETE_CONFIRMATION_CODE) {
+      return invalidCodeError();
+    }
+
+    const [removed] = students.splice(index, 1);
+    if (removed) {
+      recountClass(removed.class_id);
+      logActivity({
+        action: 'student_removed',
+        label: `Student removed: ${removed.full_name}`,
+        description: `${removed.full_name} was removed from the school.`,
+        teacher: null,
+        student: null,
+        school_class: null,
+        assessment: null,
+        metadata: {},
+        occurred_at: new Date().toISOString(),
+      });
+    }
+
+    return HttpResponse.json({});
+  }),
+
+  http.post(`${BASE}/students/transfer/`, async ({ request }) => {
+    const body = await readBody(request);
+    const studentIds = Array.isArray(body.student_ids)
+      ? body.student_ids.filter((value): value is string => typeof value === 'string')
+      : [];
+    const toClassId = asString(body.to_class);
+
+    const toClass = classes.find((entry) => entry.id === toClassId);
+    if (!toClass) return validationError({ to_class: ['Select a valid class.'] });
+    if (studentIds.length === 0) {
+      return validationError({ student_ids: ['Select at least one student.'] });
+    }
+
+    const affectedClassIds = new Set<string>([toClass.id]);
+    let transferred = 0;
+
+    for (const student of students) {
+      if (!studentIds.includes(student.id)) continue;
+      affectedClassIds.add(student.class_id);
+      student.class_id = toClass.id;
+      student.class_name = toClass.display_name;
+      student.grade_name = toClass.grade_name;
+      transferred += 1;
+    }
+
+    for (const classId of affectedClassIds) recountClass(classId);
+
+    if (transferred > 0) {
+      logActivity({
+        action: 'students_transferred',
+        label: `${String(transferred)} student(s) transferred to ${toClass.display_name}`,
+        description: `${String(transferred)} student(s) were moved to ${toClass.display_name}.`,
+        teacher: null,
+        student: null,
+        school_class: { id: toClass.id, name: toClass.display_name },
+        assessment: null,
+        metadata: {},
+        occurred_at: new Date().toISOString(),
+      });
+    }
+
+    return HttpResponse.json({ transferred });
+  }),
+
+  http.post(`${BASE}/students/transfer-class/`, async ({ request }) => {
+    const body = await readBody(request);
+    const fromClass = classes.find((entry) => entry.id === asString(body.from_class));
+    const toClass = classes.find((entry) => entry.id === asString(body.to_class));
+
+    if (!fromClass) return validationError({ from_class: ['Select a valid class.'] });
+    if (!toClass) return validationError({ to_class: ['Select a valid class.'] });
+
+    let transferred = 0;
+    for (const student of students) {
+      if (student.class_id !== fromClass.id) continue;
+      student.class_id = toClass.id;
+      student.class_name = toClass.display_name;
+      student.grade_name = toClass.grade_name;
+      transferred += 1;
+    }
+
+    recountClass(fromClass.id);
+    recountClass(toClass.id);
+
+    // One entry for the whole move, not one per child — the feed does not itemise it.
+    if (transferred > 0) {
+      logActivity({
+        action: 'students_transferred',
+        label: `${fromClass.display_name} transferred to ${toClass.display_name}`,
+        description: `${String(transferred)} student(s) moved from ${fromClass.display_name} to ${toClass.display_name}.`,
+        teacher: null,
+        student: null,
+        school_class: { id: toClass.id, name: toClass.display_name },
+        assessment: null,
+        metadata: {},
+        occurred_at: new Date().toISOString(),
+      });
+    }
+
+    return HttpResponse.json({ transferred });
   }),
 
   http.get(`${BASE}/settings/account/`, () => HttpResponse.json(account)),
@@ -663,23 +1006,5 @@ export const schoolAdminHandlers = [
     });
 
     return HttpResponse.json(account);
-  }),
-
-  http.post(`${BASE}/settings/account/password/`, async ({ request }) => {
-    const body = await readBody(request);
-    const missing = requiredFields(body, ['current_password', 'new_password', 'confirm_password']);
-    if (missing) return validationError(missing);
-
-    if (asString(body.new_password).length < 8) {
-      return validationError({ new_password: ['Use at least 8 characters.'] });
-    }
-    if (asString(body.new_password) !== asString(body.confirm_password)) {
-      return validationError({ confirm_password: ['Passwords do not match.'] });
-    }
-    if (asString(body.current_password) !== 'password123') {
-      return validationError({ current_password: ['That password is incorrect.'] });
-    }
-
-    return HttpResponse.json({ detail: 'Your password has been updated.' });
   }),
 ];
