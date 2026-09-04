@@ -284,6 +284,16 @@ export const handlers = [
         },
       );
     }
-    return HttpResponse.json(mockAuthUser);
+    // §5.1's `/me/` shape — teacher-specific, not the generic `mockAuthUser`.
+    return HttpResponse.json({
+      id: mockAuthUser.id,
+      teacher_id: 'GHS-T-00007',
+      full_name: mockAuthUser.full_name,
+      email: mockAuthUser.email,
+      school: {
+        id: '22222222-2222-4222-8222-222222222222',
+        name: 'Greenwood Primary School',
+      },
+    });
   }),
 ];

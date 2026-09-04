@@ -5,18 +5,20 @@ import { Button } from '@/components/ui/button';
 import { paths } from '@/config/paths';
 import { useLogout } from '@/features/auth/api/mutations';
 import { meQuery } from '@/features/auth/api/queries';
-import { teacherProfileFixture } from '@/features/teacher/profile/data/profile-fixture';
+import { teacherDashboardQuery } from '@/features/teacher/dashboard/api/queries';
 import { ApiError } from '@/lib/api/errors';
 
 /**
- * Account Information is real, from `GET /me/`. Teaching Context (school,
- * class) has no backend model yet, so it stays a clearly-labelled fixture —
- * never presented as if it came from the API. See CURRENT.md.
+ * `frontend-integration.md` §5.1's `GET /v1/teacher/auth/me/` — matched
+ * exactly (`id, teacher_id, full_name, email, school`). `school_class`
+ * lives on the dashboard payload instead, so Teaching Context reads it
+ * from there rather than a fixture.
  */
 export function ProfilePage() {
   const navigate = useNavigate();
   const logout = useLogout();
   const me = useQuery(meQuery());
+  const dashboard = useQuery(teacherDashboardQuery());
 
   function handleLogout() {
     logout.mutate(undefined, {
@@ -60,10 +62,8 @@ export function ProfilePage() {
               <dd className="text-koyi-text mt-1 text-sm font-medium">{me.data.full_name}</dd>
             </div>
             <div>
-              <dt className="text-koyi-muted text-xs">Email verified</dt>
-              <dd className="text-koyi-text mt-1 text-sm font-medium">
-                {me.data.email_verified ? 'Yes' : 'No'}
-              </dd>
+              <dt className="text-koyi-muted text-xs">Teacher ID</dt>
+              <dd className="text-koyi-text mt-1 text-sm font-medium">{me.data.teacher_id}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-koyi-muted text-xs">Email</dt>
@@ -77,20 +77,17 @@ export function ProfilePage() {
         <h2 className="text-koyi-text text-sm font-semibold tracking-wide uppercase">
           Teaching Context
         </h2>
-        <p className="text-koyi-muted mt-1 text-xs">
-          Provisional — not yet backed by a school/class API.
-        </p>
         <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <dt className="text-koyi-muted text-xs">School</dt>
             <dd className="text-koyi-text mt-1 text-sm font-medium">
-              {teacherProfileFixture.school}
+              {me.data?.school.name ?? '—'}
             </dd>
           </div>
           <div>
             <dt className="text-koyi-muted text-xs">Class</dt>
             <dd className="text-koyi-text mt-1 text-sm font-medium">
-              {teacherProfileFixture.className}
+              {dashboard.data?.school_class ?? 'Not assigned yet'}
             </dd>
           </div>
         </dl>

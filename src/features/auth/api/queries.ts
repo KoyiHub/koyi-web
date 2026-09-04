@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { authUserSchema } from '@/features/auth/api/auth.schema';
+import { teacherMeSchema } from '@/features/auth/api/auth.schema';
 import { teacherAuthEndpoints } from '@/features/auth/api/endpoints';
 import { api } from '@/lib/api/client';
 
@@ -13,5 +13,5 @@ export const authKeys = {
 export const meQuery = () =>
   queryOptions({
     queryKey: authKeys.me(),
-    queryFn: ({ signal }) => api.get(teacherAuthEndpoints.me, authUserSchema, { signal }),
+    queryFn: ({ signal }) => api.get(teacherAuthEndpoints.me, teacherMeSchema, { signal }),
   });

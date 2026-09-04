@@ -17,6 +17,24 @@ export const authUserSchema = z.object({
 
 export type AuthUser = z.infer<typeof authUserSchema>;
 
+/**
+ * `GET /v1/teacher/auth/me/` — `frontend-integration.md` §5.1, matched
+ * exactly. Not the generic `authUserSchema` above: this is teacher-specific
+ * and carries `teacher_id`/`school` instead of the split name/verification
+ * fields a generic Django user serializer would.
+ */
+export const teacherMeSchema = z.object({
+  id: z.string(),
+  teacher_id: z.string(),
+  full_name: z.string(),
+  email: z.string(),
+  school: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+});
+export type TeacherMe = z.infer<typeof teacherMeSchema>;
+
 /** `apps.users.views.LoginView` response — SimpleJWT pair plus the custom `user` claim. */
 export const tokenPairResponseSchema = z.object({
   access: z.string(),

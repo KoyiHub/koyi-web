@@ -38,8 +38,12 @@ export const classDistributionSchema = z.object({
 export type ClassDistribution = z.infer<typeof classDistributionSchema>;
 
 export const dashboardInsightSchema = z.object({
-  domain: domainSchema,
-  skill_name: z.string(),
+  // Nullable in practice — the live backend sends `domain: null` (and
+  // presumably `skill_name: null`) when there's nothing to templatize a
+  // skill-specific insight from, even though the doc's own example always
+  // shows a concrete domain.
+  domain: domainSchema.nullable(),
+  skill_name: z.string().nullable(),
   summary: z.string(),
   group_id: z.string().nullable(),
 });
