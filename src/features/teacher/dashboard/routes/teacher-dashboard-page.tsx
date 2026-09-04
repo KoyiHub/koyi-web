@@ -170,12 +170,14 @@ export function TeacherDashboardPage() {
 
                 {dashboard.data.insight ? (
                   <>
-                    {dashboard.data.insight.domain && dashboard.data.insight.skill_name && (
-                      <p className="mt-4 text-sm leading-relaxed font-bold">
-                        {DOMAIN_LABEL[dashboard.data.insight.domain]}:{' '}
-                        {dashboard.data.insight.skill_name}
-                      </p>
-                    )}
+                    {(dashboard.data.insight.domain === 'literacy' ||
+                      dashboard.data.insight.domain === 'numeracy') &&
+                      dashboard.data.insight.skill_name && (
+                        <p className="mt-4 text-sm leading-relaxed font-bold">
+                          {DOMAIN_LABEL[dashboard.data.insight.domain]}:{' '}
+                          {dashboard.data.insight.skill_name}
+                        </p>
+                      )}
                     <p className="mt-2 text-sm leading-relaxed text-white/85">
                       {dashboard.data.insight.summary}
                     </p>

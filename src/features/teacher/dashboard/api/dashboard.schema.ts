@@ -5,7 +5,6 @@ import {
   paginatedSchema,
   performanceBandSchema,
 } from '@/features/teacher/api/shared.schema';
-import { domainSchema } from '@/lib/api/contracts';
 
 /**
  * `GET /v1/teacher/dashboard/` — `frontend-integration.md` §5.1, matched
@@ -38,11 +37,15 @@ export const classDistributionSchema = z.object({
 export type ClassDistribution = z.infer<typeof classDistributionSchema>;
 
 export const dashboardInsightSchema = z.object({
-  // Nullable in practice — the live backend sends `domain: null` (and
-  // presumably `skill_name: null`) when there's nothing to templatize a
-  // skill-specific insight from, even though the doc's own example always
-  // shows a concrete domain.
-  domain: domainSchema.nullable(),
+  // Loosened from the strict `literacy`/`numeracy` enum: the live backend
+  // has been observed sending a `domain` that is neither of those two
+  // values nor `null`, despite the doc's own example always showing a
+  // concrete domain. Rather than guess at the real value (a third domain
+  // name? different casing? a category label?), this accepts whatever
+  // arrives and the UI only renders the domain/skill line when it happens
+  // to be exactly `literacy` or `numeracy` — anything else degrades to
+  // "no domain line" instead of a crash.
+  domain: z.string().nullable(),
   skill_name: z.string().nullable(),
   summary: z.string(),
   group_id: z.string().nullable(),
