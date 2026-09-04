@@ -48,8 +48,15 @@ export const sectionSchema = z.object({
    * The subskills this section is *meant* to probe. Powers the coverage
    * warning: a section claiming to cover blending but carrying no blending
    * items is flagged before a child ever sits it.
+   *
+   * The doc's `POST` body sends plain subskill uuids, but the live `GET`
+   * response expands each into a `{id, name, ...}` object instead — the
+   * same "return the related object, not just its id" pattern the rest of
+   * this API uses elsewhere (e.g. the school activity feed's refs). Nothing
+   * in this app renders `covers` on the read side today, so this accepts
+   * either shape without asserting on the object's exact fields.
    */
-  covers: z.array(z.string()),
+  covers: z.array(z.union([z.string(), z.object({ id: z.string() }).loose()])),
 });
 export type Section = z.infer<typeof sectionSchema>;
 
