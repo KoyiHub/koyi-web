@@ -1,4 +1,4 @@
-import type { QuizRecording, QuizResponse } from '@/features/runner/session/fln-session-fixture';
+import type { QuizRecording, QuizResponse } from '@/features/runner/session/question-types';
 
 /**
  * What every question renderer receives.

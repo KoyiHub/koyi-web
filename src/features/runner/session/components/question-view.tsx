@@ -2,17 +2,16 @@ import { ChoiceQuestionView } from '@/features/runner/session/components/questio
 import { ComparisonQuestionView } from '@/features/runner/session/components/questions/comparison-question';
 import { PassageQuestionView } from '@/features/runner/session/components/questions/passage-question';
 import type { QuestionViewProps } from '@/features/runner/session/components/questions/question-props';
-import { ReviewQuestionView } from '@/features/runner/session/components/questions/review-question';
 import { SpokenQuestionView } from '@/features/runner/session/components/questions/spoken-question';
 import { StoryQuestionView } from '@/features/runner/session/components/questions/story-question';
-import type { FlnQuestion } from '@/features/runner/session/fln-session-fixture';
+import type { FlnQuestion } from '@/features/runner/session/question-types';
 
 /**
  * Picks the renderer for a question's layout.
  *
  * The `layout` field is the discriminant on `FlnQuestion`, so TypeScript
- * narrows each branch and a new layout cannot be added to the fixture without
- * a renderer for it.
+ * narrows each branch and a new layout cannot be added without a renderer
+ * for it.
  */
 export function QuestionView(props: QuestionViewProps<FlnQuestion>) {
   const { question } = props;
@@ -28,7 +27,5 @@ export function QuestionView(props: QuestionViewProps<FlnQuestion>) {
       return <StoryQuestionView {...props} question={question} />;
     case 'passage':
       return <PassageQuestionView {...props} question={question} />;
-    case 'review':
-      return <ReviewQuestionView {...props} question={question} />;
   }
 }

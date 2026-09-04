@@ -1,6 +1,6 @@
 import { SpeakerIcon } from '@/components/ui/icons';
-import type { ListenPrompt } from '@/features/runner/session/fln-session-fixture';
 import { useSpeech } from '@/features/runner/session/hooks/use-speech';
+import type { ListenPrompt } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

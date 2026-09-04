@@ -1,53 +1,92 @@
 import { describe, expect, it } from 'vitest';
 
+import { paths } from '@/config/paths';
+import { setSitting } from '@/lib/api/sitting-store';
+import {
+  forceExpiredOnNextStart,
+  startNewSitting,
+  startSection,
+  submitSection,
+} from '@/mocks/data/runner-seed';
 import { renderRoute, screen } from '@/test/test-utils';
 
 /**
- * Guards the player's spine: the question that shows, the gate on Next, and
- * that answering moves the child forward.
+ * Drives the player against the real `/v1/student/assessment/*` endpoints
+ * (via MSW) rather than the deleted fixture — start, autosave, submit, and
+ * the section-timeout guard from B.5.
  *
- * Deliberately asserts nothing about correctness — the player has no answer
+ * Deliberately asserts nothing about correctness: the player has no answer
  * key, and adding one to a test would put it in the bundle.
  */
+function signIn() {
+  setSitting(startNewSitting());
+}
+
 describe('FlnSessionPage', () => {
-  it('opens on the first question with Next disabled', async () => {
-    renderRoute('/assessment/session');
+  it('walks through a section and returns to the hub with the next one unlocked', async () => {
+    signIn();
+    const { user } = renderRoute(`${paths.assessment.session}?section=sec-reading`, {
+      authenticated: false,
+    });
 
     expect(
-      await screen.findByRole('heading', { name: 'How many sticks are there?' }),
+      await screen.findByRole('heading', { name: "Which one starts with the same sound as 'B'?" }),
     ).toBeInTheDocument();
-    expect(screen.getByText('Question 1 out of 13')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: /Previous/ })).toBeDisabled();
-  });
 
-  it('enables Next once an answer is chosen and advances to the next question', async () => {
-    const { user } = renderRoute('/assessment/session');
-    await screen.findByRole('heading', { name: 'How many sticks are there?' });
-
-    await user.click(screen.getByRole('radio', { name: '5' }));
-
-    const next = screen.getByRole('button', { name: 'Next' });
-    expect(next).toBeEnabled();
-
-    await user.click(next);
-
-    expect(
-      await screen.findByRole('heading', { name: 'How many tens and ones are in 34?' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Question 2 out of 13')).toBeInTheDocument();
-  });
-
-  it('keeps an answer when the child steps back to it', async () => {
-    const { user } = renderRoute('/assessment/session');
-    await screen.findByRole('heading', { name: 'How many sticks are there?' });
-
-    await user.click(screen.getByRole('radio', { name: '5' }));
+    await user.click(screen.getByRole('radio', { name: 'Ball' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    await screen.findByText('Say the word you see.');
+    await user.click(screen.getByRole('button', { name: 'Skip for now' }));
+
+    await screen.findByRole('heading', { name: 'Where did Amaka go?' });
+    await user.click(screen.getByRole('radio', { name: 'School' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
+    await screen.findByRole('heading', { name: 'What did the child feed?' });
+    await user.click(screen.getByRole('radio', { name: 'Chickens' }));
+    await user.click(screen.getByRole('button', { name: 'Finish section' }));
+
+    expect(await screen.findByRole('heading', { name: 'Term 1 baseline' })).toBeInTheDocument();
+    expect(screen.getByText('Done')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument();
+  });
+
+  it('reaches the summary once the last section is submitted', async () => {
+    signIn();
+    startSection('sec-reading');
+    submitSection('sec-reading');
+
+    const { user } = renderRoute(`${paths.assessment.session}?section=sec-numbers`, {
+      authenticated: false,
+    });
+
+    await screen.findByRole('heading', { name: 'Which number is this?' });
+    await user.click(screen.getByRole('radio', { name: 'SEVEN' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+
     await screen.findByRole('heading', { name: 'How many tens and ones are in 34?' });
+    await user.click(screen.getByRole('radio', { name: '3 tens + 4 ones' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
 
-    await user.click(screen.getByRole('button', { name: /Previous/ }));
+    await screen.findByRole('heading', { name: 'Which group has MORE?' });
+    await user.click(screen.getByRole('radio', { name: 'Group A' }));
+    await user.click(screen.getByRole('button', { name: 'Next' }));
 
-    expect(await screen.findByRole('radio', { name: '5' })).toBeChecked();
+    await screen.findByRole('heading', { name: 'What is 2 + 3?' });
+    await user.click(screen.getByRole('radio', { name: '5' }));
+    await user.click(screen.getByRole('button', { name: 'Finish section' }));
+
+    expect(await screen.findByRole('heading', { name: 'All done!' })).toBeInTheDocument();
+  });
+
+  it('sends a section whose clock already ran out straight to the timeout screen', async () => {
+    signIn();
+    forceExpiredOnNextStart();
+
+    renderRoute(`${paths.assessment.session}?section=sec-reading`, { authenticated: false });
+
+    expect(await screen.findByRole('heading', { name: "Time's up for now" })).toBeInTheDocument();
   });
 });

@@ -5,7 +5,7 @@ import {
   SticksArt,
 } from '@/features/runner/session/components/illustrations/diagram-art';
 import { SceneArt } from '@/features/runner/session/components/illustrations/scene-art';
-import type { QuestionMedia } from '@/features/runner/session/fln-session-fixture';
+import type { QuestionMedia } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**
@@ -18,8 +18,8 @@ import { cn } from '@/lib/utils/cn';
  */
 
 interface QuestionMediaBlockProps {
-  media: QuestionMedia;
-  /** Controls layered on the picture, e.g. the Listen chip on question 4. */
+  media: QuestionMedia | undefined;
+  /** Controls layered on the picture, e.g. a floating Listen chip. */
   overlay?: ReactNode;
   className?: string;
 }
@@ -41,6 +41,8 @@ function describe(media: QuestionMedia): string {
 }
 
 export function QuestionMediaBlock({ media, overlay, className }: QuestionMediaBlockProps) {
+  if (!media) return null;
+
   const description = describe(media);
 
   if (media.kind === 'letter') {
@@ -111,9 +113,11 @@ export function QuestionMediaBlock({ media, overlay, className }: QuestionMediaB
           {media.imageUrl ? (
             <img src={media.imageUrl} alt={description} className="size-full object-cover" />
           ) : (
-            <div role="img" aria-label={description} className="size-full">
-              <SceneArt art={media.art} />
-            </div>
+            media.art && (
+              <div role="img" aria-label={description} className="size-full">
+                <SceneArt art={media.art} />
+              </div>
+            )
           )}
         </div>
       </div>

@@ -3,7 +3,7 @@ import { MicButton } from '@/features/runner/session/components/mic-button';
 import { QuestionMediaBlock } from '@/features/runner/session/components/question-media';
 import { QuestionSentence } from '@/features/runner/session/components/question-sentence';
 import type { QuestionViewProps } from '@/features/runner/session/components/questions/question-props';
-import type { SpokenQuestion } from '@/features/runner/session/fln-session-fixture';
+import type { SpokenQuestion } from '@/features/runner/session/question-types';
 
 /**
  * Questions the child answers with their voice: word recognition,

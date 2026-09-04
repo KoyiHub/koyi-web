@@ -1,7 +1,6 @@
 import { useLocation } from 'react-router';
 
 import { CheckCircleIcon } from '@/components/ui/icons';
-import { flnQuestions } from '@/features/runner/session/fln-session-fixture';
 
 /**
  * What the child sees after Submit.
@@ -28,7 +27,7 @@ function isSummaryState(value: unknown): value is SummaryState {
 export function FlnSummaryPage() {
   const location = useLocation();
   const state = isSummaryState(location.state) ? location.state : null;
-  const total = state?.total ?? flnQuestions.length;
+  const total = state?.total ?? 0;
   const answeredCount = state?.answeredCount ?? 0;
 
   return (
@@ -39,9 +38,7 @@ export function FlnSummaryPage() {
         </span>
 
         <h1 className="font-display text-koyi-text mt-5 text-3xl font-bold">All done!</h1>
-        <p className="text-koyi-muted mt-2 text-lg">
-          Well done for finishing the Primary 4 assessment.
-        </p>
+        <p className="text-koyi-muted mt-2 text-lg">Well done for finishing the assessment.</p>
 
         <dl className="bg-koyi-quiz-tile mt-7 rounded-2xl px-6 py-5">
           <dt className="text-koyi-muted text-sm font-semibold">Questions answered</dt>

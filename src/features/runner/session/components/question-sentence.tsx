@@ -1,4 +1,4 @@
-import type { QuizSentence } from '@/features/runner/session/fln-session-fixture';
+import type { QuizSentence } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

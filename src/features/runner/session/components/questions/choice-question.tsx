@@ -3,8 +3,8 @@ import { QuestionMediaBlock } from '@/features/runner/session/components/questio
 import { QuestionOptions } from '@/features/runner/session/components/question-options';
 import { QuestionSentence } from '@/features/runner/session/components/question-sentence';
 import type { QuestionViewProps } from '@/features/runner/session/components/questions/question-props';
-import type { ChoiceQuestion } from '@/features/runner/session/fln-session-fixture';
-import { MAIN_PART } from '@/features/runner/session/fln-session-fixture';
+import type { ChoiceQuestion } from '@/features/runner/session/question-types';
+import { MAIN_PART } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

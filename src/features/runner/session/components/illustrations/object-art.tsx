@@ -1,4 +1,4 @@
-import type { ObjectArtKey } from '@/features/runner/session/fln-session-fixture';
+import type { ObjectArtKey } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

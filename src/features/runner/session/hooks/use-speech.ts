@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { ListenPrompt } from '@/features/runner/session/fln-session-fixture';
+import type { ListenPrompt } from '@/features/runner/session/question-types';
 
 /**
  * Plays a Listen prompt.

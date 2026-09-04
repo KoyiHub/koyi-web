@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { QuizRecording } from '@/features/runner/session/fln-session-fixture';
+import type { QuizRecording } from '@/features/runner/session/question-types';
 
 /**
  * Captures a child's spoken answer with the real microphone.

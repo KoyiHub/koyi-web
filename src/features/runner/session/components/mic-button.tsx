@@ -1,6 +1,6 @@
 import { MicIcon, StopIcon } from '@/components/ui/icons';
-import type { QuizRecording } from '@/features/runner/session/fln-session-fixture';
 import { useRecorder } from '@/features/runner/session/hooks/use-recorder';
+import type { QuizRecording } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

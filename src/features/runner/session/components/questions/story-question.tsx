@@ -1,13 +1,13 @@
-import { SparklesIcon } from '@/components/ui/icons';
 import { SceneArt } from '@/features/runner/session/components/illustrations/scene-art';
 import { QuestionOptions } from '@/features/runner/session/components/question-options';
 import type { QuestionViewProps } from '@/features/runner/session/components/questions/question-props';
-import type { StoryQuestion } from '@/features/runner/session/fln-session-fixture';
-import { MAIN_PART } from '@/features/runner/session/fln-session-fixture';
+import type { StoryQuestion } from '@/features/runner/session/question-types';
+import { MAIN_PART } from '@/features/runner/session/question-types';
 
 /**
- * The short-story screen: a passage, three pictures that retell it in order,
- * a Koyi Assistant hint, then the question.
+ * The short-story screen: a passage, a few pictures that retell it in order,
+ * then the question — `passage_comprehension_choice` when the content is
+ * short and carries more than one image (`map-question.ts`).
  *
  * The thumbnails are an ordered list because the sequence is part of the
  * story — first she wakes, then she dresses, then she walks to school.
@@ -34,9 +34,11 @@ export function StoryQuestionView({
                     className="size-full object-cover"
                   />
                 ) : (
-                  <div role="img" aria-label={thumbnail.alt} className="size-full">
-                    <SceneArt art={thumbnail.art} />
-                  </div>
+                  thumbnail.art && (
+                    <div role="img" aria-label={thumbnail.alt} className="size-full">
+                      <SceneArt art={thumbnail.art} />
+                    </div>
+                  )
                 )}
               </div>
               <p className="text-koyi-muted text-sm font-semibold">
@@ -46,14 +48,6 @@ export function StoryQuestionView({
           ))}
         </ol>
       </section>
-
-      <aside className="bg-koyi-quiz-hint flex items-start gap-3 rounded-2xl p-5">
-        <SparklesIcon className="text-koyi-quiz-accent mt-0.5 size-5 shrink-0" />
-        <p className="text-koyi-text text-sm leading-relaxed sm:text-base">
-          <span className="font-semibold">Koyi Assistant: </span>
-          {question.hint}
-        </p>
-      </aside>
 
       <h3 className="font-display text-koyi-text text-center text-2xl font-bold sm:text-3xl">
         {question.prompt}

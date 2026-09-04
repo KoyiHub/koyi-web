@@ -50,11 +50,12 @@ export const paths = {
    * The assessment runner — the surface a child touches. Deliberately outside
    * `teacher`: a child holds a sitting session, not a teacher's JWT, and the
    * runner renders its own bare chrome with no sidebar.
-   *
-   * `entry` and `instructions` arrive in Phase 2 with the two-code sign-in;
-   * the player currently runs on a local fixture.
    */
   assessment: {
+    /** The two-code sign-in. Accepts `?a=<assessment>&c=<personal>` from a guardian link. */
+    entry: '/assessment',
+    /** The section hub — returned to after every section submit. */
+    instructions: '/assessment/instructions',
     session: '/assessment/session',
     summary: '/assessment/session/summary',
   },

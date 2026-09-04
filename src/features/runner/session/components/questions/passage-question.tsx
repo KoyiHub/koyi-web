@@ -1,8 +1,8 @@
 import { QuestionMediaBlock } from '@/features/runner/session/components/question-media';
 import { QuestionOptions } from '@/features/runner/session/components/question-options';
 import type { QuestionViewProps } from '@/features/runner/session/components/questions/question-props';
-import type { PassageQuestion } from '@/features/runner/session/fln-session-fixture';
-import { MAIN_PART } from '@/features/runner/session/fln-session-fixture';
+import type { PassageQuestion } from '@/features/runner/session/question-types';
+import { MAIN_PART } from '@/features/runner/session/question-types';
 
 /**
  * The reading-passage screen. Two columns on desktop — the story stays on

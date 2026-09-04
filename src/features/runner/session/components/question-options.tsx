@@ -1,5 +1,5 @@
 import { ObjectArt } from '@/features/runner/session/components/illustrations/object-art';
-import type { OptionShape, QuizOption } from '@/features/runner/session/fln-session-fixture';
+import type { OptionShape, QuizOption } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

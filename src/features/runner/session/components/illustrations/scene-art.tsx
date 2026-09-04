@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import type { SceneArtKey } from '@/features/runner/session/fln-session-fixture';
+import type { SceneArtKey } from '@/features/runner/session/question-types';
 import { cn } from '@/lib/utils/cn';
 
 /**

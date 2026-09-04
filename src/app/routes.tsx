@@ -258,13 +258,24 @@ export const routes: RouteObject[] = [
   },
   {
     // The assessment runner. Bare chrome, no sidebar, its own credential
-    // scheme. `/assessment` (the two-code entry) and `/assessment/instructions`
-    // (the section hub) arrive in Phase 2; the player below still runs on the
-    // local fixture until then.
+    // scheme — a sitting session, not a teacher's JWT.
     path: 'assessment',
     ErrorBoundary: RootErrorBoundary,
     Component: StudentAssessmentLayout,
     children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('@/features/runner/entry/routes/entry-page')).EntryPage,
+        }),
+      },
+      {
+        path: 'instructions',
+        lazy: async () => ({
+          Component: (await import('@/features/runner/instructions/routes/instructions-page'))
+            .InstructionsPage,
+        }),
+      },
       {
         path: 'session',
         lazy: async () => ({
