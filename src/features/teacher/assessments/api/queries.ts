@@ -9,8 +9,10 @@ import {
   sectionQuestionsSchema,
 } from '@/features/teacher/assessments/api/assessment.schema';
 import {
+  assignableStudentListSchema,
   assignmentListSchema,
   rosterSchema,
+  teacherClassListSchema,
 } from '@/features/teacher/assessments/api/assignment.schema';
 import { api } from '@/lib/api/client';
 
@@ -32,6 +34,9 @@ export const assessmentKeys = {
   coverage: (id: string) => [...assessmentKeys.all, id, 'coverage'] as const,
   assignments: (id: string) => [...assessmentKeys.all, id, 'assignments'] as const,
   roster: (id: string) => [...assessmentKeys.all, id, 'roster'] as const,
+  classes: () => [...assessmentKeys.all, 'classes'] as const,
+  assignableStudents: (params: AssignableStudentParams) =>
+    [...assessmentKeys.all, 'assignable-students', params] as const,
 };
 
 export interface AssessmentListParams {
@@ -103,4 +108,29 @@ export const rosterQuery = (assessmentId: string) =>
     queryKey: assessmentKeys.roster(assessmentId),
     queryFn: ({ signal }) =>
       api.get(teacherEndpoints.assessments.roster(assessmentId), rosterSchema, { signal }),
+  });
+
+/** The teacher's own classes — for the "whole class" assignment mode. */
+export const classesQuery = () =>
+  queryOptions({
+    queryKey: assessmentKeys.classes(),
+    queryFn: ({ signal }) => api.get(teacherEndpoints.classes, teacherClassListSchema, { signal }),
+    staleTime: 5 * 60_000,
+  });
+
+export interface AssignableStudentParams {
+  search?: string | undefined;
+  page?: number | undefined;
+}
+
+/** The individual-student picker for assignment. See `assignableStudentSchema`'s note. */
+export const assignableStudentsQuery = (params: AssignableStudentParams = {}) =>
+  queryOptions({
+    queryKey: assessmentKeys.assignableStudents(params),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.students.list, assignableStudentListSchema, {
+        signal,
+        params: params as Record<string, unknown>,
+      }),
+    placeholderData: (previous) => previous,
   });

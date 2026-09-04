@@ -10,6 +10,14 @@ import {
   publish,
   toAssessment,
 } from '@/mocks/data/assessment-seed';
+import {
+  assignStudents,
+  getAssignments,
+  listClasses,
+  sendGuardianLinks,
+  type StoredAssignment,
+  withdrawAssignment,
+} from '@/mocks/data/assignment-seed';
 import { bankQuestions } from '@/mocks/data/bank-seed';
 import { skills } from '@/mocks/data/taxonomy-seed';
 import { activity, classPerformance, priorityCounts } from '@/mocks/data/teacher-activity-seed';
@@ -106,6 +114,23 @@ async function readBody(request: Request): Promise<Record<string, unknown>> {
 
 function asString(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+/** Assignment rows carry the child's own name and code — `frontend-integration.md` §5.4. */
+function toAssignmentRow(assignment: StoredAssignment) {
+  const student = students.find((entry) => entry.id === assignment.student_id);
+  return {
+    id: assignment.id,
+    student: assignment.student_id,
+    student_name: student?.full_name ?? 'Unknown student',
+    student_id: student?.student_code ?? '',
+    school_class: student?.class_name ?? '',
+    code: assignment.code,
+    status: assignment.status,
+    started_at: assignment.started_at,
+    submitted_at: assignment.submitted_at,
+    link_sent_at: assignment.link_sent_at,
+  };
 }
 
 const BASE = '*/api/v1/teacher';
@@ -361,6 +386,100 @@ export const teacherHandlers = [
 
     return HttpResponse.json(toAssessment(assessment));
   }),
+
+  /* ---------------------------------------------------------------------- */
+  /* Assignment and guardian links — frontend-integration.md §5.4           */
+  /* ---------------------------------------------------------------------- */
+
+  http.get(`${BASE}/assessments/:assessmentId/assignments/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    return HttpResponse.json(getAssignments(assessment.id).map(toAssignmentRow));
+  }),
+
+  http.post(`${BASE}/assessments/:assessmentId/assignments/`, async ({ params, request }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    if (assessment.status === 'draft') {
+      return validationError({ status: ['Publish this paper before assigning it.'] });
+    }
+
+    const body = await readBody(request);
+    const input = {
+      student_ids: Array.isArray(body.student_ids) ? (body.student_ids as string[]) : undefined,
+      class_ids: Array.isArray(body.class_ids) ? (body.class_ids as string[]) : undefined,
+      all_my_students: body.all_my_students === true,
+    };
+    if (!input.student_ids?.length && !input.class_ids?.length && !input.all_my_students) {
+      return validationError({
+        non_field_errors: ['Choose at least one student, class, or "everyone".'],
+      });
+    }
+
+    const created = assignStudents(assessment.id, input);
+    return HttpResponse.json(created.map(toAssignmentRow), { status: 201 });
+  }),
+
+  http.delete(`${BASE}/assessments/:assessmentId/assignments/:assignmentId/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const result = withdrawAssignment(assessment.id, String(params.assignmentId));
+    if (!result.ok) return validationError({ status: [result.message] });
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get(`${BASE}/assessments/:assessmentId/assignments/roster/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+
+    const rows = getAssignments(assessment.id).map((assignment) => {
+      const student = students.find((entry) => entry.id === assignment.student_id);
+      return {
+        student_name: student?.full_name ?? 'Unknown student',
+        student_id: student?.student_code ?? '',
+        school_class: student?.class_name ?? '',
+        code: assignment.code,
+        status: assignment.status,
+      };
+    });
+
+    return HttpResponse.json({
+      assessment_id: assessment.id,
+      assessment_name: assessment.name,
+      assessment_code: assessment.code,
+      opens_at: assessment.opens_at,
+      closes_at: assessment.closes_at,
+      rows,
+    });
+  }),
+
+  http.post(
+    `${BASE}/assessments/:assessmentId/assignments/:assignmentId/send-link/`,
+    ({ params }) => {
+      const assessment = findStored(String(params.assessmentId));
+      if (!assessment) return notFound('That assessment does not exist.');
+      const result = sendGuardianLinks(assessment.id, [String(params.assignmentId)]);
+      return HttpResponse.json(result);
+    },
+  ),
+
+  http.post(
+    `${BASE}/assessments/:assessmentId/assignments/send-links/`,
+    async ({ params, request }) => {
+      const assessment = findStored(String(params.assessmentId));
+      if (!assessment) return notFound('That assessment does not exist.');
+      const body = await readBody(request);
+      const ids = Array.isArray(body.assignment_ids) ? (body.assignment_ids as string[]) : [];
+      const result = sendGuardianLinks(assessment.id, ids);
+      return HttpResponse.json(result);
+    },
+  ),
+
+  /* ---------------------------------------------------------------------- */
+  /* Classes                                                                */
+  /* ---------------------------------------------------------------------- */
+
+  http.get(`${BASE}/classes/`, () => HttpResponse.json(listClasses())),
 
   /* ---------------------------------------------------------------------- */
   /* Students                                                               */

@@ -79,10 +79,19 @@ export const paths = {
     assessments: {
       list: '/teacher/assessments',
       create: '/teacher/assessments/create',
-      /** Step 2 of the builder — schedule and pick who sits it. */
+      /**
+       * Step 2 of the builder — schedule and pick who sits it. A fixed path
+       * rather than `/:assessmentId/assign` so it reads as "the next builder
+       * step", but it still needs `?assessmentId=` — build the link with
+       * `assignFor`, don't hand-roll the query string.
+       */
       assign: '/teacher/assessments/create/assign',
+      assignFor: (assessmentId: string) =>
+        `/teacher/assessments/create/assign?assessmentId=${assessmentId}`,
       detail: (assessmentId: string) => `/teacher/assessments/${assessmentId}`,
       analytics: (assessmentId: string) => `/teacher/assessments/${assessmentId}/analytics`,
+      /** The printable code sheet — one row per assigned child. */
+      roster: (assessmentId: string) => `/teacher/assessments/${assessmentId}/roster`,
     },
 
     students: {

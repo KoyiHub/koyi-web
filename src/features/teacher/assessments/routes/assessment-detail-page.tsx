@@ -55,9 +55,17 @@ export function AssessmentDetailPage() {
               Continue building
             </Link>
           ) : (
-            <Link to={paths.teacher.assessments.assign} className={buttonClasses()}>
-              Assign to students
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to={paths.teacher.assessments.roster(data.id)}
+                className={buttonClasses('secondary')}
+              >
+                Printable roster
+              </Link>
+              <Link to={paths.teacher.assessments.assignFor(data.id)} className={buttonClasses()}>
+                Assign to students
+              </Link>
+            </div>
           )
         }
       />

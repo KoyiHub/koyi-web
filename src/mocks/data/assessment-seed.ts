@@ -16,12 +16,12 @@ import type {
 } from '@/features/teacher/assessments/api/assessment.schema';
 import { findSubskillSeed } from '@/mocks/data/taxonomy-seed';
 
-interface StoredSection extends Section {
+export interface StoredSection extends Section {
   covers: string[];
   questions: AuthoredQuestion[];
 }
 
-interface StoredAssessment extends Omit<Assessment, 'sections' | 'question_count'> {
+export interface StoredAssessment extends Omit<Assessment, 'sections' | 'question_count'> {
   sections: StoredSection[];
 }
 
@@ -31,8 +31,12 @@ function id(prefix: string): string {
   return `${prefix}-${String(counter)}`;
 }
 
-function code(): string {
-  // Avoids O/0, I/1, S/5, Z/2 — a child reads this off a printed sheet.
+/**
+ * Six characters, avoiding O/0, I/1, S/5, Z/2 — a child reads this off a
+ * printed sheet, and a misread character costs them a sitting. Shared with
+ * `assignment-seed.ts`, since assignment codes follow the same rule.
+ */
+export function mintCode(): string {
   const alphabet = 'ABCDEFGHJKLMNPQRTUVWXY346789';
   return Array.from(
     { length: 6 },
@@ -226,7 +230,7 @@ export function publish(
   }
 
   assessment.status = 'published';
-  assessment.code = code();
+  assessment.code = mintCode();
   assessment.published_at = new Date().toISOString();
   return { ok: true };
 }

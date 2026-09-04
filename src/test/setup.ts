@@ -6,6 +6,7 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 
 import { clearSitting } from '@/lib/api/sitting-store';
 import { clearAuthToken } from '@/lib/auth/token-store';
+import { resetAssignmentState } from '@/mocks/data/assignment-seed';
 import { resetRunnerState } from '@/mocks/data/runner-seed';
 import { server } from '@/mocks/server';
 
@@ -27,6 +28,7 @@ afterEach(() => {
   // by one test must not be there when the next test verifies a fresh sitting.
   clearSitting();
   resetRunnerState();
+  resetAssignmentState();
 });
 
 afterAll(() => {

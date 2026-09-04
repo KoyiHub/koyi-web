@@ -2,6 +2,7 @@ import type {
   AssessmentStatus,
   AssessmentSubject,
   AssessmentType,
+  AssignmentStatus,
   LearningLevel,
   PerformanceBand,
 } from '@/lib/api/contracts';
@@ -88,4 +89,19 @@ export const ASSESSMENT_STATUS_CLASS: Record<AssessmentStatus, string> = {
   published: 'bg-koyi-band-intermediate-soft text-koyi-primary',
   open: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
   closed: 'bg-koyi-nav-active text-koyi-text',
+};
+
+/** One child's progress through one paper — `not_started → in_progress → finished → graded`. */
+export const ASSIGNMENT_STATUS_LABEL: Record<AssignmentStatus, string> = {
+  not_started: 'Not started',
+  in_progress: 'In progress',
+  finished: 'Finished',
+  graded: 'Graded',
+};
+
+export const ASSIGNMENT_STATUS_CLASS: Record<AssignmentStatus, string> = {
+  not_started: 'bg-koyi-nav-active text-koyi-muted',
+  in_progress: 'bg-koyi-band-intermediate-soft text-koyi-primary',
+  finished: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
+  graded: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
 };

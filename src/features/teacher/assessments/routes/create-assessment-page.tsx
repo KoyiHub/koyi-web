@@ -477,7 +477,7 @@ function PublishStep({
         </button>
         {copied && <p className="text-koyi-success text-xs">Copied</p>}
         <Link
-          to={paths.teacher.assessments.assign}
+          to={paths.teacher.assessments.assignFor(assessmentId)}
           className="text-koyi-primary block text-sm font-medium hover:underline"
         >
           Assign it to students →

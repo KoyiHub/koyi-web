@@ -400,6 +400,14 @@ export const routes: RouteObject[] = [
                           ).AssessmentAnalyticsPage,
                         }),
                       },
+                      {
+                        path: 'roster',
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/roster-page')
+                          ).RosterPage,
+                        }),
+                      },
                     ],
                   },
                 ],

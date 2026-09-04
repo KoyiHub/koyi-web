@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { assignmentStatusSchema } from '@/lib/api/contracts';
+import { assignmentStatusSchema, paginatedSchema } from '@/lib/api/contracts';
 
 /**
  * Assigning a paper and getting its codes to children —
@@ -94,3 +94,42 @@ export const sendLinksResultSchema = z.object({
   ),
 });
 export type SendLinksResult = z.infer<typeof sendLinksResultSchema>;
+
+/* -------------------------------------------------------------------------- */
+/* Who to assign to                                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * A teacher's own classes. `frontend-integration.md` documents `/v1/school/
+ * classes/` for the school-admin surface but not a teacher-scoped
+ * equivalent — this shape is this client's best guess at one, not confirmed
+ * contract. Flag this if the real endpoint turns out different.
+ */
+export const teacherClassSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  student_count: z.number(),
+});
+export type TeacherClass = z.infer<typeof teacherClassSchema>;
+
+export const teacherClassListSchema = z.array(teacherClassSchema);
+
+/**
+ * One row for the individual-student picker. Deliberately lean — this reads
+ * `/v1/teacher/students/`, whose full response still carries the pre-refactor
+ * score-first vocabulary (`level`, `latest_score`, …) that Phase 4 rewrites.
+ * A lax schema just ignores those fields rather than asserting on them here.
+ *
+ * `student_code` (not `student_id`) because that is what the mock currently
+ * serves — a pre-refactor field name Phase 4's rewrite of this endpoint
+ * should reconcile to the guide's `student_id`.
+ */
+export const assignableStudentSchema = z.object({
+  id: z.string(),
+  full_name: z.string(),
+  student_code: z.string(),
+  class_name: z.string(),
+});
+export type AssignableStudent = z.infer<typeof assignableStudentSchema>;
+
+export const assignableStudentListSchema = paginatedSchema(assignableStudentSchema);
