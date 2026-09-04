@@ -1,24 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
 import { paths } from '@/config/paths';
-import { renderRoute, screen } from '@/test/test-utils';
+import { renderRoute, screen, waitFor } from '@/test/test-utils';
 
 /**
  * Teacher password reset request — `frontend-integration.md` §5.1.
- * Link-based: this page's job ends the moment the request succeeds, there
- * is no code to enter.
+ * Code-based, like the school admin flow: the request always confirms,
+ * whether or not the id is registered, then hands off to the reset page.
  */
 describe('TeacherForgotPasswordPage', () => {
-  it('always confirms the request, whether or not the id is registered', async () => {
-    const { user } = renderRoute(paths.login.teacherForgotPassword, { authenticated: false });
+  it('always confirms the request and moves to the code + password step', async () => {
+    const { user, router } = renderRoute(paths.login.teacherForgotPassword, {
+      authenticated: false,
+    });
     await screen.findByRole('heading', { name: 'Forgot your password?' });
 
     await user.type(screen.getByLabelText('Teacher ID'), 'GHS-T-99999');
-    await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+    await user.click(screen.getByRole('button', { name: 'Send reset code' }));
 
-    expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(paths.login.teacherResetPassword);
+    });
     expect(
-      screen.getByText(/If that Teacher ID is registered, we've emailed a link/),
+      await screen.findByRole('heading', { name: 'Choose a new password' }),
     ).toBeInTheDocument();
   });
 });

@@ -37,9 +37,9 @@ export function useTeacherLogin() {
 }
 
 /**
- * Password reset — link/token based, not the school admin's OTP-code flow.
- * The request step always resolves, so the form can never be used to
- * discover which teacher ids exist.
+ * Password reset — code-based, like the school admin flow. The request step
+ * always resolves, so the form can never be used to discover which teacher
+ * ids exist.
  */
 export function useRequestTeacherPasswordReset() {
   return useMutation({
@@ -54,11 +54,21 @@ export function useRequestTeacherPasswordReset() {
 
 export function useConfirmTeacherPasswordReset() {
   return useMutation({
-    mutationFn: (input: { token: string; password: string }) =>
+    mutationFn: (input: {
+      teacherId: string;
+      code: string;
+      password: string;
+      passwordConfirm: string;
+    }) =>
       api.post(
         teacherAuthEndpoints.resetPasswordConfirm,
         confirmTeacherPasswordResetResponseSchema,
-        input,
+        {
+          teacher_id: input.teacherId,
+          code: input.code,
+          password: input.password,
+          password_confirm: input.passwordConfirm,
+        },
       ),
   });
 }

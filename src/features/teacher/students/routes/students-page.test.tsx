@@ -11,27 +11,14 @@ describe('StudentsPage', () => {
     expect(screen.getByText('Fatima Bello')).toBeInTheDocument();
   });
 
-  it('offers a level filter for every band plus everyone', async () => {
-    renderRoute('/teacher/students');
-    await screen.findByText('Amina Yusuf');
-
-    for (const label of ['Everyone', 'Strong', 'Intermediate', 'Struggling', 'Not yet assessed']) {
-      expect(screen.getByRole('button', { name: new RegExp(`^${label}`) })).toBeInTheDocument();
-    }
-  });
-
-  it('narrows the roster when a level is chosen', async () => {
+  it('narrows the roster with the search box', async () => {
     const { user } = renderRoute('/teacher/students');
     await screen.findByText('Amina Yusuf');
 
-    const struggling = screen.getByRole('button', { name: /^Struggling/ });
-    await user.click(struggling);
+    await user.type(screen.getByRole('searchbox', { name: 'Search students' }), 'Fatima');
 
-    expect(struggling).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('button', { name: /^Everyone/ })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
+    expect(screen.getByText('Fatima Bello')).toBeInTheDocument();
+    expect(screen.queryByText('Amina Yusuf')).not.toBeInTheDocument();
   });
 
   it('links each row to that child’s learning profile', async () => {

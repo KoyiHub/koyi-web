@@ -54,12 +54,12 @@ async function assignedChildrenCard(): Promise<HTMLElement> {
 }
 
 describe('AssignAssessmentPage', () => {
-  it('assigns a whole class and lists the assigned children', async () => {
+  it('assigns everyone the teacher teaches and lists the assigned children', async () => {
     const assessment = seedPublishedAssessment();
     const { user } = renderRoute(paths.teacher.assessments.assignFor(assessment.id));
 
     await screen.findByRole('heading', { name: `Assign "${assessment.name}"` });
-    await user.click(await screen.findByRole('checkbox', { name: /Primary 4/ }));
+    await user.click(screen.getByRole('radio', { name: 'Everyone I teach' }));
     await user.click(screen.getByRole('button', { name: 'Assign' }));
 
     expect(await screen.findByText('Assigned 32 students.')).toBeInTheDocument();

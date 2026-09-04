@@ -7,25 +7,24 @@ import { studentListSchema } from '@/features/teacher/students/api/student.schem
 import { api } from '@/lib/api/client';
 
 export interface StudentListFilters {
-  search: string;
-  /** `all`, or a `LearningLevel`. */
-  level: string;
   page: number;
 }
 
-/** The class roster. Also feeds the assessment builder's student picker. */
+/**
+ * The class roster — §5.6, `Paginated`, no documented filters. Also feeds
+ * the assessment builder's individual-student picker. Search is applied
+ * client-side over the fetched page rather than an undocumented `?search=`
+ * param — a homeroom class is small enough that this stays complete for a
+ * one-page roster.
+ */
 export const studentListQuery = (filters: StudentListFilters) =>
   queryOptions({
     queryKey: teacherKeys.studentList(filters),
-    queryFn: ({ signal }) => {
-      const search = new URLSearchParams({ page: String(filters.page) });
-      if (filters.search) search.set('search', filters.search);
-      if (filters.level !== 'all') search.set('level', filters.level);
-
-      return api.get(`${teacherEndpoints.students.list}?${search.toString()}`, studentListSchema, {
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.students.list, studentListSchema, {
+        params: { page: filters.page },
         signal,
-      });
-    },
+      }),
     staleTime: 60_000,
     placeholderData: (previous) => previous,
   });

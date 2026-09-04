@@ -9,15 +9,24 @@
 const BASE = '/v1/teacher';
 
 export const teacherEndpoints = {
-  // Distinct from `teacherAuthEndpoints.me` (@/features/auth/api/endpoints):
-  // that is the lightweight auth check, this is the full profile the
-  // dashboard shell renders (school name, class, student count).
-  profile: `${BASE}/profile/`,
-
-  /** Dashboard and the drill-downs opened from its cards. */
+  /**
+   * The one dashboard call — §5.1. There is no separate `/v1/teacher/
+   * profile/`; the shell reads identity/class from here (`teacher_name`,
+   * `school_class`) plus `teacherAuthEndpoints.me` for the lightweight auth
+   * check.
+   */
   dashboard: `${BASE}/dashboard/`,
+  /**
+   * `activity`/`insights`/`class-performance` below have no anchor anywhere
+   * in §5 — no teacher-scoped activity feed, insights list or class-wide
+   * trend endpoint is documented. Left exactly as built (their pages are
+   * flagged known-fake) per an explicit scope decision — see
+   * refactor-plan.md's contract-realignment writeup. `attention` was the
+   * fourth such phantom endpoint; it's removed here because the attention
+   * page DOES have a real answer (`assessments.analyticsRoster`, §5.5) and
+   * has been repointed to it.
+   */
   activity: `${BASE}/activity/`,
-  attention: `${BASE}/attention/`,
   insights: `${BASE}/insights/`,
   classPerformance: `${BASE}/class-performance/`,
 
@@ -80,8 +89,6 @@ export const teacherEndpoints = {
     skills: (studentId: string) => `${BASE}/students/${studentId}/skills/`,
     lessonPlan: (studentId: string) => `${BASE}/students/${studentId}/lesson-plan/`,
   },
-
-  classes: `${BASE}/classes/`,
 
   groups: {
     list: `${BASE}/groups/`,

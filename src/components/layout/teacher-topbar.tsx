@@ -4,7 +4,7 @@ import { Link } from 'react-router';
 import { InitialsAvatar } from '@/components/ui/avatar';
 import { BellIcon, PlayIcon } from '@/components/ui/icons';
 import { paths } from '@/config/paths';
-import { teacherProfileQuery } from '@/features/teacher/api/queries';
+import { teacherDashboardQuery } from '@/features/teacher/dashboard/api/queries';
 
 interface TeacherTopbarProps {
   onOpenMenu: () => void;
@@ -26,7 +26,7 @@ interface TeacherTopbarProps {
  * entry point to the profile screen.
  */
 export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
-  const { data: profile } = useQuery(teacherProfileQuery());
+  const { data: dashboard } = useQuery(teacherDashboardQuery());
 
   return (
     <header className="border-koyi-border bg-koyi-card flex h-16 shrink-0 items-center gap-3 border-b px-4 lg:px-8">
@@ -70,7 +70,7 @@ export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
           title="Teacher profile"
           className="focus-visible:outline-koyi-primary rounded-full focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          <InitialsAvatar name={profile?.full_name ?? 'Koyi Teacher'} />
+          <InitialsAvatar name={dashboard?.teacher_name ?? 'Koyi Teacher'} />
         </Link>
       </div>
     </header>

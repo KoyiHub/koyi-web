@@ -36,13 +36,21 @@ export const resultsRowSchema = z.object({
   full_name: z.string(),
   school_class: z.string(),
   status: assignmentStatusSchema,
+  items_attempted: z.number(),
+  items_correct: z.number(),
   /** Decimal string like the rest of the API's percentages. `null` before submission. */
   percentage: z.string().nullable(),
-  literacy_level: flnLevelSchema.nullable(),
-  numeracy_level: flnLevelSchema.nullable(),
+  score: z.string().nullable(),
 });
 export type ResultsRow = z.infer<typeof resultsRowSchema>;
-export const resultsListSchema = z.array(resultsRowSchema);
+
+/** `{assessment_id, assessment_name, rows}` — an object, not a bare array. */
+export const resultsSchema = z.object({
+  assessment_id: z.string(),
+  assessment_name: z.string(),
+  rows: z.array(resultsRowSchema),
+});
+export type Results = z.infer<typeof resultsSchema>;
 
 /** Every level keyed 1–5, even at zero — a chart that drops empty levels reads narrower than the class actually is. */
 export const levelDistributionSchema = z.object({

@@ -184,22 +184,21 @@ export function AssessmentAnalyticsPage() {
         subtitle="Progress, score and level — 'not yet submitted' is normal, not an error."
       >
         {results.isPending && <PageSpinner />}
-        {results.data?.length === 0 && (
+        {results.data?.rows.length === 0 && (
           <p className="text-koyi-muted text-sm">Nobody is assigned to this paper yet.</p>
         )}
-        {results.data && results.data.length > 0 && (
+        {results.data && results.data.rows.length > 0 && (
           <DataTable
             caption="Results by student"
             columns={[
               { key: 'student', label: 'Student' },
               { key: 'status', label: 'Status' },
+              { key: 'items', label: 'Items correct' },
               { key: 'score', label: 'Score', align: 'right' },
-              { key: 'literacy', label: 'Literacy' },
-              { key: 'numeracy', label: 'Numeracy' },
               { key: 'open', label: 'Open', align: 'right', labelHidden: true },
             ]}
           >
-            {results.data.map((row) => (
+            {results.data.rows.map((row) => (
               <tr key={row.student_id} className="hover:bg-koyi-surface/60">
                 <td className="px-5 py-3">
                   <p className="text-koyi-text font-semibold">{row.full_name}</p>
@@ -212,14 +211,11 @@ export function AssessmentAnalyticsPage() {
                     {ASSIGNMENT_STATUS_LABEL[row.status]}
                   </span>
                 </td>
+                <td className="text-koyi-muted px-5 py-3">
+                  {row.items_correct} / {row.items_attempted}
+                </td>
                 <td className="text-koyi-text px-5 py-3 text-right font-bold">
                   {row.percentage ? `${row.percentage}%` : '—'}
-                </td>
-                <td className="text-koyi-muted px-5 py-3">
-                  {row.literacy_level ? levelLabel(row.literacy_level) : '—'}
-                </td>
-                <td className="text-koyi-muted px-5 py-3">
-                  {row.numeracy_level ? levelLabel(row.numeracy_level) : '—'}
                 </td>
                 <td className="px-5 py-3 text-right">
                   {(row.status === 'finished' || row.status === 'graded') && (

@@ -12,7 +12,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
 import { paths } from '@/config/paths';
 import { assessmentsQuery } from '@/features/teacher/assessments/api/queries';
-import { ASSESSMENT_STATUS_CLASS, ASSESSMENT_STATUS_LABEL } from '@/lib/api/format';
+import { ASSESSMENT_STATUS_CLASS, ASSESSMENT_STATUS_LABEL, formatDate } from '@/lib/api/format';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 
 /**
@@ -73,9 +73,9 @@ export function AssessmentLibraryPage() {
               <div>
                 <p className="text-koyi-text text-sm font-medium">{assessment.name}</p>
                 <p className="text-koyi-muted mt-0.5 text-xs">
-                  {assessment.sections.length} section{assessment.sections.length === 1 ? '' : 's'}{' '}
-                  · {assessment.question_count} question{assessment.question_count === 1 ? '' : 's'}
-                  {assessment.code && ` · Code ${assessment.code}`}
+                  {assessment.sections.length} section{assessment.sections.length === 1 ? '' : 's'}
+                  {assessment.code && ` · Code ${assessment.code}`} · Created{' '}
+                  {formatDate(assessment.created_at)}
                 </p>
               </div>
               <span

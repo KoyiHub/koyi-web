@@ -392,9 +392,10 @@ export function toResultsRow(result: StudentResult) {
     full_name: result.fullName,
     school_class: result.className,
     status: result.status,
+    items_attempted: result.itemsAttempted,
+    items_correct: result.itemsCorrect,
     percentage: result.percentage === null ? null : result.percentage.toFixed(2),
-    literacy_level: result.levels.literacy ?? null,
-    numeracy_level: result.levels.numeracy ?? null,
+    score: result.status === 'not_started' ? null : result.itemsCorrect.toFixed(2),
   };
 }
 

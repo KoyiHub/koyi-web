@@ -27,19 +27,22 @@ import {
   assessmentQuery,
   assignableStudentsQuery,
   assignmentsQuery,
-  classesQuery,
 } from '@/features/teacher/assessments/api/queries';
 import { ApiError } from '@/lib/api/errors';
 import { ASSIGNMENT_STATUS_CLASS, ASSIGNMENT_STATUS_LABEL } from '@/lib/api/format';
 
 /**
  * Assigning a published paper to students — `frontend-integration.md` §5.4,
- * §7.4. Three ways of saying who, because teachers think in classes far more
- * often than in individuals; assigning twice is a deliberate no-op, so the
- * result banner only speaks up when the created count is lower than the
- * selection.
+ * §7.4. Two ways of saying who: individually, or everyone. There is no
+ * "by class" mode — §5.6 confirms a teacher has exactly one homeroom class
+ * (`Teacher.school_class` is a single field, not a list), so "assign my
+ * class" and "assign everyone I teach" are the same set; a separate mode
+ * would also need class UUIDs the teacher-scoped student list doesn't
+ * carry (`school_class` there is a plain string, §5.6). Assigning twice is
+ * a deliberate no-op, so the result banner only speaks up when the created
+ * count is lower than the selection.
  */
-type Mode = 'class' | 'individual' | 'everyone';
+type Mode = 'individual' | 'everyone';
 
 export function AssignAssessmentPage() {
   const [searchParams] = useSearchParams();
@@ -51,15 +54,13 @@ export function AssignAssessmentPage() {
     enabled: Boolean(assessmentId),
   });
 
-  const [mode, setMode] = useState<Mode>('class');
-  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [mode, setMode] = useState<Mode>('individual');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [assignResult, setAssignResult] = useState<string | null>(null);
   const [linkResult, setLinkResult] = useState<SendLinksResult | null>(null);
 
-  const classes = useQuery({ ...classesQuery(), enabled: mode === 'class' });
   const pickerStudents = useQuery({
     ...assignableStudentsQuery({ search, page }),
     enabled: mode === 'individual',
@@ -93,11 +94,7 @@ export function AssignAssessmentPage() {
   function handleAssign() {
     setAssignResult(null);
     const input =
-      mode === 'everyone'
-        ? { all_my_students: true }
-        : mode === 'class'
-          ? { class_ids: selectedClassIds }
-          : { student_ids: selectedStudentIds };
+      mode === 'everyone' ? { all_my_students: true } : { student_ids: selectedStudentIds };
 
     assign.mutate(input, {
       onSuccess: (created) => {
@@ -109,7 +106,6 @@ export function AssignAssessmentPage() {
               ? `Assigned ${String(created.length)} of ${String(selectedCount)} selected — the rest were already assigned, outside your school, or disabled.`
               : `Assigned ${String(created.length)} student${created.length === 1 ? '' : 's'}.`,
         );
-        setSelectedClassIds([]);
         setSelectedStudentIds([]);
       },
     });
@@ -151,41 +147,11 @@ export function AssignAssessmentPage() {
             setAssignResult(null);
           }}
           options={[
-            { value: 'class', label: 'By class' },
             { value: 'individual', label: 'Individual students' },
             { value: 'everyone', label: 'Everyone I teach' },
           ]}
           className="mb-5"
         />
-
-        {mode === 'class' && (
-          <div className="space-y-2">
-            {classes.isPending && <PageSpinner />}
-            {classes.data?.map((schoolClass) => (
-              <label
-                key={schoolClass.id}
-                className="border-koyi-border flex items-center justify-between gap-3 rounded-md border px-4 py-3 text-sm"
-              >
-                <span className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selectedClassIds.includes(schoolClass.id)}
-                    onChange={(event) => {
-                      setSelectedClassIds((current) =>
-                        event.target.checked
-                          ? [...current, schoolClass.id]
-                          : current.filter((id) => id !== schoolClass.id),
-                      );
-                    }}
-                    className="size-4"
-                  />
-                  <span className="text-koyi-text font-semibold">{schoolClass.name}</span>
-                </span>
-                <span className="text-koyi-muted">{schoolClass.student_count} students</span>
-              </label>
-            ))}
-          </div>
-        )}
 
         {mode === 'individual' && (
           <div className="space-y-3">
@@ -218,7 +184,7 @@ export function AssignAssessmentPage() {
                       />
                       <span className="text-koyi-text font-semibold">{student.full_name}</span>
                       <span className="text-koyi-muted">
-                        {student.student_code} · {student.class_name}
+                        {student.student_id} · {student.school_class}
                       </span>
                     </label>
                   ))}
@@ -248,10 +214,7 @@ export function AssignAssessmentPage() {
         <Button
           onClick={handleAssign}
           isLoading={assign.isPending}
-          disabled={
-            (mode === 'class' && selectedClassIds.length === 0) ||
-            (mode === 'individual' && selectedStudentIds.length === 0)
-          }
+          disabled={mode === 'individual' && selectedStudentIds.length === 0}
           className="mt-5"
         >
           Assign

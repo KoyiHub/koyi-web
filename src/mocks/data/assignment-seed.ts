@@ -4,29 +4,24 @@
  * is a deliberate no-op and withdrawal only touches one paper's roster.
  *
  * The mock world currently has one class (`CLASS_NAME` in `teacher-seed.ts`),
- * so `class_ids` and `all_my_students` resolve to the same 32 children —
- * enough to exercise both assignment modes without a second class fixture.
+ * so `all_my_students` resolves to all 32 children — enough to exercise
+ * "everyone I teach" without a second class fixture. There is no "by class"
+ * assignment mode: §5.6 confirms a teacher has exactly one homeroom class.
  */
 import { mintCode } from '@/mocks/data/assessment-seed';
-import { CLASS_NAME, students } from '@/mocks/data/teacher-seed';
+import { students } from '@/mocks/data/teacher-seed';
 
 export const MOCK_CLASS_ID = 'cls-primary-4a';
 
-export interface TeacherClass {
-  id: string;
-  name: string;
-  student_count: number;
-}
-
-export function listClasses(): TeacherClass[] {
-  return [{ id: MOCK_CLASS_ID, name: CLASS_NAME, student_count: students.length }];
-}
-
 export interface AssignableStudent {
   id: string;
+  student_id: string;
+  first_name: string;
+  last_name: string;
   full_name: string;
-  student_code: string;
-  class_name: string;
+  date_of_birth: string;
+  gender: 'female' | 'male';
+  school_class: string;
 }
 
 export function listAssignableStudents(search: string): AssignableStudent[] {
@@ -34,13 +29,17 @@ export function listAssignableStudents(search: string): AssignableStudent[] {
   return students
     .filter(
       (student) =>
-        !term || `${student.full_name} ${student.student_code}`.toLowerCase().includes(term),
+        !term || `${student.full_name} ${student.student_id}`.toLowerCase().includes(term),
     )
     .map((student) => ({
       id: student.id,
+      student_id: student.student_id,
+      first_name: student.first_name,
+      last_name: student.last_name,
       full_name: student.full_name,
-      student_code: student.student_code,
-      class_name: student.class_name,
+      date_of_birth: student.date_of_birth,
+      gender: student.gender,
+      school_class: student.class_name,
     }));
 }
 

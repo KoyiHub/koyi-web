@@ -13,7 +13,6 @@ import {
 import {
   assignStudents,
   getAssignments,
-  listClasses,
   sendGuardianLinks,
   type StoredAssignment,
   withdrawAssignment,
@@ -30,16 +29,8 @@ import {
   toStudentResponses,
 } from '@/mocks/data/results-seed';
 import { skills } from '@/mocks/data/taxonomy-seed';
-import { activity, classPerformance, priorityCounts } from '@/mocks/data/teacher-activity-seed';
-import {
-  attentionRows,
-  bandLabels,
-  dashboard,
-  insights,
-  levelCounts,
-  students,
-  teacherProfile,
-} from '@/mocks/data/teacher-seed';
+import { activity, classPerformance } from '@/mocks/data/teacher-activity-seed';
+import { dashboard, insights, students } from '@/mocks/data/teacher-seed';
 
 /**
  * MSW handlers standing in for the Teacher Portal API.
@@ -145,8 +136,6 @@ function toAssignmentRow(assignment: StoredAssignment) {
 const BASE = '*/api/v1/teacher';
 
 export const teacherHandlers = [
-  http.get(`${BASE}/profile/`, () => HttpResponse.json(teacherProfile)),
-
   /* ---------------------------------------------------------------------- */
   /* Dashboard and drill-downs                                              */
   /* ---------------------------------------------------------------------- */
@@ -159,23 +148,6 @@ export const teacherHandlers = [
     const filtered = type ? activity.filter((item) => item.type === type) : activity;
 
     return HttpResponse.json(paginate(filtered, url, 8));
-  }),
-
-  http.get(`${BASE}/attention/`, ({ request }) => {
-    const url = new URL(request.url);
-    const priority = filterValue(url, 'priority');
-    const term = searchTerm(url);
-
-    const filtered = attentionRows.filter((row) => {
-      if (priority && row.priority !== priority) return false;
-      if (term && !matches(`${row.full_name} ${row.identified_issue}`, term)) return false;
-      return true;
-    });
-
-    return HttpResponse.json({
-      ...paginate(filtered, url, 8),
-      priority_counts: priorityCounts,
-    });
   }),
 
   http.get(`${BASE}/insights/`, () => HttpResponse.json(insights)),
@@ -485,12 +457,6 @@ export const teacherHandlers = [
   ),
 
   /* ---------------------------------------------------------------------- */
-  /* Classes                                                                */
-  /* ---------------------------------------------------------------------- */
-
-  http.get(`${BASE}/classes/`, () => HttpResponse.json(listClasses())),
-
-  /* ---------------------------------------------------------------------- */
   /* Results, analytics and review — frontend-integration.md §5.5           */
   /* ---------------------------------------------------------------------- */
 
@@ -498,7 +464,11 @@ export const teacherHandlers = [
     const assessment = findStored(String(params.assessmentId));
     if (!assessment) return notFound('That assessment does not exist.');
     const results = getResults(assessment.id);
-    return HttpResponse.json((results?.students ?? []).map(toResultsRow));
+    return HttpResponse.json({
+      assessment_id: assessment.id,
+      assessment_name: assessment.name,
+      rows: (results?.students ?? []).map(toResultsRow),
+    });
   }),
 
   http.get(`${BASE}/assessments/:assessmentId/results/:studentId/responses/`, ({ params }) => {
@@ -560,33 +530,31 @@ export const teacherHandlers = [
   /* Students                                                               */
   /* ---------------------------------------------------------------------- */
 
+  /**
+   * §5.6 — Paginated, no documented filters. `search` is still accepted
+   * (harmless, and the assign-picker sends it) but the students page itself
+   * filters client-side, matching the documented contract.
+   */
   http.get(`${BASE}/students/`, ({ request }) => {
     const url = new URL(request.url);
     const term = searchTerm(url);
-    const level = filterValue(url, 'level');
 
-    const filtered = students.filter((student) => {
-      if (term && !matches(`${student.full_name} ${student.student_code}`, term)) return false;
-      if (level && student.level !== level) return false;
-      return true;
-    });
+    const filtered = students.filter(
+      (student) => !term || matches(`${student.full_name} ${student.student_id}`, term),
+    );
 
     const rows = filtered.map((student) => ({
       id: student.id,
+      student_id: student.student_id,
+      first_name: student.first_name,
+      last_name: student.last_name,
       full_name: student.full_name,
-      student_code: student.student_code,
-      class_name: student.class_name,
-      level: student.level,
-      level_label: bandLabels[student.level],
-      avatar_url: student.avatar_url,
-      latest_score: student.latest_score,
-      last_assessed: student.last_assessed,
-      last_assessed_label: student.last_assessed_label,
-      primary_gap: student.primary_gap,
-      needs_attention: student.needs_attention,
+      date_of_birth: student.date_of_birth,
+      gender: student.gender,
+      school_class: student.class_name,
     }));
 
-    return HttpResponse.json({ ...paginate(rows, url, 10), level_counts: levelCounts });
+    return HttpResponse.json(paginate(rows, url, 25));
   }),
 
   http.get(`${BASE}/students/:studentId/skills/`, ({ params }) => {
@@ -597,19 +565,5 @@ export const teacherHandlers = [
     const studentSkills = computeStudentSkills(studentId);
     if (!studentSkills) return notFound('This child has not sat an assessment yet.');
     return HttpResponse.json(studentSkills);
-  }),
-
-  http.get(`${BASE}/students/:studentId/`, ({ params }) => {
-    const student = students.find((entry) => entry.id === String(params.studentId));
-    if (!student) return notFound('That student is not in your class.');
-
-    return HttpResponse.json({
-      id: student.id,
-      full_name: student.full_name,
-      student_code: student.student_code,
-      class_name: student.class_name,
-      level: student.level,
-      avatar_url: student.avatar_url,
-    });
   }),
 ];

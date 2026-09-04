@@ -77,8 +77,9 @@ export const assessmentSchema = z.object({
   opens_at: z.string().nullable(),
   closes_at: z.string().nullable(),
   published_at: z.string().nullable(),
-  question_count: z.number(),
+  teacher_name: z.string(),
   sections: z.array(sectionSchema),
+  created_at: z.string(),
 });
 export type Assessment = z.infer<typeof assessmentSchema>;
 

@@ -3,32 +3,34 @@ import { describe, expect, it } from 'vitest';
 import { paths } from '@/config/paths';
 import { renderRoute, screen, waitFor } from '@/test/test-utils';
 
-const VALID_TOKEN = 'mock-teacher-reset-token';
-
 /**
- * Where a teacher's emailed reset link lands — `frontend-integration.md`
- * §5.1. The token travels in the URL; there is no code-entry step.
+ * Where the teacher password reset flow lands — `frontend-integration.md`
+ * §5.1. Code-based: code and new password are entered together and spent
+ * in one `confirm` call, no separate verify step and no `reset_token`.
  */
 describe('TeacherResetPasswordPage', () => {
-  it("rejects a missing token rather than showing a form that can't work", async () => {
+  it("rejects a missing teacher id rather than showing a form that can't work", async () => {
     renderRoute(paths.login.teacherResetPassword, { authenticated: false });
 
-    expect(await screen.findByText("This link isn't valid")).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Request a new link' })).toHaveAttribute(
+    expect(await screen.findByRole('heading', { name: 'Request a new code' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Request a new code' })).toHaveAttribute(
       'href',
       paths.login.teacherForgotPassword,
     );
   });
 
-  it('resets the password with a valid token and returns to sign in', async () => {
-    const { user, router } = renderRoute(
-      `${paths.login.teacherResetPassword}?token=${VALID_TOKEN}`,
-      {
-        authenticated: false,
-      },
-    );
+  it('resets the password with a valid code and returns to sign in', async () => {
+    const { user, router } = renderRoute(paths.login.teacherForgotPassword, {
+      authenticated: false,
+    });
+    await screen.findByRole('heading', { name: 'Forgot your password?' });
+
+    await user.type(screen.getByLabelText('Teacher ID'), 'GHS-T-00007');
+    await user.click(screen.getByRole('button', { name: 'Send reset code' }));
     await screen.findByRole('heading', { name: 'Choose a new password' });
 
+    const boxes = screen.getAllByRole('textbox');
+    await user.type(boxes[0]!, '123456');
     await user.type(screen.getByLabelText('New password'), 'a-new-password1');
     await user.click(screen.getByRole('button', { name: 'Reset password' }));
 
@@ -38,17 +40,19 @@ describe('TeacherResetPasswordPage', () => {
     expect(await screen.findByText(/Password reset/)).toBeInTheDocument();
   });
 
-  it('shows an error for an expired or unknown token', async () => {
-    const { user } = renderRoute(`${paths.login.teacherResetPassword}?token=not-a-real-token`, {
-      authenticated: false,
-    });
+  it('shows an error for an incorrect code', async () => {
+    const { user } = renderRoute(paths.login.teacherForgotPassword, { authenticated: false });
+    await screen.findByRole('heading', { name: 'Forgot your password?' });
+
+    await user.type(screen.getByLabelText('Teacher ID'), 'GHS-T-00007');
+    await user.click(screen.getByRole('button', { name: 'Send reset code' }));
     await screen.findByRole('heading', { name: 'Choose a new password' });
 
+    const boxes = screen.getAllByRole('textbox');
+    await user.type(boxes[0]!, '000000');
     await user.type(screen.getByLabelText('New password'), 'a-new-password1');
     await user.click(screen.getByRole('button', { name: 'Reset password' }));
 
-    expect(
-      await screen.findByText('That reset link has expired. Request a new one.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('That code is incorrect or has expired.')).toBeInTheDocument();
   });
 });

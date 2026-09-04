@@ -20,48 +20,46 @@ import {
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { StatBar } from '@/components/ui/stat-bar';
 import { paths } from '@/config/paths';
-import {
-  BAND_BAR_CLASS,
-  PRIORITY_CHIP_CLASS,
-  PRIORITY_LABEL,
-  SUBJECT_LABEL,
-} from '@/features/teacher/api/format';
-import { teacherProfileQuery } from '@/features/teacher/api/queries';
+import { BAND_BAR_CLASS, formatDate } from '@/features/teacher/api/format';
 import { DataTable } from '@/features/teacher/components/data-table';
 import { StatCard } from '@/features/teacher/components/stat-card';
 import { teacherDashboardQuery } from '@/features/teacher/dashboard/api/queries';
-import { cn } from '@/lib/utils/cn';
-
-const GREETING: Record<'morning' | 'afternoon' | 'evening', string> = {
-  morning: 'Good morning',
-  afternoon: 'Good afternoon',
-  evening: 'Good evening',
-};
+import { DOMAIN_LABEL } from '@/lib/fln/level';
 
 const ATTENTION_COLUMNS = [
   { key: 'student', label: 'Student' },
-  { key: 'priority', label: 'Priority' },
-  { key: 'issue', label: 'Identified issue' },
-  { key: 'action', label: 'Recommended action' },
+  { key: 'gap', label: 'Primary gap' },
+  { key: 'assessed', label: 'Last assessed' },
   { key: 'open', label: 'Open profile', align: 'right' as const, labelHidden: true },
 ];
 
+const DISTRIBUTION_BANDS = ['strong', 'intermediate', 'struggling', 'not_yet_assessed'] as const;
+
+const DISTRIBUTION_LABEL: Record<(typeof DISTRIBUTION_BANDS)[number], string> = {
+  strong: 'Strong',
+  intermediate: 'Intermediate',
+  struggling: 'Struggling',
+  not_yet_assessed: 'Not yet assessed',
+};
+
+const DISTRIBUTION_BAR_CLASS: Record<(typeof DISTRIBUTION_BANDS)[number], string> = {
+  strong: BAND_BAR_CLASS.strong,
+  intermediate: BAND_BAR_CLASS.intermediate,
+  struggling: BAND_BAR_CLASS.struggling,
+  not_yet_assessed: 'bg-koyi-border',
+};
+
 /**
- * The Teacher landing screen.
+ * The Teacher landing screen — `frontend-integration.md` §5.1, one call.
  *
- * Every card is a doorway: the distribution opens the class report, the
- * insight opens the full insight list, the attention table opens the full
- * attention list. Nothing on this page is a dead end except the one quick
- * action that is deliberately not wired up yet.
- *
- * No figure here is computed in the browser — counts, percentages, bands and
- * movement captions all arrive from the API already decided.
+ * `class_distribution` is the **one place** literacy and numeracy collapse
+ * into a single band per child (their weaker domain) — a declared exception
+ * to §9, used nowhere else in this app. There is no trend arrow: the doc is
+ * explicit that a mocked-up "12 ↑2%" was rejected rather than faked, since
+ * nothing here stores a historical snapshot to diff against.
  */
 export function TeacherDashboardPage() {
-  const profile = useQuery(teacherProfileQuery());
   const dashboard = useQuery(teacherDashboardQuery());
-
-  const teacherName = profile.data ? `${profile.data.title} ${profile.data.short_name}` : 'there';
 
   return (
     <div className="space-y-6">
@@ -81,17 +79,18 @@ export function TeacherDashboardPage() {
           <header className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-0">
               <h1 className="text-koyi-text font-display lg:text-koyi-page-title text-3xl leading-tight font-extrabold tracking-tight text-balance">
-                {GREETING[dashboard.data.time_of_day]}, {teacherName}{' '}
-                <span aria-hidden="true">👋</span>
+                Hello, {dashboard.data.teacher_name} <span aria-hidden="true">👋</span>
               </h1>
               <p className="text-koyi-muted mt-2 text-sm">
-                Here is where {dashboard.data.class_name} stands today · {dashboard.data.term_label}
+                {dashboard.data.school_class
+                  ? `Here is where ${dashboard.data.school_class} stands today`
+                  : 'No class assigned yet.'}
               </p>
             </div>
 
             <Link
               to={paths.teacher.assessments.create}
-              className={cn(buttonClasses('primary'), 'shrink-0')}
+              className={buttonClasses('primary') + ' shrink-0'}
             >
               <PlusIcon aria-hidden="true" className="size-4" />
               Create assessment
@@ -101,24 +100,18 @@ export function TeacherDashboardPage() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <StatCard
               label="Total students"
-              value={dashboard.data.stats.total_students.value}
-              caption={dashboard.data.stats.total_students.delta_label}
-              direction={dashboard.data.stats.total_students.delta_direction}
+              value={dashboard.data.total_students}
               Icon={UsersIcon}
             />
             <StatCard
-              label="Assessed this term"
-              value={dashboard.data.stats.assessed.value}
-              caption={dashboard.data.stats.assessed.delta_label}
-              direction={dashboard.data.stats.assessed.delta_direction}
+              label="Assessed"
+              value={dashboard.data.assessed_students}
               Icon={CheckCircleIcon}
               chipClassName="bg-koyi-band-strong-soft text-koyi-band-strong-ink"
             />
             <StatCard
               label="Needing attention"
-              value={dashboard.data.stats.needs_attention.value}
-              caption={dashboard.data.stats.needs_attention.delta_label}
-              direction={dashboard.data.stats.needs_attention.delta_direction}
+              value={dashboard.data.attention_count}
               Icon={AlertCircleIcon}
               chipClassName="bg-koyi-band-struggling-soft text-koyi-band-struggling-ink"
             />
@@ -127,7 +120,7 @@ export function TeacherDashboardPage() {
           <div className="grid gap-4 lg:grid-cols-3">
             <Card
               title="Class distribution"
-              subtitle={`${String(dashboard.data.distribution.assessed_count)} children assessed · ${dashboard.data.distribution.updated_label}`}
+              subtitle={`${String(dashboard.data.assessed_students)} of ${String(dashboard.data.total_students)} children assessed`}
               className="lg:col-span-2"
               action={
                 <Link
@@ -140,15 +133,23 @@ export function TeacherDashboardPage() {
               }
             >
               <div className="space-y-5">
-                {dashboard.data.distribution.segments.map((segment) => (
-                  <StatBar
-                    key={segment.band}
-                    label={segment.label}
-                    valueLabel={`${String(segment.students)} students · ${String(segment.percentage)}%`}
-                    percentage={segment.percentage}
-                    toneClassName={BAND_BAR_CLASS[segment.band]}
-                  />
-                ))}
+                {DISTRIBUTION_BANDS.map((band) => {
+                  const students = dashboard.data.class_distribution[band];
+                  const percentage =
+                    dashboard.data.total_students > 0
+                      ? (students / dashboard.data.total_students) * 100
+                      : 0;
+
+                  return (
+                    <StatBar
+                      key={band}
+                      label={DISTRIBUTION_LABEL[band]}
+                      valueLabel={`${String(students)} students · ${percentage.toFixed(0)}%`}
+                      percentage={percentage}
+                      toneClassName={DISTRIBUTION_BAR_CLASS[band]}
+                    />
+                  );
+                })}
               </div>
 
               <Link
@@ -164,28 +165,34 @@ export function TeacherDashboardPage() {
               <section className="rounded-koyi-xl from-koyi-primary to-koyi-accent bg-gradient-to-br p-5 text-white">
                 <div className="flex items-center gap-2">
                   <SparklesIcon aria-hidden="true" className="size-5" />
-                  <h2 className="font-display text-base font-bold">AI insights</h2>
+                  <h2 className="font-display text-base font-bold">Insight</h2>
                 </div>
 
-                <p className="mt-4 text-sm leading-relaxed font-bold">
-                  {dashboard.data.ai_insight.headline}
-                </p>
-                <p className="mt-2 text-sm leading-relaxed text-white/85">
-                  {dashboard.data.ai_insight.body}
-                </p>
+                {dashboard.data.insight ? (
+                  <>
+                    <p className="mt-4 text-sm leading-relaxed font-bold">
+                      {DOMAIN_LABEL[dashboard.data.insight.domain]}:{' '}
+                      {dashboard.data.insight.skill_name}
+                    </p>
+                    <p className="mt-2 text-sm leading-relaxed text-white/85">
+                      {dashboard.data.insight.summary}
+                    </p>
 
-                <p className="mt-4 inline-flex items-center rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                  {dashboard.data.ai_insight.focus_skill} ·{' '}
-                  {dashboard.data.ai_insight.affected_students} children
-                </p>
-
-                <Link
-                  to={paths.teacher.insights.aiInsights}
-                  className="text-koyi-primary mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-white text-sm font-bold transition-colors hover:bg-white/90"
-                >
-                  View lesson plan
-                  <ArrowRightIcon aria-hidden="true" className="size-4" />
-                </Link>
+                    {dashboard.data.insight.group_id && (
+                      <Link
+                        to={paths.teacher.students.groupDetail(dashboard.data.insight.group_id)}
+                        className="text-koyi-primary mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-white text-sm font-bold transition-colors hover:bg-white/90"
+                      >
+                        View lesson plan
+                        <ArrowRightIcon aria-hidden="true" className="size-4" />
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <p className="mt-4 text-sm leading-relaxed text-white/85">
+                    Nothing to flag yet — check back once more results are in.
+                  </p>
+                )}
               </section>
 
               <Card title="Quick actions">
@@ -270,7 +277,7 @@ export function TeacherDashboardPage() {
 
           <Card
             title="Students needing attention"
-            subtitle={`${String(dashboard.data.attention.total)} children flagged from the latest results`}
+            subtitle={`${String(dashboard.data.attention_count)} children flagged from the latest results`}
             action={
               <Link
                 to={paths.teacher.insights.attention}
@@ -282,39 +289,24 @@ export function TeacherDashboardPage() {
             }
           >
             <DataTable
-              caption="The children this class is flagging, with the action the report suggests"
+              caption="The children this class is flagging, with their primary gap"
               columns={ATTENTION_COLUMNS}
-              minWidthClassName="min-w-200"
+              minWidthClassName="min-w-160"
             >
-              {dashboard.data.attention.rows.map((row) => (
+              {dashboard.data.students_needing_attention.map((row) => (
                 <tr key={row.student_id}>
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <InitialsAvatar name={row.full_name} />
-                      <div className="min-w-0">
-                        <p className="text-koyi-text truncate font-bold">{row.full_name}</p>
-                        <p className="text-koyi-muted text-xs">{row.student_code}</p>
-                      </div>
+                      <p className="text-koyi-text truncate font-bold">{row.full_name}</p>
                     </div>
                   </td>
 
-                  <td className="px-5 py-4">
-                    <span
-                      className={cn(
-                        'inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold',
-                        PRIORITY_CHIP_CLASS[row.priority],
-                      )}
-                    >
-                      {PRIORITY_LABEL[row.priority]}
-                    </span>
-                  </td>
+                  <td className="text-koyi-text px-5 py-4">{row.primary_gap}</td>
 
-                  <td className="px-5 py-4">
-                    <p className="text-koyi-text">{row.identified_issue}</p>
-                    <p className="text-koyi-muted text-xs">{SUBJECT_LABEL[row.subject]}</p>
+                  <td className="text-koyi-muted px-5 py-4 text-xs">
+                    {formatDate(row.last_assessed_at)}
                   </td>
-
-                  <td className="text-koyi-text max-w-72 px-5 py-4">{row.recommended_action}</td>
 
                   <td className="px-5 py-4 text-right">
                     <Link

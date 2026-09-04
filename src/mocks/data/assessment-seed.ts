@@ -15,13 +15,14 @@ import type {
   Section,
 } from '@/features/teacher/assessments/api/assessment.schema';
 import { findSubskillSeed } from '@/mocks/data/taxonomy-seed';
+import { TEACHER_NAME } from '@/mocks/data/teacher-seed';
 
 export interface StoredSection extends Section {
   covers: string[];
   questions: AuthoredQuestion[];
 }
 
-export interface StoredAssessment extends Omit<Assessment, 'sections' | 'question_count'> {
+export interface StoredAssessment extends Omit<Assessment, 'sections'> {
   sections: StoredSection[];
 }
 
@@ -60,7 +61,8 @@ export function toAssessment(stored: StoredAssessment): Assessment {
     opens_at: stored.opens_at,
     closes_at: stored.closes_at,
     published_at: stored.published_at,
-    question_count: questionCount(stored),
+    teacher_name: stored.teacher_name,
+    created_at: stored.created_at,
     sections: stored.sections.map((section) => ({
       id: section.id,
       name: section.name,
@@ -100,6 +102,8 @@ export function createAssessment(input: {
     opens_at: input.opens_at,
     closes_at: input.closes_at,
     published_at: null,
+    teacher_name: TEACHER_NAME,
+    created_at: new Date().toISOString(),
     sections: [],
   };
   assessmentStore.unshift(created);

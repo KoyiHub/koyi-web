@@ -43,9 +43,8 @@ export const MOCK_PASSWORD = 'password123';
  */
 export const MOCK_ADMIN_DEVICE_CHECK = false;
 
-/** Tokens the mock password-reset flows accept — a real backend would mint these per request. */
+/** The token the mock school password-reset flow accepts — a real backend would mint one per request. */
 export const MOCK_SCHOOL_RESET_TOKEN = 'mock-school-reset-token';
-export const MOCK_TEACHER_RESET_TOKEN = 'mock-teacher-reset-token';
 
 interface MockSchool {
   id: string;
@@ -222,7 +221,8 @@ export const handlers = [
   }),
 
   /* ---------------------------------------------------------------------- */
-  /* Password reset — school admin (OTP-code, §4.1) and teacher (link, §5.1)*/
+  /* Password reset — school admin (OTP-code, §4.1) and teacher (also       */
+  /* OTP-code, §5.1 — identified by teacher_id, no separate verify step)    */
   /* ---------------------------------------------------------------------- */
 
   // Always 200, whether or not the address is registered — the anti-enumeration rule.
@@ -256,10 +256,12 @@ export const handlers = [
   http.post('*/api/v1/teacher/auth/password/reset/request/', () => new HttpResponse(null)),
 
   http.post('*/api/v1/teacher/auth/password/reset/confirm/', async ({ request }) => {
-    const body = (await request.json()) as { token: string; password: string };
-    if (body.token !== MOCK_TEACHER_RESET_TOKEN) {
+    const body = (await request.json()) as { teacher_id: string; code: string; password: string };
+    if (body.code !== MOCK_VERIFICATION_CODE) {
       return HttpResponse.json(
-        errorEnvelope('validation_error', 'That reset link has expired. Request a new one.'),
+        errorEnvelope('validation_error', 'That code is incorrect or has expired.', {
+          code: ['Invalid verification code.'],
+        }),
         { status: 400 },
       );
     }

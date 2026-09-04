@@ -9,7 +9,7 @@ import { PageSpinner } from '@/components/ui/page-spinner';
 import { paths } from '@/config/paths';
 import { assessmentQuery, coverageQuery } from '@/features/teacher/assessments/api/queries';
 import { CoveragePanel } from '@/features/teacher/assessments/components/coverage-panel';
-import { ASSESSMENT_STATUS_CLASS, ASSESSMENT_STATUS_LABEL } from '@/lib/api/format';
+import { ASSESSMENT_STATUS_CLASS, ASSESSMENT_STATUS_LABEL, formatDate } from '@/lib/api/format';
 import { DOMAIN_LABEL } from '@/lib/fln/level';
 
 /**
@@ -94,6 +94,9 @@ export function AssessmentDetailPage() {
             {data.code}
           </span>
         )}
+        <span className="text-koyi-muted text-xs">
+          By {data.teacher_name} · Created {formatDate(data.created_at)}
+        </span>
       </div>
 
       <div className="border-koyi-border rounded-koyi-md border p-5">

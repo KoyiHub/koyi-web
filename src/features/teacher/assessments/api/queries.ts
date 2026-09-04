@@ -12,12 +12,11 @@ import {
   assignableStudentListSchema,
   assignmentListSchema,
   rosterSchema,
-  teacherClassListSchema,
 } from '@/features/teacher/assessments/api/assignment.schema';
 import {
   analyticsRosterSchema,
   analyticsSchema,
-  resultsListSchema,
+  resultsSchema,
   reviewQueueListSchema,
   studentResponsesSchema,
 } from '@/features/teacher/assessments/api/results.schema';
@@ -41,7 +40,6 @@ export const assessmentKeys = {
   coverage: (id: string) => [...assessmentKeys.all, id, 'coverage'] as const,
   assignments: (id: string) => [...assessmentKeys.all, id, 'assignments'] as const,
   roster: (id: string) => [...assessmentKeys.all, id, 'roster'] as const,
-  classes: () => [...assessmentKeys.all, 'classes'] as const,
   assignableStudents: (params: AssignableStudentParams) =>
     [...assessmentKeys.all, 'assignable-students', params] as const,
   results: (id: string) => [...assessmentKeys.all, id, 'results'] as const,
@@ -125,14 +123,6 @@ export const rosterQuery = (assessmentId: string) =>
       api.get(teacherEndpoints.assessments.roster(assessmentId), rosterSchema, { signal }),
   });
 
-/** The teacher's own classes — for the "whole class" assignment mode. */
-export const classesQuery = () =>
-  queryOptions({
-    queryKey: assessmentKeys.classes(),
-    queryFn: ({ signal }) => api.get(teacherEndpoints.classes, teacherClassListSchema, { signal }),
-    staleTime: 5 * 60_000,
-  });
-
 export interface AssignableStudentParams {
   search?: string | undefined;
   page?: number | undefined;
@@ -159,7 +149,7 @@ export const resultsQuery = (assessmentId: string) =>
   queryOptions({
     queryKey: assessmentKeys.results(assessmentId),
     queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.assessments.results(assessmentId), resultsListSchema, { signal }),
+      api.get(teacherEndpoints.assessments.results(assessmentId), resultsSchema, { signal }),
   });
 
 /** One child's paper, in sitting order, annotated with what happened. */
