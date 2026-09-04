@@ -1,7 +1,6 @@
 import { http, HttpResponse } from 'msw';
 
 import {
-  adminAccount,
   assessments,
   type AssessmentStatus,
   classes,
@@ -16,11 +15,11 @@ import {
 } from '@/mocks/data/school-admin-seed';
 
 /**
- * MSW handlers for the School Portal API — `frontend-integration.md` §4.
- *
- * Writes mutate the in-memory seed so that adding, disabling or transferring
- * something shows up in every list afterwards, exactly as the real API would
- * behave. State resets on reload.
+ * MSW handlers for the School Portal API — `frontend-integration.md` §4,
+ * matched field-for-field so switching to the real backend is a base-URL
+ * change. Writes mutate the in-memory seed so that adding, disabling or
+ * transferring something shows up in every list afterwards, exactly as the
+ * real API would behave. State resets on reload.
  */
 
 /** Mirrors `apps.common.exceptions.api_exception_handler`. */
@@ -39,15 +38,18 @@ function validationError(detail: Record<string, string[]>) {
   );
 }
 
-/** A wrong or expired confirmation code — the message carries the whole story. */
-function invalidCodeError() {
-  const message = 'That code is incorrect or has expired.';
-  return HttpResponse.json(errorEnvelope('validation_error', message, { code: [message] }), {
+/**
+ * A validation failure whose whole story is one sentence — the UI reads
+ * `error.message` directly rather than a per-field `detail` entry, so the
+ * envelope's top-level `message` carries the specific text.
+ */
+function singleMessageError(field: string, message: string) {
+  return HttpResponse.json(errorEnvelope('validation_error', message, { [field]: [message] }), {
     status: 400,
   });
 }
 
-const DEFAULT_PAGE_SIZE = 8;
+const DEFAULT_PAGE_SIZE = 25;
 
 interface Paginated<T> {
   count: number;
@@ -143,6 +145,10 @@ function logActivity(row: Omit<ActivityRow, 'id'>) {
   activityLog.unshift({ id: nextActivityId(), ...row });
 }
 
+function classLabel(classId: string | null): string | null {
+  return classes.find((entry) => entry.id === classId)?.label ?? null;
+}
+
 function seedActivityLog(): ActivityRow[] {
   const rows: ActivityRow[] = [];
 
@@ -157,7 +163,7 @@ function seedActivityLog(): ActivityRow[] {
       school_class: null,
       assessment: null,
       metadata: {},
-      occurred_at: teacher.date_joined,
+      occurred_at: teacher.created_at,
     });
   }
 
@@ -165,14 +171,14 @@ function seedActivityLog(): ActivityRow[] {
     rows.push({
       id: nextActivityId(),
       action: 'class_created',
-      label: `Class created: ${entry.display_name}`,
-      description: `${entry.display_name} was added to the school.`,
+      label: `Class created: ${entry.label}`,
+      description: `${entry.label} was added to the school.`,
       teacher: null,
       student: null,
-      school_class: { id: entry.id, name: entry.display_name },
+      school_class: { id: entry.id, name: entry.label },
       assessment: null,
       metadata: {},
-      occurred_at: entry.created_at,
+      occurred_at: isoNow(),
     });
   }
 
@@ -181,13 +187,13 @@ function seedActivityLog(): ActivityRow[] {
       id: nextActivityId(),
       action: 'student_admitted',
       label: `Student enrolled: ${student.full_name}`,
-      description: `${student.full_name} was enrolled in ${student.class_name}.`,
+      description: `${student.full_name} was enrolled in ${classLabel(student.class_id) ?? 'the school'}.`,
       teacher: null,
       student: { id: student.id, name: student.full_name },
       school_class: null,
       assessment: null,
       metadata: {},
-      occurred_at: student.enrolled_on,
+      occurred_at: student.created_at,
     });
   }
 
@@ -200,12 +206,12 @@ function seedActivityLog(): ActivityRow[] {
     rows.push({
       id: nextActivityId(),
       action,
-      label: `Assessment ${verb}: ${assessment.title}`,
-      description: `${teacher?.full_name ?? 'A teacher'} ${verb} "${assessment.title}" for ${assessment.class_name}.`,
+      label: `Assessment ${verb}: ${assessment.name}`,
+      description: `${teacher?.full_name ?? 'A teacher'} ${verb} "${assessment.name}".`,
       teacher: teacher ? { id: teacher.id, name: teacher.full_name } : null,
       student: null,
       school_class: null,
-      assessment: { id: assessment.id, name: assessment.title },
+      assessment: { id: assessment.id, name: assessment.name },
       metadata: {},
       occurred_at: assessment.created_at,
     });
@@ -214,88 +220,68 @@ function seedActivityLog(): ActivityRow[] {
   return rows.sort((a, b) => b.occurred_at.localeCompare(a.occurred_at));
 }
 
+function isoNow(): string {
+  return new Date().toISOString();
+}
+
 const activityLog: ActivityRow[] = seedActivityLog();
 
 /* -------------------------------------------------------------------------- */
 /* Serializers                                                                */
 /* -------------------------------------------------------------------------- */
 
-function teacherListItem(teacher: SeedTeacher) {
-  const formClass = teacher.classes.find((entry) => entry.is_form_teacher) ?? teacher.classes[0];
+function classResponse(entry: SeedClass) {
+  return {
+    id: entry.id,
+    grade: entry.grade_id,
+    grade_name: entry.grade_name,
+    name: entry.name,
+    label: entry.label,
+  };
+}
 
+function classForId(classId: string | null) {
+  if (!classId) return null;
+  const entry = classes.find((item) => item.id === classId);
+  return entry ? classResponse(entry) : null;
+}
+
+function teacherResponse(teacher: SeedTeacher) {
   return {
     id: teacher.id,
     teacher_id: teacher.teacher_id,
-    full_name: teacher.full_name,
     email: teacher.email,
-    status: teacher.status,
-    class_assigned: formClass?.class_name ?? null,
-    additional_class_count: Math.max(0, teacher.classes.length - 1),
-  };
-}
-
-function teacherDetail(teacher: SeedTeacher) {
-  const created = assessments.filter((assessment) => assessment.created_by === teacher.id);
-  const scored = created.filter((assessment) => assessment.average_score !== null);
-  const studentsReached = teacher.classes.reduce((total, entry) => total + entry.student_count, 0);
-
-  return {
-    ...teacherListItem(teacher),
     first_name: teacher.first_name,
     last_name: teacher.last_name,
-    phone: teacher.phone,
-    qualification: teacher.qualification,
-    subjects: teacher.subjects,
-    date_joined: teacher.date_joined,
-    last_login: teacher.last_login,
-    classes: teacher.classes,
-    stats: {
-      assessments_created: created.length,
-      classes_assigned: teacher.classes.length,
-      students_reached: studentsReached,
-      average_class_score:
-        scored.length > 0
-          ? Math.round(
-              scored.reduce((total, entry) => total + (entry.average_score ?? 0), 0) /
-                scored.length,
-            )
-          : null,
-    },
-    assessments: created,
+    full_name: teacher.full_name,
+    school_class: classForId(teacher.class_id),
+    is_active: teacher.is_active,
+    created_at: teacher.created_at,
+    updated_at: teacher.updated_at,
   };
 }
 
-function studentListItem(student: SeedStudent) {
+function studentResponse(student: SeedStudent) {
   return {
     id: student.id,
     student_id: student.student_id,
-    full_name: student.full_name,
-    age: student.age,
-    class_name: student.class_name,
-    grade_name: student.grade_name,
-    status: student.status,
-  };
-}
-
-function studentDetail(student: SeedStudent) {
-  return {
-    ...studentListItem(student),
     first_name: student.first_name,
     last_name: student.last_name,
+    full_name: student.full_name,
     date_of_birth: student.date_of_birth,
     gender: student.gender,
-    class_id: student.class_id,
-    enrolled_on: student.enrolled_on,
-    guardian: {
-      name: student.guardian_name,
-      phone: student.guardian_phone,
-      email: student.guardian_email,
-      relationship: student.guardian_relationship,
-    },
+    school_class: classForId(student.class_id),
+    guardian_name: student.guardian_name,
+    guardian_phone_number: student.guardian_phone_number,
+    guardian_email: student.guardian_email,
+    guardian_relationship: student.guardian_relationship,
+    is_active: student.is_active,
+    created_at: student.created_at,
+    updated_at: student.updated_at,
   };
 }
 
-function studentFln(student: SeedStudent) {
+function studentFlnResponse(student: SeedStudent) {
   if (!student.fln) return null;
 
   return {
@@ -307,56 +293,28 @@ function studentFln(student: SeedStudent) {
   };
 }
 
-function classListItem(entry: SeedClass) {
-  const classTeachers = teachers
-    .filter((teacher) => teacher.classes.some((item) => item.class_id === entry.id))
-    .map((teacher) => ({
-      id: teacher.id,
-      teacher_id: teacher.teacher_id,
-      full_name: teacher.full_name,
-      email: teacher.email,
-      is_form_teacher: teacher.classes.some(
-        (item) => item.class_id === entry.id && item.is_form_teacher,
-      ),
-    }));
+function assessmentResponse(assessment: (typeof assessments)[number]) {
+  const teacher = teachers.find((entry) => entry.id === assessment.created_by);
 
   return {
-    id: entry.id,
-    name: entry.name,
-    grade_id: entry.grade_id,
-    grade_name: entry.grade_name,
-    display_name: entry.display_name,
-    term: entry.term,
-    room: entry.room,
-    capacity: entry.capacity,
-    student_count: entry.student_count,
-    average_score: entry.average_score,
-    literacy_score: entry.literacy_score,
-    numeracy_score: entry.numeracy_score,
-    teachers: classTeachers,
+    id: assessment.id,
+    name: assessment.name,
+    teacher_name: teacher?.full_name ?? null,
+    code: assessment.code,
+    status: assessment.status,
+    opens_at: assessment.opens_at,
+    closes_at: assessment.closes_at,
+    assigned_count: assessment.assigned_count,
+    graded_count: assessment.graded_count,
+    created_at: assessment.created_at,
   };
-}
-
-function classDetail(entry: SeedClass) {
-  return {
-    ...classListItem(entry),
-    created_at: entry.created_at,
-    students: students.filter((student) => student.class_id === entry.id).map(studentListItem),
-  };
-}
-
-function recountClass(classId: string) {
-  const entry = classes.find((item) => item.id === classId);
-  if (entry)
-    entry.student_count = students.filter((student) => student.class_id === classId).length;
 }
 
 /* -------------------------------------------------------------------------- */
-/* Mutable settings state                                                     */
+/* Mutable profile state                                                     */
 /* -------------------------------------------------------------------------- */
 
 const schoolProfile = { ...school };
-const account = { ...adminAccount };
 
 function currentSession() {
   return sessions.find((entry) => entry.id === schoolProfile.current_session_id) ?? sessions[0]!;
@@ -367,20 +325,11 @@ function profileResponse() {
     id: schoolProfile.id,
     name: schoolProfile.name,
     abbreviation: schoolProfile.abbreviation,
-    location: schoolProfile.location,
     email: schoolProfile.email,
     email_verified: true,
-    phone: schoolProfile.phone,
-    address: schoolProfile.address,
-    logo: null,
-    logo_url: null,
-    motto: schoolProfile.motto,
     class_system: schoolProfile.class_system,
+    logo: null,
     current_session: currentSession(),
-    current_term: schoolProfile.current_term,
-    term_starts_on: schoolProfile.term_starts_on,
-    term_ends_on: schoolProfile.term_ends_on,
-    timezone: schoolProfile.timezone,
   };
 }
 
@@ -393,25 +342,23 @@ const BASE = '*/api/v1/school';
 export const schoolAdminHandlers = [
   http.get(`${BASE}/profile/`, () => HttpResponse.json(profileResponse())),
 
+  /** `abbreviation` is read-only after registration — including it is a `400`. */
   http.patch(`${BASE}/profile/`, async ({ request }) => {
     const body = await readBody(request);
-    const missing = requiredFields(body, ['name', 'email']);
+    const missing = requiredFields(body, ['name']);
     if (missing) return validationError(missing);
 
-    if (body.current_session !== undefined) {
-      const session = sessions.find((entry) => entry.id === asString(body.current_session));
-      if (!session) return validationError({ current_session: ['Select a valid session.'] });
-      schoolProfile.current_session_id = session.id;
+    if (body.abbreviation !== undefined) {
+      return validationError({ abbreviation: ['This field cannot be changed.'] });
     }
 
-    Object.assign(schoolProfile, {
-      name: asString(body.name),
-      email: asString(body.email),
-      phone: asString(body.phone),
-      address: asString(body.address),
-      location: asString(body.location),
-      motto: asString(body.motto),
-    });
+    if (body.current_session !== undefined) {
+      const sessionEntry = sessions.find((entry) => entry.id === asString(body.current_session));
+      if (!sessionEntry) return validationError({ current_session: ['Select a valid session.'] });
+      schoolProfile.current_session_id = sessionEntry.id;
+    }
+
+    schoolProfile.name = asString(body.name);
 
     return HttpResponse.json(profileResponse());
   }),
@@ -437,23 +384,28 @@ export const schoolAdminHandlers = [
   http.get(`${BASE}/sessions/`, () => HttpResponse.json(sessions)),
 
   http.get(`${BASE}/overview/`, () => {
-    const distribution: { literacy: Record<string, number>; numeracy: Record<string, number> } = {
+    const levels: { literacy: Record<string, number>; numeracy: Record<string, number> } = {
       literacy: {},
       numeracy: {},
     };
+    const unplaced = { literacy: 0, numeracy: 0 };
 
     for (const student of students) {
-      if (student.status !== 'active' || !student.fln) continue;
+      if (!student.is_active) continue;
+      if (!student.fln) {
+        unplaced.literacy += 1;
+        unplaced.numeracy += 1;
+        continue;
+      }
       const literacyKey = String(student.fln.literacy_level);
       const numeracyKey = String(student.fln.numeracy_level);
-      distribution.literacy[literacyKey] = (distribution.literacy[literacyKey] ?? 0) + 1;
-      distribution.numeracy[numeracyKey] = (distribution.numeracy[numeracyKey] ?? 0) + 1;
+      levels.literacy[literacyKey] = (levels.literacy[literacyKey] ?? 0) + 1;
+      levels.numeracy[numeracyKey] = (levels.numeracy[numeracyKey] ?? 0) + 1;
     }
 
     const statusBreakdown: Record<AssessmentStatus, number> = {
       draft: 0,
       published: 0,
-      open: 0,
       closed: 0,
     };
     for (const assessment of assessments) statusBreakdown[assessment.status] += 1;
@@ -470,14 +422,14 @@ export const schoolAdminHandlers = [
         : 0;
 
     return HttpResponse.json({
-      students_count: students.length,
-      teachers_count: teachers.length,
-      assessments_count: assessments.length,
-      active_assessments: statusBreakdown.open,
-      status_breakdown: statusBreakdown,
-      level_distribution: distribution,
+      students: students.length,
+      teachers: teachers.length,
+      assessments: assessments.length,
+      active_assessments: statusBreakdown.published,
+      assessment_status_breakdown: statusBreakdown,
+      level_distribution: { levels, unplaced },
       average_graded_score: averageGradedScore.toFixed(2),
-      current_session_label: currentSession().label,
+      current_session: currentSession().label,
     });
   }),
 
@@ -516,30 +468,32 @@ export const schoolAdminHandlers = [
     });
   }),
 
-  http.get(`${BASE}/grades/`, () => HttpResponse.json({ count: grades.length, results: grades })),
+  http.get(`${BASE}/assessments/`, ({ request }) => {
+    const url = new URL(request.url);
+    const sorted = [...assessments].sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return HttpResponse.json(paginate(sorted.map(assessmentResponse), url));
+  }),
+
+  http.get(`${BASE}/grades/`, () => HttpResponse.json(grades)),
 
   http.get(`${BASE}/classes/`, ({ request }) => {
     const url = new URL(request.url);
-    const search = searchTerm(url);
     const gradeId = url.searchParams.get('grade');
 
-    const filtered = classes.filter((entry) => {
-      if (gradeId && gradeId !== 'all' && entry.grade_id !== gradeId) return false;
-      if (!search) return true;
-      return matches(entry.display_name, search) || matches(entry.grade_name, search);
-    });
+    const filtered = classes.filter(
+      (entry) => !gradeId || gradeId === 'all' || entry.grade_id === gradeId,
+    );
 
-    const page = paginate(filtered.map(classListItem), url, 24);
-    return HttpResponse.json(page);
+    return HttpResponse.json(filtered.map(classResponse));
   }),
 
   http.post(`${BASE}/classes/`, async ({ request }) => {
     const body = await readBody(request);
-    const missing = requiredFields(body, ['grade_id', 'name']);
+    const missing = requiredFields(body, ['grade', 'name']);
     if (missing) return validationError(missing);
 
-    const grade = grades.find((entry) => entry.id === asString(body.grade_id));
-    if (!grade) return validationError({ grade_id: ['Select a valid grade.'] });
+    const grade = grades.find((entry) => entry.id === asString(body.grade));
+    if (!grade) return validationError({ grade: ['Select a valid grade.'] });
 
     const name = asString(body.name);
     const duplicate = classes.some(
@@ -551,40 +505,26 @@ export const schoolAdminHandlers = [
 
     const created: SeedClass = {
       id: `cls-${String(Date.now())}`,
-      name,
       grade_id: grade.id,
       grade_name: grade.name,
-      display_name: `${grade.name} - ${name}`,
-      term: schoolProfile.current_term,
-      room: asString(body.room) || null,
-      capacity: Number(body.capacity) || 20,
-      student_count: 0,
-      average_score: 0,
-      literacy_score: 0,
-      numeracy_score: 0,
-      created_at: new Date().toISOString(),
+      name,
+      label: `${grade.name} ${name}`,
     };
 
     classes.push(created);
     logActivity({
       action: 'class_created',
-      label: `Class created: ${created.display_name}`,
-      description: `${created.display_name} was added to the school.`,
+      label: `Class created: ${created.label}`,
+      description: `${created.label} was added to the school.`,
       teacher: null,
       student: null,
-      school_class: { id: created.id, name: created.display_name },
+      school_class: { id: created.id, name: created.label },
       assessment: null,
       metadata: {},
-      occurred_at: created.created_at,
+      occurred_at: isoNow(),
     });
 
-    return HttpResponse.json(classDetail(created), { status: 201 });
-  }),
-
-  http.get(`${BASE}/classes/:classId/`, ({ params }) => {
-    const entry = classes.find((item) => item.id === params.classId);
-    if (!entry) return notFound('We could not find that class.');
-    return HttpResponse.json(classDetail(entry));
+    return HttpResponse.json(classResponse(created), { status: 201 });
   }),
 
   /** Refused with `400` while any student is still enrolled — §4.3. */
@@ -595,10 +535,10 @@ export const schoolAdminHandlers = [
     const entry = classes[index]!;
     const occupied = students.some((student) => student.class_id === entry.id);
     if (occupied) {
-      const message = 'Transfer every student out of this class before deleting it.';
-      return HttpResponse.json(errorEnvelope('validation_error', message, { class: [message] }), {
-        status: 400,
-      });
+      return singleMessageError(
+        'class',
+        'Transfer every student out of this class before deleting it.',
+      );
     }
 
     classes.splice(index, 1);
@@ -608,15 +548,15 @@ export const schoolAdminHandlers = [
   http.get(`${BASE}/teachers/`, ({ request }) => {
     const url = new URL(request.url);
     const search = searchTerm(url);
-    const status = url.searchParams.get('status');
+    const classId = url.searchParams.get('school_class');
 
     const filtered = teachers.filter((teacher) => {
-      if (status && status !== 'all' && teacher.status !== status) return false;
+      if (classId && classId !== 'all' && teacher.class_id !== classId) return false;
       if (!search) return true;
       return matches(teacher.full_name, search) || matches(teacher.teacher_id, search);
     });
 
-    return HttpResponse.json(paginate(filtered.map(teacherListItem), url));
+    return HttpResponse.json(paginate(filtered.map(teacherResponse), url));
   }),
 
   http.post(`${BASE}/teachers/`, async ({ request }) => {
@@ -629,34 +569,22 @@ export const schoolAdminHandlers = [
       return validationError({ email: ['A teacher with this email already exists.'] });
     }
 
-    const assignedClass = classes.find((entry) => entry.id === asString(body.class_id));
+    const schoolClassId = asString(body.school_class) || null;
     const firstName = asString(body.first_name);
     const lastName = asString(body.last_name);
+    const now = isoNow();
 
     const created: SeedTeacher = {
       id: `tch-${String(Date.now())}`,
-      teacher_id: `TCH-2026-${String(teachers.length + 1).padStart(3, '0')}`,
+      teacher_id: `${school.abbreviation}-T${String(teachers.length + 1).padStart(3, '0')}`,
+      email,
       first_name: firstName,
       last_name: lastName,
       full_name: `${firstName} ${lastName}`,
-      email,
-      phone: asString(body.phone),
-      status: 'invited',
-      date_joined: new Date().toISOString(),
-      last_login: null,
-      qualification: asString(body.qualification) || 'Not provided',
-      subjects: ['Literacy', 'Numeracy'],
-      classes: assignedClass
-        ? [
-            {
-              class_id: assignedClass.id,
-              class_name: assignedClass.display_name,
-              grade_name: assignedClass.grade_name,
-              is_form_teacher: false,
-              student_count: assignedClass.student_count,
-            },
-          ]
-        : [],
+      class_id: schoolClassId,
+      is_active: true,
+      created_at: now,
+      updated_at: now,
     };
 
     teachers.unshift(created);
@@ -669,22 +597,23 @@ export const schoolAdminHandlers = [
       school_class: null,
       assessment: null,
       metadata: {},
-      occurred_at: created.date_joined,
+      occurred_at: created.created_at,
     });
 
-    return HttpResponse.json(teacherDetail(created), { status: 201 });
+    return HttpResponse.json(teacherResponse(created), { status: 201 });
   }),
 
   http.get(`${BASE}/teachers/:teacherId/`, ({ params }) => {
     const teacher = teachers.find((item) => item.id === params.teacherId);
     if (!teacher) return notFound('We could not find that teacher.');
-    return HttpResponse.json(teacherDetail(teacher));
+    return HttpResponse.json(teacherResponse(teacher));
   }),
 
   http.post(`${BASE}/teachers/:teacherId/disable/`, ({ params }) => {
     const teacher = teachers.find((item) => item.id === params.teacherId);
     if (!teacher) return notFound('We could not find that teacher.');
-    teacher.status = 'disabled';
+    teacher.is_active = false;
+    teacher.updated_at = isoNow();
     logActivity({
       action: 'teacher_disabled',
       label: `Teacher disabled: ${teacher.full_name}`,
@@ -694,16 +623,17 @@ export const schoolAdminHandlers = [
       school_class: null,
       assessment: null,
       metadata: {},
-      occurred_at: new Date().toISOString(),
+      occurred_at: teacher.updated_at,
     });
-    return HttpResponse.json(teacherDetail(teacher));
+    return HttpResponse.json(teacherResponse(teacher));
   }),
 
   http.post(`${BASE}/teachers/:teacherId/enable/`, ({ params }) => {
     const teacher = teachers.find((item) => item.id === params.teacherId);
     if (!teacher) return notFound('We could not find that teacher.');
-    teacher.status = 'active';
-    return HttpResponse.json(teacherDetail(teacher));
+    teacher.is_active = true;
+    teacher.updated_at = isoNow();
+    return HttpResponse.json(teacherResponse(teacher));
   }),
 
   /** Emails a reset link — §4.4. No password or mode ever reaches this response. */
@@ -725,7 +655,7 @@ export const schoolAdminHandlers = [
 
     const body = await readBody(request);
     if (asString(body.code) !== DELETE_CONFIRMATION_CODE) {
-      return invalidCodeError();
+      return singleMessageError('code', 'That code is incorrect or has expired.');
     }
 
     const [removed] = teachers.splice(index, 1);
@@ -739,7 +669,7 @@ export const schoolAdminHandlers = [
         school_class: null,
         assessment: null,
         metadata: {},
-        occurred_at: new Date().toISOString(),
+        occurred_at: isoNow(),
       });
     }
 
@@ -749,17 +679,15 @@ export const schoolAdminHandlers = [
   http.get(`${BASE}/students/`, ({ request }) => {
     const url = new URL(request.url);
     const search = searchTerm(url);
-    const classId = url.searchParams.get('class');
-    const status = url.searchParams.get('status');
+    const classId = url.searchParams.get('school_class');
 
     const filtered = students.filter((student) => {
       if (classId && classId !== 'all' && student.class_id !== classId) return false;
-      if (status && status !== 'all' && student.status !== status) return false;
       if (!search) return true;
       return matches(student.full_name, search) || matches(student.student_id, search);
     });
 
-    return HttpResponse.json(paginate(filtered.map(studentListItem), url));
+    return HttpResponse.json(paginate(filtered.map(studentResponse), url));
   }),
 
   http.post(`${BASE}/students/`, async ({ request }) => {
@@ -767,17 +695,17 @@ export const schoolAdminHandlers = [
     const missing = requiredFields(body, [
       'first_name',
       'last_name',
-      'class_id',
+      'school_class',
       'date_of_birth',
       'gender',
       'guardian_name',
-      'guardian_phone',
+      'guardian_phone_number',
       'guardian_relationship',
     ]);
     if (missing) return validationError(missing);
 
-    const studentClass = classes.find((entry) => entry.id === asString(body.class_id));
-    if (!studentClass) return validationError({ class_id: ['Select a valid class.'] });
+    const studentClass = classes.find((entry) => entry.id === asString(body.school_class));
+    if (!studentClass) return validationError({ school_class: ['Select a valid class.'] });
 
     const dateOfBirth = asString(body.date_of_birth);
     const birthYear = Number(dateOfBirth.slice(0, 4));
@@ -788,58 +716,56 @@ export const schoolAdminHandlers = [
     const firstName = asString(body.first_name);
     const lastName = asString(body.last_name);
     const guardianEmail = asString(body.guardian_email);
+    const now = isoNow();
 
     const created: SeedStudent = {
       id: `stu-${String(Date.now())}`,
       // Always server-generated — never accepted from the request body.
-      student_id: `STU-2026-${String(students.length + 1).padStart(3, '0')}`,
+      student_id: `${school.abbreviation}-${String(students.length + 1).padStart(4, '0')}`,
       first_name: firstName,
       last_name: lastName,
       full_name: `${firstName} ${lastName}`,
       date_of_birth: new Date(dateOfBirth).toISOString(),
-      age: 2026 - birthYear,
       gender: asString(body.gender) === 'male' ? 'male' : 'female',
       class_id: studentClass.id,
-      class_name: studentClass.display_name,
-      grade_name: studentClass.grade_name,
-      status: 'active',
-      enrolled_on: new Date().toISOString(),
+      is_active: true,
       guardian_name: asString(body.guardian_name),
-      guardian_phone: asString(body.guardian_phone),
+      guardian_phone_number: asString(body.guardian_phone_number),
       guardian_email: guardianEmail || null,
       guardian_relationship: asString(body.guardian_relationship),
+      created_at: now,
+      updated_at: now,
       // No sitting yet — the `/fln/` endpoint 404s until this student is assessed.
       fln: null,
     };
 
     students.unshift(created);
-    recountClass(studentClass.id);
     logActivity({
       action: 'student_admitted',
       label: `Student enrolled: ${created.full_name}`,
-      description: `${created.full_name} was enrolled in ${created.class_name}.`,
+      description: `${created.full_name} was enrolled in ${studentClass.label}.`,
       teacher: null,
       student: { id: created.id, name: created.full_name },
       school_class: null,
       assessment: null,
       metadata: {},
-      occurred_at: created.enrolled_on,
+      occurred_at: created.created_at,
     });
 
-    return HttpResponse.json(studentDetail(created), { status: 201 });
+    return HttpResponse.json(studentResponse(created), { status: 201 });
   }),
 
   http.get(`${BASE}/students/:studentId/`, ({ params }) => {
     const student = students.find((item) => item.id === params.studentId);
     if (!student) return notFound('We could not find that student.');
-    return HttpResponse.json(studentDetail(student));
+    return HttpResponse.json(studentResponse(student));
   }),
 
   http.get(`${BASE}/students/:studentId/fln/`, ({ params }) => {
     const student = students.find((item) => item.id === params.studentId);
     if (!student) return notFound('We could not find that student.');
 
-    const fln = studentFln(student);
+    const fln = studentFlnResponse(student);
     if (!fln) return notFound('This student has not sat an assessment yet.');
 
     return HttpResponse.json(fln);
@@ -848,7 +774,8 @@ export const schoolAdminHandlers = [
   http.post(`${BASE}/students/:studentId/disable/`, ({ params }) => {
     const student = students.find((item) => item.id === params.studentId);
     if (!student) return notFound('We could not find that student.');
-    student.status = 'disabled';
+    student.is_active = false;
+    student.updated_at = isoNow();
     logActivity({
       action: 'student_disabled',
       label: `Student disabled: ${student.full_name}`,
@@ -858,16 +785,17 @@ export const schoolAdminHandlers = [
       school_class: null,
       assessment: null,
       metadata: {},
-      occurred_at: new Date().toISOString(),
+      occurred_at: student.updated_at,
     });
-    return HttpResponse.json(studentDetail(student));
+    return HttpResponse.json(studentResponse(student));
   }),
 
   http.post(`${BASE}/students/:studentId/enable/`, ({ params }) => {
     const student = students.find((item) => item.id === params.studentId);
     if (!student) return notFound('We could not find that student.');
-    student.status = 'active';
-    return HttpResponse.json(studentDetail(student));
+    student.is_active = true;
+    student.updated_at = isoNow();
+    return HttpResponse.json(studentResponse(student));
   }),
 
   http.post(`${BASE}/students/:studentId/delete/request/`, ({ params }) => {
@@ -882,12 +810,11 @@ export const schoolAdminHandlers = [
 
     const body = await readBody(request);
     if (asString(body.code) !== DELETE_CONFIRMATION_CODE) {
-      return invalidCodeError();
+      return singleMessageError('code', 'That code is incorrect or has expired.');
     }
 
     const [removed] = students.splice(index, 1);
     if (removed) {
-      recountClass(removed.class_id);
       logActivity({
         action: 'student_removed',
         label: `Student removed: ${removed.full_name}`,
@@ -897,7 +824,7 @@ export const schoolAdminHandlers = [
         school_class: null,
         assessment: null,
         metadata: {},
-        occurred_at: new Date().toISOString(),
+        occurred_at: isoNow(),
       });
     }
 
@@ -917,35 +844,29 @@ export const schoolAdminHandlers = [
       return validationError({ student_ids: ['Select at least one student.'] });
     }
 
-    const affectedClassIds = new Set<string>([toClass.id]);
-    let transferred = 0;
-
+    let moved = 0;
     for (const student of students) {
       if (!studentIds.includes(student.id)) continue;
-      affectedClassIds.add(student.class_id);
       student.class_id = toClass.id;
-      student.class_name = toClass.display_name;
-      student.grade_name = toClass.grade_name;
-      transferred += 1;
+      student.updated_at = isoNow();
+      moved += 1;
     }
 
-    for (const classId of affectedClassIds) recountClass(classId);
-
-    if (transferred > 0) {
+    if (moved > 0) {
       logActivity({
         action: 'students_transferred',
-        label: `${String(transferred)} student(s) transferred to ${toClass.display_name}`,
-        description: `${String(transferred)} student(s) were moved to ${toClass.display_name}.`,
+        label: `${String(moved)} student(s) transferred to ${toClass.label}`,
+        description: `${String(moved)} student(s) were moved to ${toClass.label}.`,
         teacher: null,
         student: null,
-        school_class: { id: toClass.id, name: toClass.display_name },
+        school_class: { id: toClass.id, name: toClass.label },
         assessment: null,
         metadata: {},
-        occurred_at: new Date().toISOString(),
+        occurred_at: isoNow(),
       });
     }
 
-    return HttpResponse.json({ transferred });
+    return HttpResponse.json({ moved, to_class: toClass.id });
   }),
 
   http.post(`${BASE}/students/transfer-class/`, async ({ request }) => {
@@ -956,55 +877,29 @@ export const schoolAdminHandlers = [
     if (!fromClass) return validationError({ from_class: ['Select a valid class.'] });
     if (!toClass) return validationError({ to_class: ['Select a valid class.'] });
 
-    let transferred = 0;
+    let moved = 0;
     for (const student of students) {
       if (student.class_id !== fromClass.id) continue;
       student.class_id = toClass.id;
-      student.class_name = toClass.display_name;
-      student.grade_name = toClass.grade_name;
-      transferred += 1;
+      student.updated_at = isoNow();
+      moved += 1;
     }
 
-    recountClass(fromClass.id);
-    recountClass(toClass.id);
-
     // One entry for the whole move, not one per child — the feed does not itemise it.
-    if (transferred > 0) {
+    if (moved > 0) {
       logActivity({
         action: 'students_transferred',
-        label: `${fromClass.display_name} transferred to ${toClass.display_name}`,
-        description: `${String(transferred)} student(s) moved from ${fromClass.display_name} to ${toClass.display_name}.`,
+        label: `${fromClass.label} transferred to ${toClass.label}`,
+        description: `${String(moved)} student(s) moved from ${fromClass.label} to ${toClass.label}.`,
         teacher: null,
         student: null,
-        school_class: { id: toClass.id, name: toClass.display_name },
+        school_class: { id: toClass.id, name: toClass.label },
         assessment: null,
         metadata: {},
-        occurred_at: new Date().toISOString(),
+        occurred_at: isoNow(),
       });
     }
 
-    return HttpResponse.json({ transferred });
-  }),
-
-  http.get(`${BASE}/settings/account/`, () => HttpResponse.json(account)),
-
-  http.patch(`${BASE}/settings/account/`, async ({ request }) => {
-    const body = await readBody(request);
-    const missing = requiredFields(body, ['first_name', 'last_name', 'email']);
-    if (missing) return validationError(missing);
-
-    const firstName = asString(body.first_name);
-    const lastName = asString(body.last_name);
-
-    Object.assign(account, {
-      first_name: firstName,
-      last_name: lastName,
-      full_name: `${firstName} ${lastName}`,
-      email: asString(body.email),
-      phone: asString(body.phone),
-      two_factor_enabled: Boolean(body.two_factor_enabled),
-    });
-
-    return HttpResponse.json(account);
+    return HttpResponse.json({ moved, to_class: toClass.id });
   }),
 ];

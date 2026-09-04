@@ -3,20 +3,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
 import { schoolSchema } from '@/features/school-admin/api/shared.schema';
-import {
-  adminAccountSchema,
-  passwordChangeResponseSchema,
-} from '@/features/school-admin/settings/api/settings.schema';
+import { passwordChangeResponseSchema } from '@/features/school-admin/settings/api/settings.schema';
 import { api } from '@/lib/api/client';
 
-/** §4.2 — `PATCH /v1/school/profile/`. `abbreviation` is never sent — read-only after registration. */
+/**
+ * §4.2 — `PATCH /v1/school/profile/`. `abbreviation` is never sent — read-only
+ * after registration. `email`/`phone`/`address`/`location`/`motto` are gone —
+ * the documented profile only has `name`, `logo` and `current_session`.
+ */
 export interface UpdateSchoolProfileInput {
   name: string;
-  email: string;
-  phone: string;
-  address: string;
-  location: string;
-  motto: string;
   currentSessionId: string;
 }
 
@@ -28,42 +24,11 @@ export function useUpdateSchoolProfile() {
     mutationFn: (input: UpdateSchoolProfileInput) =>
       api.patch(schoolAdminEndpoints.profile, schoolSchema, {
         name: input.name,
-        email: input.email,
-        phone: input.phone,
-        address: input.address,
-        location: input.location,
-        motto: input.motto,
         current_session: input.currentSessionId,
       }),
     onSuccess: (data) => {
       // Write straight into the cache: the shell reads this on every screen.
       queryClient.setQueryData(schoolAdminKeys.profile(), data);
-    },
-  });
-}
-
-export interface UpdateAdminAccountInput {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  twoFactorEnabled: boolean;
-}
-
-export function useUpdateAdminAccount() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: (input: UpdateAdminAccountInput) =>
-      api.patch(schoolAdminEndpoints.account, adminAccountSchema, {
-        first_name: input.firstName,
-        last_name: input.lastName,
-        email: input.email,
-        phone: input.phone,
-        two_factor_enabled: input.twoFactorEnabled,
-      }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(schoolAdminKeys.accountSettings(), data);
     },
   });
 }

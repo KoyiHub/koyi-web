@@ -5,8 +5,8 @@ import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
 import {
   deleteRequestSchema,
-  teacherDetailSchema,
   teacherPasswordResetSchema,
+  teacherSchema,
 } from '@/features/school-admin/teachers/api/teacher.schema';
 import { api } from '@/lib/api/client';
 
@@ -24,12 +24,12 @@ export function useCreateTeacher() {
 
   return useMutation({
     mutationFn: (input: CreateTeacherInput) =>
-      api.post(schoolAdminEndpoints.teachers.list, teacherDetailSchema, {
-        first_name: input.firstName,
-        last_name: input.lastName,
+      api.post(schoolAdminEndpoints.teachers.list, teacherSchema, {
         email: input.email,
         password: input.password,
-        class_id: input.classId || null,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        school_class: input.classId || null,
       }),
     onSuccess: async () => {
       // The roster count on the classes screen moves too, so both lists go.
@@ -69,7 +69,7 @@ export function useDisableTeacher() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (teacherId: string) =>
-      api.post(schoolAdminEndpoints.teachers.disable(teacherId), teacherDetailSchema),
+      api.post(schoolAdminEndpoints.teachers.disable(teacherId), teacherSchema),
     onSuccess: (_data, teacherId) => invalidateTeacher(queryClient, teacherId),
   });
 }
@@ -78,7 +78,7 @@ export function useEnableTeacher() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (teacherId: string) =>
-      api.post(schoolAdminEndpoints.teachers.enable(teacherId), teacherDetailSchema),
+      api.post(schoolAdminEndpoints.teachers.enable(teacherId), teacherSchema),
     onSuccess: (_data, teacherId) => invalidateTeacher(queryClient, teacherId),
   });
 }

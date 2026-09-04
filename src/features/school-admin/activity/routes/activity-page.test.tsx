@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { paths } from '@/config/paths';
-import { teachers } from '@/mocks/data/school-admin-seed';
 import { renderRoute, screen } from '@/test/test-utils';
 
 /**
@@ -14,10 +13,12 @@ describe('ActivityPage', () => {
 
     await screen.findByRole('heading', { name: 'Activity' });
 
-    const someTeacher = teachers[0]!;
-    expect(
-      await screen.findByText(`New teacher added: ${someTeacher.full_name}`),
-    ).toBeInTheDocument();
+    // Whichever events sort first, their labels are rendered verbatim — never
+    // reconstructed from an id — so match the pattern, not one fixed row.
+    const rows = await screen.findAllByText(
+      /^(New teacher added|Class created|Student enrolled|Assessment published|Assessment closed):/,
+    );
+    expect(rows.length).toBeGreaterThan(0);
   });
 
   it('is cursor-paginated: a large seed offers a "load more" rather than page numbers', async () => {

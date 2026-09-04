@@ -42,10 +42,11 @@ function StatCard({ label, value, Icon, chipClassName }: StatCardProps) {
  * School Admin landing screen — `frontend-integration.md` §4.7.
  *
  * Leads with `level_distribution`, not an average: "a class with more Level
- * 1 children is differently composed, not worse" (§9), and the guide's own
- * design note says this screen should lead with distribution once placement
- * lands, which it now has. Every figure is read straight off the response —
- * no band thresholds or averages are computed in the browser.
+ * 1 children is differently composed, not worse" (§9). `unplaced` — active
+ * children no assessment has reached yet — gets its own line under each
+ * chart, per the doc's steer that it is "usually the most actionable figure
+ * on the dashboard." Every figure is read straight off the response — no
+ * band thresholds or averages are computed in the browser.
  */
 export function SchoolAdminDashboardPage() {
   const overview = useQuery(overviewQuery());
@@ -59,7 +60,7 @@ export function SchoolAdminDashboardPage() {
   const maxDistribution = Math.max(
     1,
     ...DOMAINS.flatMap((domain) =>
-      levelDistributionRows(data.level_distribution[domain]).map((row) => row.students),
+      levelDistributionRows(data.level_distribution.levels[domain]).map((row) => row.students),
     ),
   );
 
@@ -67,19 +68,19 @@ export function SchoolAdminDashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="School Summary"
-        subtitle={`${data.current_session_label} — high-level overview of Foundation Literacy and Numeracy (FLN) levels.`}
+        subtitle={`${data.current_session} — high-level overview of Foundation Literacy and Numeracy (FLN) levels.`}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
           label="Total Teachers"
-          value={data.teachers_count}
+          value={data.teachers}
           Icon={UsersIcon}
           chipClassName="bg-koyi-primary text-white"
         />
         <StatCard
           label="Total Students"
-          value={data.students_count}
+          value={data.students}
           Icon={GraduationCapIcon}
           chipClassName="bg-koyi-band-intermediate-soft text-koyi-primary"
         />
@@ -95,7 +96,7 @@ export function SchoolAdminDashboardPage() {
         {DOMAINS.map((domain) => (
           <Card key={domain} title={`${DOMAIN_LABEL[domain]} — level distribution`}>
             <div className="space-y-3">
-              {levelDistributionRows(data.level_distribution[domain]).map((row) => (
+              {levelDistributionRows(data.level_distribution.levels[domain]).map((row) => (
                 <StatBar
                   key={row.level}
                   label={levelLabel(row.level)}
@@ -104,16 +105,18 @@ export function SchoolAdminDashboardPage() {
                 />
               ))}
             </div>
+            <p className="text-koyi-muted mt-4 text-xs">
+              {data.level_distribution.unplaced[domain]}{' '}
+              {data.level_distribution.unplaced[domain] === 1 ? 'child has' : 'children have'} not
+              been reached by an assessment yet.
+            </p>
           </Card>
         ))}
       </div>
 
-      <Card
-        title="Assessments by status"
-        subtitle={`${data.assessments_count} papers created in total.`}
-      >
+      <Card title="Assessments by status" subtitle={`${data.assessments} papers created in total.`}>
         <div className="flex flex-wrap gap-3">
-          {Object.entries(data.status_breakdown).map(([status, count]) => (
+          {Object.entries(data.assessment_status_breakdown).map(([status, count]) => (
             <span
               key={status}
               className="bg-koyi-surface text-koyi-text rounded-full px-3 py-1.5 text-sm font-medium"

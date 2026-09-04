@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
-import { classDetailSchema } from '@/features/school-admin/classes/api/class.schema';
+import { classSchema } from '@/features/school-admin/classes/api/class.schema';
 import { api } from '@/lib/api/client';
 
 export interface CreateClassInput {
@@ -17,8 +17,8 @@ export function useCreateClass() {
 
   return useMutation({
     mutationFn: (input: CreateClassInput) =>
-      api.post(schoolAdminEndpoints.classes.list, classDetailSchema, {
-        grade_id: input.gradeId,
+      api.post(schoolAdminEndpoints.classes.list, classSchema, {
+        grade: input.gradeId,
         name: input.name,
       }),
     onSuccess: async () => {

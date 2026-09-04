@@ -39,7 +39,7 @@ const RELATIONSHIP_OPTIONS = GUARDIAN_RELATIONSHIPS.map((relationship) => ({
 export function AddStudentPage() {
   const navigate = useNavigate();
   const createStudent = useCreateStudent();
-  const classesQuery = useQuery(classListQuery({ gradeId: 'all' }));
+  const classesQuery = useQuery(classListQuery('all'));
 
   const {
     register,
@@ -56,13 +56,12 @@ export function AddStudentPage() {
       guardianName: '',
       guardianPhone: '',
       guardianEmail: '',
-      triggerBaselineAssessment: true,
     },
   });
 
-  const classOptions = (classesQuery.data?.results ?? []).map((schoolClass) => ({
+  const classOptions = (classesQuery.data ?? []).map((schoolClass) => ({
     value: schoolClass.id,
-    label: schoolClass.display_name,
+    label: schoolClass.label,
   }));
 
   async function onSubmit(values: AddStudentFormValues) {
@@ -139,25 +138,6 @@ export function AddStudentPage() {
             {...register('classId')}
           />
         </FormRow>
-
-        <div className="bg-koyi-nav-active rounded-koyi-md border-koyi-primary border-l-4 p-4">
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="border-koyi-border text-koyi-primary mt-0.5 size-4 shrink-0 rounded-sm"
-              {...register('triggerBaselineAssessment')}
-            />
-            <span>
-              <span className="text-koyi-text block text-sm font-bold">
-                Trigger Learning Level Assessment
-              </span>
-              <span className="text-koyi-muted mt-1 block text-xs">
-                Queue a baseline diagnostic test for this student upon creation. This helps
-                instantly map their foundational literacy and numeracy gaps.
-              </span>
-            </span>
-          </label>
-        </div>
       </FormSection>
 
       <FormSection title="Parent / Guardian Info" icon={<UserGroupIcon className="size-4" />}>

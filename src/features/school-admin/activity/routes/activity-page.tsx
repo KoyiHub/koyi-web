@@ -58,11 +58,9 @@ export function ActivityPage() {
   const [student, setStudent] = useState('');
   const [schoolClass, setSchoolClass] = useState('');
 
-  const teachers = useQuery(teacherListQuery({ search: '', status: 'all', page: 1 }));
-  const students = useQuery(
-    studentListQuery({ search: '', page: 1, classId: 'all', status: 'all' }),
-  );
-  const classes = useQuery(classListQuery({ gradeId: 'all' }));
+  const teachers = useQuery(teacherListQuery({ search: '', schoolClass: 'all', page: 1 }));
+  const students = useQuery(studentListQuery({ search: '', page: 1, schoolClass: 'all' }));
+  const classes = useQuery(classListQuery('all'));
 
   const feed = useInfiniteQuery(activityFeedQuery({ action, teacher, student, schoolClass }));
   const rows = useMemo(() => feed.data?.pages.flatMap((page) => page.results) ?? [], [feed.data]);
@@ -121,9 +119,9 @@ export function ActivityPage() {
         <SelectField
           label="Class"
           placeholder="All classes"
-          options={(classes.data?.results ?? []).map((entry) => ({
+          options={(classes.data ?? []).map((entry) => ({
             value: entry.id,
-            label: entry.display_name,
+            label: entry.label,
           }))}
           value={schoolClass}
           onChange={(event) => {

@@ -183,6 +183,14 @@ export const routes: RouteObject[] = [
             }),
           },
           {
+            path: 'assessments',
+            lazy: async () => ({
+              Component: (
+                await import('@/features/school-admin/assessments/routes/assessments-page')
+              ).SchoolAssessmentsPage,
+            }),
+          },
+          {
             path: 'teachers',
             children: [
               {

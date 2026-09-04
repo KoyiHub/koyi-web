@@ -9,10 +9,8 @@ import { renderRoute, screen, waitFor } from '@/test/test-utils';
  * independent levels, never combined — §9), disable/enable, and a two-step
  * delete behind a code.
  */
-const assessedStudent = students.find((student) => student.status === 'active' && student.fln)!;
-const notYetAssessedStudent = students.find(
-  (student) => student.status === 'active' && !student.fln,
-)!;
+const assessedStudent = students.find((student) => student.is_active && student.fln)!;
+const notYetAssessedStudent = students.find((student) => student.is_active && !student.fln)!;
 
 describe('StudentDetailPage', () => {
   it('shows independent literacy and numeracy levels, never a combined score', async () => {

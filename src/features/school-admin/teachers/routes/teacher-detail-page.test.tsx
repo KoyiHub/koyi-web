@@ -13,7 +13,7 @@ import { renderRoute, screen, waitFor } from '@/test/test-utils';
  * state, so a delete in one test must not remove the teacher another test
  * still needs.
  */
-const activeTeachers = teachers.filter((teacher) => teacher.status === 'active');
+const activeTeachers = teachers.filter((teacher) => teacher.is_active);
 const [toggleTeacher, resetTeacher, deleteTeacher, wrongCodeTeacher] = activeTeachers;
 
 describe('TeacherDetailPage', () => {

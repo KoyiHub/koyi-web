@@ -8,11 +8,11 @@ import { renderRoute, screen, waitFor } from '@/test/test-utils';
  * Student transfer — `frontend-integration.md` §4.5. Two independent modes:
  * a hand-picked set of students, or every student in one class at once.
  */
-const sourceClass = classes.find((entry) => entry.student_count > 0)!;
-const destinationClass = classes.find((entry) => entry.id !== sourceClass.id)!;
-const student = students.find(
-  (entry) => entry.class_id === sourceClass.id && entry.status === 'active',
+const sourceClass = classes.find((entry) =>
+  students.some((student) => student.class_id === entry.id && student.is_active),
 )!;
+const destinationClass = classes.find((entry) => entry.id !== sourceClass.id)!;
+const student = students.find((entry) => entry.class_id === sourceClass.id && entry.is_active)!;
 
 describe('TransferStudentsPage', () => {
   it('transfers a hand-picked selection of students to another class', async () => {

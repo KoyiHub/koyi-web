@@ -47,7 +47,7 @@ export function SchoolAdminTopbar({ onOpenMenu }: SchoolAdminTopbarProps) {
           <BellIcon />
         </button>
 
-        <SchoolCrest name={school?.name ?? 'Koyi School'} logoUrl={school?.logo_url} />
+        <SchoolCrest name={school?.name ?? 'Koyi School'} logoUrl={school?.logo?.url} />
       </div>
     </header>
   );

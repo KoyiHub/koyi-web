@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
-import { studentDetailSchema } from '@/features/school-admin/students/api/student.schema';
+import { studentSchema } from '@/features/school-admin/students/api/student.schema';
 import { api } from '@/lib/api/client';
 
 export interface CreateStudentInput {
@@ -17,8 +17,6 @@ export interface CreateStudentInput {
   /** Optional — many guardians won't have one. Where an assessment link is sent. */
   guardianEmail?: string | undefined;
   guardianRelationship: string;
-  /** Queues a baseline diagnostic for the new student. */
-  triggerBaselineAssessment?: boolean;
 }
 
 /**
@@ -32,20 +30,19 @@ export function useCreateStudent() {
 
   return useMutation({
     mutationFn: (input: CreateStudentInput) =>
-      api.post(schoolAdminEndpoints.students.list, studentDetailSchema, {
+      api.post(schoolAdminEndpoints.students.list, studentSchema, {
         first_name: input.firstName,
         last_name: input.lastName,
-        class_id: input.classId,
+        school_class: input.classId,
         date_of_birth: input.dateOfBirth,
         gender: input.gender,
         guardian_name: input.guardianName,
-        guardian_phone: input.guardianPhone,
+        guardian_phone_number: input.guardianPhone,
         guardian_email:
           input.guardianEmail === undefined || input.guardianEmail === ''
             ? null
             : input.guardianEmail,
         guardian_relationship: input.guardianRelationship,
-        trigger_baseline_assessment: input.triggerBaselineAssessment ?? false,
       }),
     onSuccess: async () => {
       // Class rosters and the dashboard headline count both move.
@@ -68,7 +65,7 @@ export function useDisableStudent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (studentId: string) =>
-      api.post(schoolAdminEndpoints.students.disable(studentId), studentDetailSchema),
+      api.post(schoolAdminEndpoints.students.disable(studentId), studentSchema),
     onSuccess: (_data, studentId) => invalidateStudent(queryClient, studentId),
   });
 }
@@ -77,7 +74,7 @@ export function useEnableStudent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (studentId: string) =>
-      api.post(schoolAdminEndpoints.students.enable(studentId), studentDetailSchema),
+      api.post(schoolAdminEndpoints.students.enable(studentId), studentSchema),
     onSuccess: (_data, studentId) => invalidateStudent(queryClient, studentId),
   });
 }
@@ -106,7 +103,8 @@ export function useConfirmStudentDelete() {
   });
 }
 
-const transferResultSchema = z.object({ transferred: z.number() });
+/** `{ moved, to_class }` — §4.5. Both transfer shapes share this response. */
+const transferResultSchema = z.object({ moved: z.number(), to_class: z.string() });
 
 /** Multi-select mode — `POST /v1/school/students/transfer/`, §4.5. */
 export function useTransferStudents() {

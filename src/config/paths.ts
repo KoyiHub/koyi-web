@@ -126,6 +126,8 @@ export const paths = {
     dashboard: '/school-admin/dashboard',
     /** Server-authored feed of who-did-what — §4.6. Rendered verbatim, never reconstructed. */
     activity: '/school-admin/activity',
+    /** School-wide oversight, not authoring — §4.8. */
+    assessments: '/school-admin/assessments',
     teachers: {
       list: '/school-admin/teachers',
       new: '/school-admin/teachers/new',

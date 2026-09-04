@@ -59,12 +59,15 @@ export type LevelRange = z.infer<typeof levelRangeSchema>;
 /**
  * Where a paper sits in its life.
  *
- * `open` and `closed` follow from `opens_at`/`closes_at` and are decided
- * server-side, so the client renders `status` and never computes the window
- * itself. `published` is a one-way door: a published paper cannot be edited or
- * deleted, so those controls are hidden rather than allowed to fail.
+ * Three values, not four — `frontend-integration.md` §4.7's status
+ * breakdown and §5.3's draft→published flow never evidence a distinct
+ * `open` step. `published` **is** the currently-open-for-sitting state;
+ * `closed` follows from `closes_at`, decided server-side, so the client
+ * renders `status` and never computes the window itself. `published` is
+ * also a one-way door: a published paper cannot be edited or deleted, so
+ * those controls are hidden rather than allowed to fail.
  */
-export const assessmentStatusSchema = z.enum(['draft', 'published', 'open', 'closed']);
+export const assessmentStatusSchema = z.enum(['draft', 'published', 'closed']);
 export type AssessmentStatus = z.infer<typeof assessmentStatusSchema>;
 
 /** One child's progress through one paper. */

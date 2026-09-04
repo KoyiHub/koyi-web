@@ -13,6 +13,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { paths } from '@/config/paths';
+import { ageFromDob } from '@/features/school-admin/api/format';
 import { studentListQuery } from '@/features/school-admin/students/api/queries';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils/cn';
@@ -24,10 +25,13 @@ const STATUS_OPTIONS = [
 ];
 
 /**
- * Student roster (design reference page 11).
+ * Student roster — `frontend-integration.md` §4.5.
  *
- * Students carry no email — they have no login of their own — so the name cell
- * shows the name alone, unlike the teacher table.
+ * Students carry no email — they have no login of their own — so the name
+ * cell shows the name alone, unlike the teacher table. §4.5's documented
+ * filters are `?search=&school_class=` only — no `?is_active=` — so the
+ * active/disabled filter here is applied client-side over the fetched page
+ * rather than sending an undocumented query param.
  */
 export function StudentsPage() {
   const [search, setSearch] = useState('');
@@ -36,9 +40,13 @@ export function StudentsPage() {
   const debouncedSearch = useDebouncedValue(search);
 
   const listQuery = useQuery(
-    studentListQuery({ search: debouncedSearch, page, classId: 'all', status }),
+    studentListQuery({ search: debouncedSearch, page, schoolClass: 'all' }),
   );
-  const students = listQuery.data?.results ?? [];
+  const students = (listQuery.data?.results ?? []).filter((student) => {
+    if (status === 'active') return student.is_active;
+    if (status === 'disabled') return !student.is_active;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -133,7 +141,7 @@ export function StudentsPage() {
                           <InitialsAvatar name={student.full_name} />
                           <p className="text-koyi-text flex items-center gap-2 truncate font-bold">
                             {student.full_name}
-                            {student.status === 'disabled' && (
+                            {!student.is_active && (
                               <span className="bg-koyi-surface text-koyi-muted rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase">
                                 Disabled
                               </span>
@@ -143,12 +151,18 @@ export function StudentsPage() {
                       </td>
 
                       <td className="text-koyi-text px-5 py-4">{student.student_id}</td>
-                      <td className="text-koyi-text px-5 py-4">{student.age}</td>
+                      <td className="text-koyi-text px-5 py-4">
+                        {ageFromDob(student.date_of_birth)}
+                      </td>
 
                       <td className="px-5 py-4">
-                        <span className="bg-koyi-band-intermediate-soft text-koyi-primary inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
-                          {student.grade_name}
-                        </span>
+                        {student.school_class ? (
+                          <span className="bg-koyi-band-intermediate-soft text-koyi-primary inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
+                            {student.school_class.label}
+                          </span>
+                        ) : (
+                          <span className="text-koyi-muted text-xs">Not assigned</span>
+                        )}
                       </td>
 
                       <td className="px-5 py-4 text-right">

@@ -1,4 +1,5 @@
 import {
+  ClipboardIcon,
   GearIcon,
   GridIcon,
   HelpIcon,
@@ -25,6 +26,12 @@ export const schoolAdminNav: AppNav = {
     { label: 'Teachers', to: paths.schoolAdmin.teachers.list, end: false, Icon: UsersIcon },
     { label: 'Students', to: paths.schoolAdmin.students.list, end: false, Icon: UserGroupIcon },
     { label: 'Classes', to: paths.schoolAdmin.classes.list, end: false, Icon: TrendingUpIcon },
+    {
+      label: 'Assessments',
+      to: paths.schoolAdmin.assessments,
+      end: false,
+      Icon: ClipboardIcon,
+    },
   ],
   footer: [
     { label: 'Settings', to: paths.schoolAdmin.settings, end: false, Icon: GearIcon },

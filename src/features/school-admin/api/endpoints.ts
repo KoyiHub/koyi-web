@@ -20,15 +20,8 @@ export const schoolAdminEndpoints = {
   sessions: `${BASE}/sessions/`,
   /** §4.6 — every core action, with server-authored label/description. */
   activity: `${BASE}/activity/`,
-
-  /**
-   * The administrator's own identity/security fields — first/last name, 2FA.
-   * No guide endpoint covers this distinctly from `/profile/`; kept at its
-   * pre-guide path, same "no anchor, left alone" treatment as the dropped
-   * academic-settings tab. Only the password change above moved to the real
-   * `/v1/school/profile/password/change/`.
-   */
-  account: `${BASE}/settings/account/`,
+  /** §4.8 — every assessment across every teacher, for oversight, not authoring. */
+  assessments: `${BASE}/assessments/`,
 
   teachers: {
     list: `${BASE}/teachers/`,
@@ -53,6 +46,11 @@ export const schoolAdminEndpoints = {
     transferClass: `${BASE}/students/transfer-class/`,
   },
 
+  /**
+   * §4.3 — unpaginated. There is no `GET .../{id}/` detail endpoint; a class
+   * is looked up client-side from the already-fetched list. `detail` below
+   * exists only to build the `DELETE` URL, which the guide does document.
+   */
   classes: {
     list: `${BASE}/classes/`,
     detail: (classId: string) => `${BASE}/classes/${classId}/`,

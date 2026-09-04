@@ -30,10 +30,10 @@ type Mode = 'individual' | 'class';
  */
 export function TransferStudentsPage() {
   const [mode, setMode] = useState<Mode>('individual');
-  const classesQuery = useQuery(classListQuery({ gradeId: 'all' }));
-  const classOptions = (classesQuery.data?.results ?? []).map((entry) => ({
+  const classesQuery = useQuery(classListQuery('all'));
+  const classOptions = (classesQuery.data ?? []).map((entry) => ({
     value: entry.id,
-    label: entry.display_name,
+    label: entry.label,
   }));
 
   return (
@@ -82,8 +82,9 @@ function IndividualTransfer({ classOptions }: { classOptions: ClassOption[] }) {
   const [result, setResult] = useState<string | null>(null);
 
   const students = useQuery(
-    studentListQuery({ search: debouncedSearch, page: 1, classId: 'all', status: 'active' }),
+    studentListQuery({ search: debouncedSearch, page: 1, schoolClass: 'all' }),
   );
+  const activeStudents = students.data?.results.filter((student) => student.is_active) ?? [];
   const transfer = useTransferStudents();
 
   return (
@@ -98,7 +99,7 @@ function IndividualTransfer({ classOptions }: { classOptions: ClassOption[] }) {
       {students.isPending && <PageSpinner />}
       {students.data && (
         <div className="divide-koyi-border max-h-80 divide-y overflow-y-auto">
-          {students.data.results.map((student) => (
+          {activeStudents.map((student) => (
             <label key={student.id} className="flex items-center gap-3 px-1 py-2.5 text-sm">
               <input
                 type="checkbox"
@@ -114,7 +115,7 @@ function IndividualTransfer({ classOptions }: { classOptions: ClassOption[] }) {
               />
               <span className="text-koyi-text font-semibold">{student.full_name}</span>
               <span className="text-koyi-muted">
-                {student.student_id} · {student.class_name}
+                {student.student_id} · {student.school_class?.label ?? 'Not assigned'}
               </span>
             </label>
           ))}
@@ -144,7 +145,7 @@ function IndividualTransfer({ classOptions }: { classOptions: ClassOption[] }) {
             { studentIds: selectedIds, toClass },
             {
               onSuccess: (data) => {
-                setResult(`Transferred ${data.transferred} student(s).`);
+                setResult(`Transferred ${data.moved} student(s).`);
                 setSelectedIds([]);
               },
             },
@@ -205,7 +206,7 @@ function ClassTransfer({ classOptions }: { classOptions: ClassOption[] }) {
             { fromClass, toClass },
             {
               onSuccess: (data) => {
-                setResult(`Transferred ${data.transferred} student(s).`);
+                setResult(`Transferred ${data.moved} student(s).`);
               },
             },
           );

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { paths } from '@/config/paths';
-import { classes } from '@/mocks/data/school-admin-seed';
+import { classes, students } from '@/mocks/data/school-admin-seed';
 import { renderRoute, screen } from '@/test/test-utils';
 
 /**
@@ -9,13 +9,15 @@ import { renderRoute, screen } from '@/test/test-utils';
  * any student is still enrolled, offering a transfer link rather than a
  * delete button that just fails.
  */
-const occupiedClass = classes.find((entry) => entry.student_count > 0)!;
+const occupiedClass = classes.find((entry) =>
+  students.some((student) => student.class_id === entry.id),
+)!;
 
 describe('ClassDetailPage', () => {
   it('refuses to delete an occupied class and offers to transfer its students', async () => {
     const { user } = renderRoute(paths.schoolAdmin.classes.detail(occupiedClass.id));
 
-    await screen.findByRole('heading', { name: occupiedClass.display_name });
+    await screen.findByRole('heading', { name: occupiedClass.name });
     await user.click(screen.getByRole('button', { name: 'Delete class' }));
 
     expect(

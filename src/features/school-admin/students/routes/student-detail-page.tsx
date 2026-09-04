@@ -9,14 +9,14 @@ import { ErrorState } from '@/components/ui/error-state';
 import { ArrowLeftIcon, BarChartIcon, CalendarIcon, TrashIcon } from '@/components/ui/icons';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { paths } from '@/config/paths';
-import { formatDate } from '@/features/school-admin/api/format';
+import { ageFromDob, formatDate } from '@/features/school-admin/api/format';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
 import {
   useDisableStudent,
   useEnableStudent,
 } from '@/features/school-admin/students/api/mutations';
 import { studentDetailQuery, studentFlnQuery } from '@/features/school-admin/students/api/queries';
-import type { StudentDetail } from '@/features/school-admin/students/api/student.schema';
+import type { Student } from '@/features/school-admin/students/api/student.schema';
 import { DeleteStudentModal } from '@/features/school-admin/students/components/delete-student-modal';
 import { ApiError } from '@/lib/api/errors';
 import { ASSIGNMENT_STATUS_LABEL } from '@/lib/api/format';
@@ -102,13 +102,13 @@ function FlnPanel({ studentId }: { studentId: string }) {
   );
 }
 
-function StudentProfile({ student }: { student: StudentDetail }) {
+function StudentProfile({ student }: { student: Student }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const disableStudent = useDisableStudent();
   const enableStudent = useEnableStudent();
-  const isDisabled = student.status === 'disabled';
+  const isDisabled = !student.is_active;
 
   return (
     <div className="grid gap-4 xl:grid-cols-3">
@@ -128,9 +128,12 @@ function StudentProfile({ student }: { student: StudentDetail }) {
               )}
             </div>
             <p className="text-koyi-muted mt-1 text-sm">
-              {student.class_name} &middot; Student ID: {student.student_id}
+              {student.school_class?.label ?? 'Not assigned'} &middot; Student ID:{' '}
+              {student.student_id}
             </p>
-            <p className="text-koyi-muted mt-1 text-xs">Age: {student.age} yrs</p>
+            <p className="text-koyi-muted mt-1 text-xs">
+              Age: {ageFromDob(student.date_of_birth)} yrs
+            </p>
           </div>
 
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -166,26 +169,22 @@ function StudentProfile({ student }: { student: StudentDetail }) {
           <div className="flex items-baseline justify-between gap-4 py-2">
             <dt className="text-koyi-muted text-xs font-medium">Guardian</dt>
             <dd className="text-koyi-text truncate font-semibold">
-              {student.guardian.name} ({student.guardian.relationship})
+              {student.guardian_name} ({student.guardian_relationship})
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4 py-2">
             <dt className="text-koyi-muted text-xs font-medium">Phone</dt>
-            <dd className="text-koyi-text font-semibold">{student.guardian.phone}</dd>
+            <dd className="text-koyi-text font-semibold">{student.guardian_phone_number}</dd>
           </div>
           <div className="flex items-baseline justify-between gap-4 py-2">
             <dt className="text-koyi-muted text-xs font-medium">Email</dt>
             <dd className="text-koyi-text truncate font-semibold">
-              {student.guardian.email ?? '—'}
+              {student.guardian_email ?? '—'}
             </dd>
           </div>
           <div className="flex items-baseline justify-between gap-4 py-2">
             <dt className="text-koyi-muted text-xs font-medium">Date of birth</dt>
             <dd className="text-koyi-text font-semibold">{formatDate(student.date_of_birth)}</dd>
-          </div>
-          <div className="flex items-baseline justify-between gap-4 py-2">
-            <dt className="text-koyi-muted text-xs font-medium">Enrolled</dt>
-            <dd className="text-koyi-text font-semibold">{formatDate(student.enrolled_on)}</dd>
           </div>
         </dl>
       </Card>

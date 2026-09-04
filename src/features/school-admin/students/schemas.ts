@@ -21,7 +21,6 @@ export const addStudentSchema = z.object({
   guardianRelationship: z.enum(GUARDIAN_RELATIONSHIPS, {
     message: 'Select guardian relationship',
   }),
-  triggerBaselineAssessment: z.boolean(),
 });
 
 export type AddStudentFormValues = z.infer<typeof addStudentSchema>;

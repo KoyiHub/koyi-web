@@ -10,23 +10,9 @@ import { z } from 'zod';
 
 export const schoolProfileSchema = z.object({
   name: z.string().min(1, 'School name is required'),
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-  phone: z.string().min(7, 'Enter a valid phone number'),
-  address: z.string().min(1, 'Address is required'),
-  location: z.string().min(1, 'Location is required'),
-  motto: z.string(),
   currentSessionId: z.string().min(1, 'Select the current session'),
 });
 export type SchoolProfileFormValues = z.infer<typeof schoolProfileSchema>;
-
-export const adminAccountFormSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
-  email: z.string().min(1, 'Email is required').email('Enter a valid email address'),
-  phone: z.string().min(7, 'Enter a valid phone number'),
-  twoFactorEnabled: z.boolean(),
-});
-export type AdminAccountFormValues = z.infer<typeof adminAccountFormSchema>;
 
 export const changePasswordSchema = z
   .object({
