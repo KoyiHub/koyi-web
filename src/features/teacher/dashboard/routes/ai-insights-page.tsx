@@ -20,7 +20,6 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { paths } from '@/config/paths';
 import { INSIGHT_KIND_LABEL } from '@/features/teacher/api/format';
-import { emptyDraft, readDraft, writeDraft } from '@/features/teacher/assessments/lib/draft';
 import type { Insight, InsightKind } from '@/features/teacher/dashboard/api/dashboard.schema';
 import { insightsQuery } from '@/features/teacher/dashboard/api/queries';
 import { cn } from '@/lib/utils/cn';
@@ -60,26 +59,17 @@ export function AiInsightsPage() {
   const rest = all.filter((insight) => insight.id !== hero?.id);
 
   /**
-   * "Apply focus group" is a real handover, not a saved object: the children
-   * and the skill are carried into the assessment builder, which pre-selects
-   * them at the assign step. No group is persisted, because no endpoint for
-   * one has been confirmed.
+   * "Apply focus group" used to pre-fill a sessionStorage assessment draft
+   * with the flagged children and skill before handing off to the builder.
+   *
+   * That mechanism is gone: under draft-then-publish (`frontend-integration.md`
+   * §5.3) the draft is a real server record from step 1, not local state a
+   * dashboard screen can reach into. There is also no group endpoint yet to
+   * hand the children off to (§5.6, Planned) — that lands with groups and
+   * lesson plans later in the refactor. Until then this opens the builder with
+   * nothing pre-filled rather than silently dropping a promise it can't keep.
    */
-  const applyFocusGroup = (insight: Insight) => {
-    const draft = readDraft() ?? emptyDraft();
-
-    writeDraft({
-      ...draft,
-      details: {
-        ...draft.details,
-        title: draft.details.title || `${insight.focus_skill ?? 'Focus'} practice`,
-      },
-      focus: {
-        skill: insight.focus_skill ?? insight.headline,
-        student_ids: insight.student_ids,
-      },
-    });
-
+  const applyFocusGroup = (_insight: Insight) => {
     void navigate(paths.teacher.assessments.create);
   };
 

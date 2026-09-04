@@ -1,46 +1,53 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { teacherEndpoints } from '@/features/teacher/api/endpoints';
-import { teacherKeys } from '@/features/teacher/api/queries';
 import {
-  bankListSchema,
-  bankSummarySchema,
-} from '@/features/teacher/bank/api/question-bank.schema';
+  type BankQuestionFilters,
+  bankQuestionListSchema,
+  bankQuestionSchema,
+  skillListSchema,
+} from '@/features/teacher/bank/api/bank.schema';
 import { api } from '@/lib/api/client';
 
-export interface BankFilters {
-  search: string;
-  subject: string;
-  /** `all`, or a `QuestionType`. The bank's most useful filter when building. */
-  questionType: string;
-  level: string;
-  page: number;
-}
+export const bankKeys = {
+  all: ['teacher', 'bank'] as const,
+  skills: (domain?: string) => [...bankKeys.all, 'skills', domain ?? 'all'] as const,
+  questions: (filters: BankQuestionFilters) => [...bankKeys.all, 'questions', filters] as const,
+  question: (id: string) => [...bankKeys.all, 'question', id] as const,
+};
 
-/** Bank questions, filtered server-side so paging stays correct. */
-export const questionBankQuery = (filters: BankFilters) =>
+/**
+ * The taxonomy. Unpaginated — 14 skills and 55 subskills is small enough that
+ * paging would only add a round trip.
+ *
+ * Held for a long time: it is reference data that changes with a release, not
+ * with a teacher's work.
+ */
+export const skillsQuery = (domain?: string) =>
   queryOptions({
-    queryKey: teacherKeys.questionBankList(filters),
-    queryFn: ({ signal }) => {
-      const search = new URLSearchParams({ page: String(filters.page) });
-      if (filters.search) search.set('search', filters.search);
-      if (filters.subject !== 'all') search.set('subject', filters.subject);
-      if (filters.questionType !== 'all') search.set('question_type', filters.questionType);
-      if (filters.level !== 'all') search.set('level', filters.level);
-
-      return api.get(`${teacherEndpoints.questionBank.list}?${search.toString()}`, bankListSchema, {
+    queryKey: bankKeys.skills(domain),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.bank.skills, skillListSchema, {
         signal,
-      });
-    },
-    staleTime: 60_000,
-    placeholderData: (previous) => previous,
+        params: domain ? { domain } : undefined,
+      }),
+    staleTime: 60 * 60 * 1000,
   });
 
-/** Counts for the filter rail. Kept separate so filtering never restates its own totals. */
-export const questionBankSummaryQuery = () =>
+export const bankQuestionsQuery = (filters: BankQuestionFilters = {}) =>
   queryOptions({
-    queryKey: teacherKeys.questionBankSummary(),
+    queryKey: bankKeys.questions(filters),
     queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.questionBank.summary, bankSummarySchema, { signal }),
-    staleTime: 10 * 60_000,
+      api.get(teacherEndpoints.bank.questions, bankQuestionListSchema, {
+        signal,
+        params: filters,
+      }),
+  });
+
+/** One bank question, fetched to prefill the authoring form. */
+export const bankQuestionQuery = (questionId: string) =>
+  queryOptions({
+    queryKey: bankKeys.question(questionId),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.bank.question(questionId), bankQuestionSchema, { signal }),
   });

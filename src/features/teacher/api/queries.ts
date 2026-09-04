@@ -25,32 +25,10 @@ export const teacherKeys = {
   insights: () => [...teacherKeys.all, 'insights'] as const,
   classPerformance: () => [...teacherKeys.all, 'class-performance'] as const,
 
-  assessments: () => [...teacherKeys.all, 'assessments'] as const,
-  assessmentList: (filters: {
-    tab: string;
-    search: string;
-    difficulty: string;
-    subject: string;
-    status: string;
-    grade: string;
-    page: number;
-  }) => [...teacherKeys.assessments(), 'list', filters] as const,
-  assessmentDetail: (assessmentId: string) =>
-    [...teacherKeys.assessments(), 'detail', assessmentId] as const,
-  assessmentAnalytics: (assessmentId: string) =>
-    [...teacherKeys.assessments(), 'analytics', assessmentId] as const,
-
-  questionLayouts: () => [...teacherKeys.all, 'question-layouts'] as const,
-
-  questionBank: () => [...teacherKeys.all, 'question-bank'] as const,
-  questionBankList: (filters: {
-    search: string;
-    subject: string;
-    questionType: string;
-    level: string;
-    page: number;
-  }) => [...teacherKeys.questionBank(), 'list', filters] as const,
-  questionBankSummary: () => [...teacherKeys.questionBank(), 'summary'] as const,
+  // Assessment authoring and bank keys now live beside their own query
+  // modules — `@/features/teacher/assessments/api/queries` (`assessmentKeys`)
+  // and `@/features/teacher/bank/api/queries` (`bankKeys`) — since those are
+  // real, live query hooks now rather than the placeholders these once were.
 
   students: () => [...teacherKeys.all, 'students'] as const,
   studentList: (filters: { search: string; level: string; page: number }) =>

@@ -1,19 +1,18 @@
 import { http, HttpResponse } from 'msw';
 
+import {
+  assessmentStore,
+  computeCoverage,
+  createAssessment,
+  createSection,
+  findStored,
+  findStoredSection,
+  publish,
+  toAssessment,
+} from '@/mocks/data/assessment-seed';
+import { bankQuestions } from '@/mocks/data/bank-seed';
+import { skills } from '@/mocks/data/taxonomy-seed';
 import { activity, classPerformance, priorityCounts } from '@/mocks/data/teacher-activity-seed';
-import {
-  assessments,
-  buildAnalytics,
-  buildDetail,
-  findAssessment,
-  tabCounts,
-} from '@/mocks/data/teacher-assessment-seed';
-import {
-  bankQuestions,
-  bankSummary,
-  questionLayouts,
-  toAssessmentQuestion,
-} from '@/mocks/data/teacher-question-seed';
 import {
   attentionRows,
   bandLabels,
@@ -150,177 +149,217 @@ export const teacherHandlers = [
   http.get(`${BASE}/class-performance/`, () => HttpResponse.json(classPerformance)),
 
   /* ---------------------------------------------------------------------- */
-  /* Assessments                                                            */
+  /* Taxonomy and question bank — frontend-integration.md §5.2             */
+  /* ---------------------------------------------------------------------- */
+
+  http.get(`${BASE}/bank/skills/`, ({ request }) => {
+    const url = new URL(request.url);
+    const domain = filterValue(url, 'domain');
+    const filtered = domain ? skills.filter((skill) => skill.domain === domain) : skills;
+    return HttpResponse.json(filtered);
+  }),
+
+  http.get(`${BASE}/bank/questions/`, ({ request }) => {
+    const url = new URL(request.url);
+    const term = searchTerm(url);
+    const domain = filterValue(url, 'domain');
+    const skillId = filterValue(url, 'skill');
+    const subskillId = filterValue(url, 'subskill');
+    const flnLevel = filterValue(url, 'fln_level');
+    const type = filterValue(url, 'type');
+
+    const filtered = bankQuestions.filter((question) => {
+      if (term && !matches(`${question.content} ${question.skill_name}`, term)) return false;
+      if (domain && question.domain !== domain) return false;
+      if (skillId) {
+        // The mock bank does not carry a separate skill id on each question;
+        // `skill` filters by the skill's own id via the taxonomy lookup below.
+        const bySkillId = skills.find((skill) => skill.id === skillId);
+        if (bySkillId?.name !== question.skill_name) return false;
+      }
+      if (subskillId && question.subskill.id !== subskillId) return false;
+      if (flnLevel && String(question.fln_level) !== flnLevel) return false;
+      if (type && question.type !== type) return false;
+      return true;
+    });
+
+    return HttpResponse.json(paginate(filtered, url, 10));
+  }),
+
+  http.get(`${BASE}/bank/questions/:questionId/`, ({ params }) => {
+    const question = bankQuestions.find((candidate) => candidate.id === params.questionId);
+    if (!question) return notFound('That bank question does not exist.');
+    return HttpResponse.json(question);
+  }),
+
+  /* ---------------------------------------------------------------------- */
+  /* Assessments — draft, then publish. frontend-integration.md §5.3        */
   /* ---------------------------------------------------------------------- */
 
   http.get(`${BASE}/assessments/`, ({ request }) => {
     const url = new URL(request.url);
-    const tab = url.searchParams.get('tab') ?? 'all';
     const term = searchTerm(url);
-    const difficulty = filterValue(url, 'difficulty');
-    const subject = filterValue(url, 'subject');
     const status = filterValue(url, 'status');
-    const grade = filterValue(url, 'grade');
 
-    const filtered = assessments.filter((assessment) => {
-      if (tab === 'drafts' && assessment.status !== 'draft') return false;
-      if ((tab === 'literacy' || tab === 'numeracy') && assessment.subject !== tab) return false;
-      if (term && !matches(`${assessment.title} ${assessment.description}`, term)) return false;
-      if (difficulty && assessment.difficulty !== difficulty) return false;
-      if (subject && assessment.subject !== subject) return false;
+    const filtered = assessmentStore.filter((assessment) => {
+      if (term && !matches(assessment.name, term)) return false;
       if (status && assessment.status !== status) return false;
-      if (grade && String(assessment.grade_level) !== grade) return false;
       return true;
     });
 
-    // `questions` stays on the detail response; the library only needs the card.
-    const summaries = filtered.map(({ questions: _questions, ...summary }) => summary);
-
-    return HttpResponse.json({ ...paginate(summaries, url, 6), tab_counts: tabCounts });
+    const page = paginate(filtered, url, 25);
+    return HttpResponse.json({ ...page, results: page.results.map(toAssessment) });
   }),
 
   http.post(`${BASE}/assessments/`, async ({ request }) => {
     const body = await readBody(request);
-    const title = asString(body.title);
-    const subject = asString(body.subject);
-    const detail: Record<string, string[]> = {};
+    const name = asString(body.name);
+    if (!name) return validationError({ name: ['Give the assessment a name.'] });
 
-    if (!title) detail.title = ['Give the assessment a title.'];
-    if (subject !== 'literacy' && subject !== 'numeracy') {
-      detail.subject = ['Choose either literacy or numeracy.'];
-    }
-    if (Object.keys(detail).length > 0) return validationError(detail);
-
-    const submitted = Array.isArray(body.questions) ? body.questions : [];
-    const questions = submitted.map((entry, index) => {
-      const raw = entry as Record<string, unknown>;
-      const source = bankQuestions.find((question) => question.id === asString(raw.id));
-
-      if (source) return toAssessmentQuestion(source, index + 1);
-
-      return {
-        id: `q-new-${String(Date.now())}-${String(index)}`,
-        text: asString(raw.text),
-        description: asString(raw.description) || null,
-        subject: subject as 'literacy' | 'numeracy',
-        level: Number(raw.level ?? 4),
-        order: index + 1,
-        point: Number(raw.point ?? 1),
-        question_type: (asString(raw.question_type) || 'single_choice') as 'single_choice',
-        layout: (raw.layout as null) ?? null,
-        contents: (raw.contents ?? []) as never[],
-        options: (raw.options ?? []) as never[],
-      };
+    const created = createAssessment({
+      name,
+      instructions: asString(body.instructions),
+      opens_at: (body.opens_at as string | null) ?? null,
+      closes_at: (body.closes_at as string | null) ?? null,
     });
 
-    const created = {
-      id: `asm-new-${String(assessments.length + 1)}`,
-      title,
-      description: asString(body.description),
-      subject: subject as 'literacy' | 'numeracy',
-      assessment_type: (asString(body.assessment_type) || 'practice') as 'practice',
-      status: 'draft' as const,
-      difficulty: (asString(body.difficulty) || 'core') as 'core',
-      grade_label: asString(body.grade_label) || 'Primary 4',
-      grade_level: Number(body.grade_level ?? 4),
-      question_count: questions.length,
-      time_limit_minutes:
-        body.time_limit_minutes === null ? null : Number(body.time_limit_minutes ?? 30),
-      assigned_count: 0,
-      completed_count: 0,
-      updated_at: new Date().toISOString(),
-      updated_label: 'Draft · just now',
-      questions,
-    };
-
-    assessments.unshift(created);
-    tabCounts.all += 1;
-    tabCounts.drafts += 1;
-    tabCounts[created.subject] += 1;
-
-    return HttpResponse.json(
-      {
-        id: created.id,
-        title: created.title,
-        status: created.status,
-        question_count: created.question_count,
-        questions: created.questions,
-      },
-      { status: 201 },
-    );
-  }),
-
-  http.get(`${BASE}/assessments/:assessmentId/analytics/`, ({ params }) => {
-    const assessment = findAssessment(String(params.assessmentId));
-    if (!assessment) return notFound('That assessment does not exist.');
-
-    return HttpResponse.json(buildAnalytics(assessment));
-  }),
-
-  http.post(`${BASE}/assessments/:assessmentId/assign/`, async ({ params, request }) => {
-    const assessment = findAssessment(String(params.assessmentId));
-    if (!assessment) return notFound('That assessment does not exist.');
-
-    const body = await readBody(request);
-    const studentIds = Array.isArray(body.student_ids) ? body.student_ids : [];
-    const saveAsDraft = body.save_as_draft === true;
-
-    if (!saveAsDraft && studentIds.length === 0) {
-      return validationError({ student_ids: ['Choose at least one student.'] });
-    }
-    if (!saveAsDraft && !asString(body.starts_at)) {
-      return validationError({ starts_at: ['Choose when the assessment opens.'] });
-    }
-
-    assessment.assigned_count = studentIds.length;
-    assessment.status = saveAsDraft ? 'draft' : 'published';
-    assessment.updated_at = new Date().toISOString();
-    assessment.updated_label = saveAsDraft ? 'Draft · just now' : 'Scheduled · just now';
-
-    return HttpResponse.json({
-      id: assessment.id,
-      status: assessment.status,
-      assigned_count: assessment.assigned_count,
-    });
+    return HttpResponse.json(toAssessment(created), { status: 201 });
   }),
 
   http.get(`${BASE}/assessments/:assessmentId/`, ({ params }) => {
-    const assessment = findAssessment(String(params.assessmentId));
+    const assessment = findStored(String(params.assessmentId));
     if (!assessment) return notFound('That assessment does not exist.');
-
-    return HttpResponse.json(buildDetail(assessment));
+    return HttpResponse.json(toAssessment(assessment));
   }),
 
-  /* ---------------------------------------------------------------------- */
-  /* Builder lookups and the question bank                                  */
-  /* ---------------------------------------------------------------------- */
+  http.patch(`${BASE}/assessments/:assessmentId/`, async ({ params, request }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    if (assessment.status !== 'draft') {
+      return validationError({ status: ['A published assessment cannot be edited.'] });
+    }
 
-  http.get(`${BASE}/question-layouts/`, () =>
-    HttpResponse.json({ count: questionLayouts.length, results: questionLayouts }),
-  ),
+    const body = await readBody(request);
+    if (typeof body.name === 'string') assessment.name = body.name;
+    if (typeof body.instructions === 'string') assessment.instructions = body.instructions;
+    if ('opens_at' in body) assessment.opens_at = body.opens_at as string | null;
+    if ('closes_at' in body) assessment.closes_at = body.closes_at as string | null;
 
-  http.get(`${BASE}/question-bank/summary/`, () => HttpResponse.json(bankSummary)),
+    return HttpResponse.json(toAssessment(assessment));
+  }),
 
-  http.get(`${BASE}/question-bank/`, ({ request }) => {
-    const url = new URL(request.url);
-    const term = searchTerm(url);
-    const subject = filterValue(url, 'subject');
-    const questionType = filterValue(url, 'question_type');
-    const level = filterValue(url, 'level');
-    const difficulty = filterValue(url, 'difficulty');
+  http.delete(`${BASE}/assessments/:assessmentId/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    if (assessment.status !== 'draft') {
+      return validationError({ status: ['A published assessment cannot be deleted.'] });
+    }
+    const index = assessmentStore.indexOf(assessment);
+    assessmentStore.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
 
-    const filtered = bankQuestions.filter((question) => {
-      if (term && !matches(`${question.text} ${question.skill} ${question.reference}`, term)) {
-        return false;
-      }
-      if (subject && question.subject !== subject) return false;
-      if (questionType && question.question_type !== questionType) return false;
-      if (level && String(question.level) !== level) return false;
-      if (difficulty && question.difficulty !== difficulty) return false;
-      return true;
+  http.get(`${BASE}/assessments/:assessmentId/sections/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    return HttpResponse.json(toAssessment(assessment).sections);
+  }),
+
+  http.post(`${BASE}/assessments/:assessmentId/sections/`, async ({ params, request }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+
+    const body = await readBody(request);
+    const domain = asString(body.domain);
+    const name = asString(body.name);
+    const detail: Record<string, string[]> = {};
+    if (domain !== 'literacy' && domain !== 'numeracy')
+      detail.domain = ['Choose either literacy or numeracy.'];
+    if (!name) detail.name = ['Give the section a name.'];
+    if (Object.keys(detail).length > 0) return validationError(detail);
+
+    const section = createSection(assessment, {
+      domain,
+      name,
+      instructions: asString(body.instructions),
+      timer: (body.timer as string | null) ?? null,
+      covers: Array.isArray(body.covers) ? (body.covers as string[]) : [],
     });
 
-    return HttpResponse.json(paginate(filtered, url, 8));
+    return HttpResponse.json(
+      toAssessment(assessment).sections.find((candidate) => candidate.id === section.id),
+      {
+        status: 201,
+      },
+    );
+  }),
+
+  http.delete(`${BASE}/assessments/:assessmentId/sections/:sectionId/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const index = assessment.sections.findIndex((section) => section.id === params.sectionId);
+    if (index === -1) return notFound('That section does not exist.');
+    assessment.sections.splice(index, 1);
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.get(`${BASE}/assessments/:assessmentId/sections/:sectionId/questions/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const section = findStoredSection(assessment, String(params.sectionId));
+    if (!section) return notFound('That section does not exist.');
+    return HttpResponse.json({ questions: section.questions });
+  }),
+
+  http.put(
+    `${BASE}/assessments/:assessmentId/sections/:sectionId/questions/`,
+    async ({ params, request }) => {
+      const assessment = findStored(String(params.assessmentId));
+      if (!assessment) return notFound('That assessment does not exist.');
+      const section = findStoredSection(assessment, String(params.sectionId));
+      if (!section) return notFound('That section does not exist.');
+
+      const body = await readBody(request);
+      const submitted = Array.isArray(body.questions) ? body.questions : [];
+
+      // The client owns the ordered array and sends it whole — this replaces
+      // the section's questions entirely rather than appending or patching.
+      section.questions = submitted.map((entry, index) => {
+        const raw = entry as Record<string, unknown>;
+        return {
+          id: asString(raw.id) || `q-${String(Date.now())}-${String(index)}`,
+          subskill_id: asString(raw.subskill_id),
+          fln_level: Number(raw.fln_level ?? 1) as never,
+          question_type: (asString(raw.question_type) || 'single_choice') as never,
+          layout: (raw.layout ?? null) as never,
+          text: asString(raw.text),
+          description: asString(raw.description),
+          point: asString(raw.point) || '1.00',
+          source_question_id: (raw.source_question_id as string | null) ?? null,
+          contents: (raw.contents ?? []) as never,
+          options: (raw.options ?? []) as never,
+          answer: (raw.answer ?? null) as never,
+        };
+      });
+
+      return HttpResponse.json({ questions: section.questions });
+    },
+  ),
+
+  http.get(`${BASE}/assessments/:assessmentId/coverage/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    return HttpResponse.json(computeCoverage(assessment));
+  }),
+
+  http.post(`${BASE}/assessments/:assessmentId/publish/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+
+    const result = publish(assessment);
+    if (!result.ok) return validationError({ status: [result.message] });
+
+    return HttpResponse.json(toAssessment(assessment));
   }),
 
   /* ---------------------------------------------------------------------- */

@@ -22,7 +22,22 @@ import type {
   QuestionOption,
   QuestionType,
 } from '@/features/teacher/api/shared.schema';
-import type { BankQuestion } from '@/features/teacher/bank/api/question-bank.schema';
+
+/**
+ * LEGACY bank-question shape, kept local now that
+ * `@/features/teacher/bank/api/bank.schema` answers the real contract instead
+ * (`frontend-integration.md` §5.2). This file only still exists to feed
+ * `teacher-assessment-seed.ts` and `teacher-student-seed.ts`'s question-log
+ * demo data — see the note at the top of `teacher-assessment-seed.ts`.
+ */
+interface BankQuestion extends Omit<AssessmentQuestion, 'order'> {
+  reference: string;
+  skill: string;
+  difficulty: 'foundation' | 'core' | 'stretch';
+  status: 'production_ready' | 'needs_review' | 'retired';
+  usage_count: number;
+  updated_label: string;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Synthetic media                                                            */

@@ -1,81 +1,106 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { teacherEndpoints } from '@/features/teacher/api/endpoints';
-import { teacherKeys } from '@/features/teacher/api/queries';
 import {
-  analyticsSchema,
-  assessmentDetailSchema,
   assessmentListSchema,
-  questionLayoutListSchema,
+  assessmentSchema,
+  coverageSchema,
+  sectionListSchema,
+  sectionQuestionsSchema,
 } from '@/features/teacher/assessments/api/assessment.schema';
+import {
+  assignmentListSchema,
+  rosterSchema,
+} from '@/features/teacher/assessments/api/assignment.schema';
 import { api } from '@/lib/api/client';
 
-export interface AssessmentListFilters {
-  /** `all` | `literacy` | `numeracy` | `drafts` — the library's four tabs. */
-  tab: string;
-  search: string;
-  difficulty: string;
-  subject: string;
-  status: string;
-  grade: string;
-  page: number;
+/**
+ * Query keys for authoring.
+ *
+ * Nested under the assessment id so that saving one section's questions
+ * invalidates that paper's coverage and detail without touching the library
+ * list or another draft the teacher has open.
+ */
+export const assessmentKeys = {
+  all: ['teacher', 'assessments'] as const,
+  lists: () => [...assessmentKeys.all, 'list'] as const,
+  list: (params: AssessmentListParams) => [...assessmentKeys.lists(), params] as const,
+  detail: (id: string) => [...assessmentKeys.all, 'detail', id] as const,
+  sections: (id: string) => [...assessmentKeys.all, id, 'sections'] as const,
+  sectionQuestions: (id: string, sectionId: string) =>
+    [...assessmentKeys.all, id, 'sections', sectionId, 'questions'] as const,
+  coverage: (id: string) => [...assessmentKeys.all, id, 'coverage'] as const,
+  assignments: (id: string) => [...assessmentKeys.all, id, 'assignments'] as const,
+  roster: (id: string) => [...assessmentKeys.all, id, 'roster'] as const,
+};
+
+export interface AssessmentListParams {
+  search?: string | undefined;
+  status?: string | undefined;
+  page?: number | undefined;
 }
 
-/**
- * The assessment library. Filters go on the query string rather than being
- * applied in the browser, so paging stays correct once the list outgrows a
- * single page.
- */
-export const assessmentListQuery = (filters: AssessmentListFilters) =>
+export const assessmentsQuery = (params: AssessmentListParams = {}) =>
   queryOptions({
-    queryKey: teacherKeys.assessmentList(filters),
-    queryFn: ({ signal }) => {
-      const search = new URLSearchParams({ tab: filters.tab, page: String(filters.page) });
-      if (filters.search) search.set('search', filters.search);
-      if (filters.difficulty !== 'all') search.set('difficulty', filters.difficulty);
-      if (filters.subject !== 'all') search.set('subject', filters.subject);
-      if (filters.status !== 'all') search.set('status', filters.status);
-      if (filters.grade !== 'all') search.set('grade', filters.grade);
-
-      return api.get(
-        `${teacherEndpoints.assessments.list}?${search.toString()}`,
-        assessmentListSchema,
-        { signal },
-      );
-    },
-    staleTime: 30_000,
-    placeholderData: (previous) => previous,
+    queryKey: assessmentKeys.list(params),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.list, assessmentListSchema, {
+        signal,
+        params: params as Record<string, unknown>,
+      }),
   });
 
-/** One assessment with its results. Scores and bands arrive already computed. */
-export const assessmentDetailQuery = (assessmentId: string) =>
+export const assessmentQuery = (assessmentId: string) =>
   queryOptions({
-    queryKey: teacherKeys.assessmentDetail(assessmentId),
+    queryKey: assessmentKeys.detail(assessmentId),
     queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.assessments.detail(assessmentId), assessmentDetailSchema, {
+      api.get(teacherEndpoints.assessments.detail(assessmentId), assessmentSchema, { signal }),
+  });
+
+export const sectionsQuery = (assessmentId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.sections(assessmentId),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.sections(assessmentId), sectionListSchema, { signal }),
+  });
+
+export const sectionQuestionsQuery = (assessmentId: string, sectionId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.sectionQuestions(assessmentId, sectionId),
+    queryFn: ({ signal }) =>
+      api.get(
+        teacherEndpoints.assessments.sectionQuestions(assessmentId, sectionId),
+        sectionQuestionsSchema,
+        { signal },
+      ),
+  });
+
+/**
+ * Coverage — what the paper can actually establish about a child.
+ *
+ * Read it **while the teacher builds**, not only before publishing: a paper
+ * that probes one level cannot place anyone, and that is worth knowing at
+ * question three rather than at publish.
+ */
+export const coverageQuery = (assessmentId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.coverage(assessmentId),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.coverage(assessmentId), coverageSchema, { signal }),
+  });
+
+export const assignmentsQuery = (assessmentId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.assignments(assessmentId),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.assignments(assessmentId), assignmentListSchema, {
         signal,
       }),
-    staleTime: 60_000,
   });
 
-/** The deeper report behind an assessment: distribution, skills, most-missed questions. */
-export const assessmentAnalyticsQuery = (assessmentId: string) =>
+export const rosterQuery = (assessmentId: string) =>
   queryOptions({
-    queryKey: teacherKeys.assessmentAnalytics(assessmentId),
+    queryKey: assessmentKeys.roster(assessmentId),
     queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.assessments.analytics(assessmentId), analyticsSchema, { signal }),
-    staleTime: 60_000,
-  });
-
-/**
- * The `QuestionLayout` lookup table. Cached for the session — it is a small,
- * rarely-changing table that every question box in the builder reads.
- */
-export const questionLayoutsQuery = () =>
-  queryOptions({
-    queryKey: teacherKeys.questionLayouts(),
-    queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.questionLayouts, questionLayoutListSchema, { signal }),
-    staleTime: 30 * 60_000,
-    select: (data) => data.results,
+      api.get(teacherEndpoints.assessments.roster(assessmentId), rosterSchema, { signal }),
   });

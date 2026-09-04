@@ -4,8 +4,6 @@ import type {
   QuestionOptionType,
   QuestionType,
 } from '@/features/teacher/api/shared.schema';
-import type { Difficulty } from '@/features/teacher/assessments/api/assessment.schema';
-import type { BankStatus } from '@/features/teacher/bank/api/question-bank.schema';
 import type {
   AttentionPriority,
   InsightKind,
@@ -129,33 +127,13 @@ export const LAYOUT_HINT: Record<QuestionLayout, string> = {
   PASSAGE_COMPREHENSION_CHOICE: 'A passage the child reads, with the question below it.',
 };
 
-/* -------------------------------------------------------------------------- */
-/* Library and bank                                                           */
-/* -------------------------------------------------------------------------- */
-
-export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  foundation: 'Foundation',
-  core: 'Core',
-  stretch: 'Stretch',
-};
-
-export const DIFFICULTY_CHIP_CLASS: Record<Difficulty, string> = {
-  foundation: 'bg-koyi-band-intermediate-soft text-koyi-band-intermediate-ink',
-  core: 'bg-koyi-nav-active text-koyi-primary',
-  stretch: 'bg-amber-100 text-amber-800',
-};
-
-export const BANK_STATUS_LABEL: Record<BankStatus, string> = {
-  production_ready: 'Ready to use',
-  needs_review: 'Needs review',
-  retired: 'Retired',
-};
-
-export const BANK_STATUS_CHIP_CLASS: Record<BankStatus, string> = {
-  production_ready: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
-  needs_review: 'bg-amber-100 text-amber-800',
-  retired: 'bg-koyi-surface text-koyi-muted',
-};
+/*
+ * DEPRECATED: difficulty (foundation/core/stretch) and bank status
+ * (production_ready/needs_review/retired) do not exist in the new contract —
+ * questions carry `fln_level` instead, and the bank is read-only with no
+ * status field. Removed rather than kept as dead exports: nothing outside
+ * this file referenced either.
+ */
 
 /* -------------------------------------------------------------------------- */
 /* Dashboard drill-downs                                                      */
