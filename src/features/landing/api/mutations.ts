@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { schoolOnboardingEndpoints } from '@/features/landing/api/endpoints';
+import { schoolAuthEndpoints } from '@/features/landing/api/endpoints';
 import {
   registerSchoolResponseSchema,
   resendVerificationResponseSchema,
@@ -40,24 +40,20 @@ export interface ResendVerificationInput {
 export function useRegisterSchool() {
   return useMutation({
     mutationFn: (input: RegisterSchoolInput) =>
-      api.post(schoolOnboardingEndpoints.register, registerSchoolResponseSchema, input),
+      api.post(schoolAuthEndpoints.register, registerSchoolResponseSchema, input),
   });
 }
 
 export function useVerifyEmail() {
   return useMutation({
     mutationFn: (input: VerifyEmailInput) =>
-      api.post(schoolOnboardingEndpoints.verifyEmail, verifyEmailResponseSchema, input),
+      api.post(schoolAuthEndpoints.registerVerify, verifyEmailResponseSchema, input),
   });
 }
 
 export function useResendVerification() {
   return useMutation({
     mutationFn: (input: ResendVerificationInput) =>
-      api.post(
-        schoolOnboardingEndpoints.resendVerification,
-        resendVerificationResponseSchema,
-        input,
-      ),
+      api.post(schoolAuthEndpoints.otpResend, resendVerificationResponseSchema, input),
   });
 }

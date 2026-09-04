@@ -1,27 +1,27 @@
 /**
- * Auth endpoint URLs in one place, split by how certain we are of them.
+ * Shared auth endpoint URLs.
  *
- * `authEndpoints` are confirmed against the Django `apps.users` URLs.
+ * Logout and token refresh are the only two auth paths both surfaces share;
+ * everything else is grouped **surface first** (`/v1/teacher/auth/…`,
+ * `/v1/school/auth/…`) so permissions, routing and the OpenAPI tags line up.
  *
- * `provisionalAuthEndpoints` are NOT confirmed. Koyi signs teachers in with a
- * Teacher ID + School ID pair, which has no published contract yet — MSW
- * answers it in development (see `src/mocks/handlers.ts`). It is isolated
- * here so that swapping to the real API is a change of URL and
- * request/response schema in this folder, never a change to a screen. The
- * School Admin equivalents live in
- * `@/features/school-admin/auth/api/endpoints`.
- *
- * Request bodies use snake_case to match the confirmed Django auth
- * serializers (`first_name`, `password_confirm`); revisit if the real
- * contract differs.
+ * There is no register endpoint here: teachers do not self-register. A school
+ * admin creates a teacher account, which is what ties the login to a school.
  */
 export const authEndpoints = {
-  register: '/v1/auth/register/',
   logout: '/v1/auth/logout/',
   refresh: '/v1/auth/token/refresh/',
-  me: '/v1/auth/me/',
 } as const;
 
-export const provisionalAuthEndpoints = {
-  teacherLogin: '/v1/auth/teacher/login/',
+/**
+ * Teacher auth. A teacher signs in with the **teacher id** the school issued
+ * them — e.g. `GHS-T-00007` — not an email: it carries the school abbreviation
+ * as a prefix and is globally unique, so no separate school field is needed.
+ */
+export const teacherAuthEndpoints = {
+  login: '/v1/teacher/auth/login/',
+  me: '/v1/teacher/auth/me/',
+  changePassword: '/v1/teacher/auth/password/change/',
+  resetPasswordRequest: '/v1/teacher/auth/password/reset/request/',
+  resetPasswordConfirm: '/v1/teacher/auth/password/reset/confirm/',
 } as const;

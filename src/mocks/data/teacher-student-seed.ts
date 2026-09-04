@@ -80,7 +80,7 @@ const RESPONSES: Record<string, string> = {
 };
 
 function questionLogFor(studentId: string, base: number): QuestionLogEntry[] {
-  const completed = assessments.filter((assessment) => assessment.status === 'completed');
+  const completed = assessments.filter((assessment) => assessment.status === 'closed');
 
   return completed.flatMap((assessment, assessmentIndex) =>
     assessment.questions.slice(0, 4).map((question, questionIndex) => {

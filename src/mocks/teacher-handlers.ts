@@ -273,7 +273,7 @@ export const teacherHandlers = [
     }
 
     assessment.assigned_count = studentIds.length;
-    assessment.status = saveAsDraft ? 'draft' : 'scheduled';
+    assessment.status = saveAsDraft ? 'draft' : 'published';
     assessment.updated_at = new Date().toISOString();
     assessment.updated_label = saveAsDraft ? 'Draft · just now' : 'Scheduled · just now';
 

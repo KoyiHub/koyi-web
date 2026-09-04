@@ -1,14 +1,19 @@
 /**
- * School Admin auth URLs. PROVISIONAL — the School Portal backend code exists
- * but is not wired into public API URLs yet (confirmed via repo audit), so
- * none of these is a confirmed contract. MSW answers them in development (see
- * `src/mocks/handlers.ts`); a build without mocks will fail against them
- * loudly rather than pretending to sign anyone in.
+ * School management auth.
  *
- * Request bodies use snake_case to match the confirmed Django auth
- * serializers; revisit if the real contract differs.
+ * Registration and login are both two-step behind an emailed OTP, so each has
+ * a `verify` counterpart. The password-reset *request* step always returns
+ * `200` whether or not the address exists — so the form says "if that address
+ * is registered, a code is on its way", never "code sent", which would let the
+ * form be used to discover which schools have accounts.
  */
-export const provisionalSchoolAdminAuthEndpoints = {
-  login: '/v1/auth/school-admin/login/',
-  verifyDevice: '/v1/auth/school-admin/verify-device/',
+export const schoolAuthEndpoints = {
+  register: '/v1/school/auth/register/',
+  registerVerify: '/v1/school/auth/register/verify/',
+  login: '/v1/school/auth/login/',
+  loginVerify: '/v1/school/auth/login/verify/',
+  otpResend: '/v1/school/auth/otp/resend/',
+  resetPasswordRequest: '/v1/school/auth/password/reset/request/',
+  resetPasswordVerify: '/v1/school/auth/password/reset/verify/',
+  resetPasswordConfirm: '/v1/school/auth/password/reset/confirm/',
 } as const;

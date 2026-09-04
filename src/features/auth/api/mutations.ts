@@ -1,49 +1,34 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
-import {
-  type RegisterRequest,
-  registerResponseSchema,
-  teacherLoginResponseSchema,
-} from '@/features/auth/api/auth.schema';
-import { authEndpoints, provisionalAuthEndpoints } from '@/features/auth/api/endpoints';
+import { teacherLoginResponseSchema } from '@/features/auth/api/auth.schema';
+import { authEndpoints, teacherAuthEndpoints } from '@/features/auth/api/endpoints';
 import { api } from '@/lib/api/client';
 import { clearAuthToken, getRefreshToken, setAuthTokens } from '@/lib/auth/token-store';
 
 export interface TeacherLoginInput {
   teacherId: string;
-  schoolId: string;
   password: string;
 }
 
 /**
- * Teacher sign-in. Teachers are issued a Teacher ID by their school rather
- * than registering an email themselves, so the credential pair is
- * (Teacher ID, School ID) plus a password.
+ * Teacher sign-in.
  *
- * PROVISIONAL endpoint — see `api/endpoints.ts`. In development MSW answers
- * it; in a build without mocks it fails loudly rather than pretending to sign
- * anyone in.
+ * Teachers do not register themselves — a school admin creates the account and
+ * the school issues the teacher id — so this is the only way into the teacher
+ * surface. The id is the credential; there is no school field, because the id
+ * already carries the school's abbreviation as a prefix.
  */
 export function useTeacherLogin() {
   return useMutation({
     mutationFn: (input: TeacherLoginInput) =>
-      api.post(provisionalAuthEndpoints.teacherLogin, teacherLoginResponseSchema, {
+      api.post(teacherAuthEndpoints.login, teacherLoginResponseSchema, {
         teacher_id: input.teacherId,
-        school_id: input.schoolId,
         password: input.password,
       }),
     onSuccess: (data) => {
       setAuthTokens({ access: data.access, refresh: data.refresh });
     },
-  });
-}
-
-/** `RegisterView` returns the created user only — it never authenticates the caller. */
-export function useRegister() {
-  return useMutation({
-    mutationFn: (input: RegisterRequest) =>
-      api.post(authEndpoints.register, registerResponseSchema, input),
   });
 }
 

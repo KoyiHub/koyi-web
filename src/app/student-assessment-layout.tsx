@@ -25,7 +25,7 @@ export function StudentAssessmentLayout() {
           <button
             type="button"
             onClick={() => {
-              void navigate(paths.teacher.assessment.setup);
+              void navigate(paths.teacher.assessments.list);
             }}
             aria-label="Leave assessment"
             className="text-koyi-primary hover:bg-koyi-surface border-koyi-border flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors"

@@ -356,7 +356,7 @@ function generatePassword(): string {
 /* Handlers                                                                   */
 /* -------------------------------------------------------------------------- */
 
-const BASE = '*/api/v1/school-admin';
+const BASE = '*/api/v1/school';
 
 export const schoolAdminHandlers = [
   http.get(`${BASE}/school/`, () => HttpResponse.json(schoolProfile)),

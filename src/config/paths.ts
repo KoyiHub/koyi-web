@@ -12,6 +12,9 @@
  * Teacher and School Admin are separate applications per product
  * requirements; namespacing them here makes an accidental cross-link a
  * type error rather than a runtime surprise.
+ *
+ * There is no teacher signup path: a school admin creates teacher accounts,
+ * so self-registration would produce logins that belong to no school.
  */
 export const paths = {
   /** Public six-step onboarding journey. Step order is defined in `@/config/landing-steps`. */
@@ -44,10 +47,12 @@ export const paths = {
   },
 
   /**
-   * The student-facing FLN assessment player. Deliberately outside `teacher`:
-   * a child sitting the assessment is not inside the teacher application, and
-   * the player renders its own bare "Koyi Assessment" chrome with no sidebar.
-   * A teacher launches it from `teacher.assessment.setup`.
+   * The assessment runner — the surface a child touches. Deliberately outside
+   * `teacher`: a child holds a sitting session, not a teacher's JWT, and the
+   * runner renders its own bare chrome with no sidebar.
+   *
+   * `entry` and `instructions` arrive in Phase 2 with the two-code sign-in;
+   * the player currently runs on a local fixture.
    */
   assessment: {
     session: '/assessment/session',
@@ -55,10 +60,6 @@ export const paths = {
   },
 
   teacher: {
-    auth: {
-      signup: '/teacher/signup',
-    },
-
     dashboard: '/teacher/dashboard',
 
     /**
@@ -71,18 +72,6 @@ export const paths = {
       attention: '/teacher/dashboard/attention',
       aiInsights: '/teacher/dashboard/ai-insights',
       classPerformance: '/teacher/dashboard/class-performance',
-    },
-
-    /**
-     * Running an assessment with a child, one question at a time. Distinct
-     * from `assessments` below, which is the library of assessments a teacher
-     * authors and assigns. Singular vs plural is load-bearing here.
-     */
-    assessment: {
-      setup: '/teacher/assessment',
-      session: '/teacher/assessment/session',
-      complete: '/teacher/assessment/session/complete',
-      results: '/teacher/assessment/results',
     },
 
     /** Authoring and reviewing assessments: library, builder, results. */
@@ -107,10 +96,6 @@ export const paths = {
     settings: '/teacher/settings',
     help: '/teacher/help',
     profile: '/teacher/profile',
-    users: {
-      list: '/teacher/users',
-      detail: (userId: string | number) => `/teacher/users/${String(userId)}`,
-    },
   },
 
   schoolAdmin: {

@@ -31,10 +31,11 @@ axiosClient.interceptors.request.use((config) => {
 // a failed login/register/refresh call is a terminal failure, not a stale
 // session.
 const AUTH_ENDPOINTS = [
-  '/v1/auth/teacher/login/',
-  '/v1/auth/school-admin/login/',
-  '/v1/auth/school-admin/verify-device/',
-  '/v1/auth/register/',
+  '/v1/teacher/auth/login/',
+  '/v1/school/auth/login/',
+  '/v1/school/auth/login/verify/',
+  '/v1/school/auth/register/',
+  '/v1/school/auth/register/verify/',
   '/v1/auth/token/refresh/',
 ];
 

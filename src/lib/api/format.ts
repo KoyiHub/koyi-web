@@ -71,16 +71,21 @@ export const ASSESSMENT_TYPE_LABEL: Record<AssessmentType, string> = {
   practice: 'Practice',
 };
 
+/**
+ * Where a paper is in its life. `open` and `closed` are decided server-side
+ * from `opens_at`/`closes_at`, so these are labels for a value that arrived —
+ * nothing here computes a window.
+ */
 export const ASSESSMENT_STATUS_LABEL: Record<AssessmentStatus, string> = {
   draft: 'Draft',
-  scheduled: 'Scheduled',
-  active: 'Active',
-  completed: 'Completed',
+  published: 'Published',
+  open: 'Open',
+  closed: 'Closed',
 };
 
 export const ASSESSMENT_STATUS_CLASS: Record<AssessmentStatus, string> = {
   draft: 'bg-koyi-nav-active text-koyi-muted',
-  scheduled: 'bg-koyi-band-intermediate-soft text-koyi-primary',
-  active: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
-  completed: 'bg-koyi-nav-active text-koyi-text',
+  published: 'bg-koyi-band-intermediate-soft text-koyi-primary',
+  open: 'bg-koyi-band-strong-soft text-koyi-band-strong-ink',
+  closed: 'bg-koyi-nav-active text-koyi-text',
 };

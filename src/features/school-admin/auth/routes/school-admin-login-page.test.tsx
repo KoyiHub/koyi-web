@@ -5,7 +5,7 @@ import { getAuthToken } from '@/lib/auth/token-store';
 import { server } from '@/mocks/server';
 import { renderRoute, screen, waitFor } from '@/test/test-utils';
 
-const LOGIN_URL = '*/api/v1/auth/school-admin/login/';
+const LOGIN_URL = '*/api/v1/school/auth/login/';
 
 async function signIn(user: ReturnType<typeof renderRoute>['user'], password = 'password123') {
   await user.type(screen.getByLabelText('Email Address'), 'admin@school.edu');

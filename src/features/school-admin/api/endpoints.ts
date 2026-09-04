@@ -1,16 +1,13 @@
 /**
- * PROVISIONAL School Portal endpoints.
+ * School management endpoints, grouped under the `/v1/school/` surface.
  *
- * No confirmed Django/OpenAPI contract exists for any School Admin resource
- * yet — the backend ships `apps.common` and `apps.users` only. These paths are
- * answered by MSW (`src/mocks/school-admin-handlers.ts`) in development and
- * are NOT verified against the backend.
- *
- * They live in one file on purpose: when the real contract lands this is the
- * only module that changes. The query hooks, the Zod schemas and every screen
- * that uses them stay as they are.
+ * Paths follow `frontend-integration.md` §4. Several resources there are still
+ * marked *Planned*; those are answered by MSW
+ * (`src/mocks/school-admin-handlers.ts`) until the backend lands them, and the
+ * handler is written to match the guide's JSON exactly so switching over is a
+ * base-URL change.
  */
-const BASE = '/v1/school-admin';
+const BASE = '/v1/school';
 
 export const schoolAdminEndpoints = {
   school: `${BASE}/school/`,

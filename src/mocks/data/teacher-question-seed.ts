@@ -22,7 +22,7 @@ import type {
   QuestionOption,
   QuestionType,
 } from '@/features/teacher/api/shared.schema';
-import type { BankQuestion } from '@/features/teacher/question-bank/api/question-bank.schema';
+import type { BankQuestion } from '@/features/teacher/bank/api/question-bank.schema';
 
 /* -------------------------------------------------------------------------- */
 /* Synthetic media                                                            */

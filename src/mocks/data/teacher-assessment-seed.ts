@@ -54,7 +54,7 @@ export const assessments: SeedAssessment[] = [
       'Where every child stands on letter sounds, word reading and comprehension at the start of the term.',
     subject: 'literacy',
     assessment_type: 'baseline',
-    status: 'completed',
+    status: 'closed',
     difficulty: 'core',
     grade_label: 'Primary 4',
     grade_level: 4,
@@ -73,7 +73,7 @@ export const assessments: SeedAssessment[] = [
       'A short check on addition, subtraction and place value after the first six weeks.',
     subject: 'numeracy',
     assessment_type: 'midline',
-    status: 'completed',
+    status: 'closed',
     difficulty: 'core',
     grade_label: 'Primary 4',
     grade_level: 4,
@@ -91,7 +91,7 @@ export const assessments: SeedAssessment[] = [
     description: 'Ten quick listening items. Untimed, and children may replay each sound twice.',
     subject: 'literacy',
     assessment_type: 'practice',
-    status: 'completed',
+    status: 'closed',
     difficulty: 'foundation',
     grade_label: 'Primary 3',
     grade_level: 3,
@@ -109,7 +109,7 @@ export const assessments: SeedAssessment[] = [
     description: 'Spoken responses to picture and passage prompts. Best run one child at a time.',
     subject: 'literacy',
     assessment_type: 'practice',
-    status: 'active',
+    status: 'open',
     difficulty: 'stretch',
     grade_label: 'Primary 4',
     grade_level: 4,
@@ -128,7 +128,7 @@ export const assessments: SeedAssessment[] = [
       'Built for the borrowing-across-zero group. Six items, all on the same misconception.',
     subject: 'numeracy',
     assessment_type: 'practice',
-    status: 'scheduled',
+    status: 'published',
     difficulty: 'core',
     grade_label: 'Primary 4',
     grade_level: 4,
@@ -182,7 +182,7 @@ export const assessments: SeedAssessment[] = [
     description: 'Five-minute starter for Monday mornings. Reusable every week.',
     subject: 'numeracy',
     assessment_type: 'practice',
-    status: 'active',
+    status: 'open',
     difficulty: 'foundation',
     grade_label: 'Primary 3',
     grade_level: 3,
@@ -244,7 +244,7 @@ function buildResults(assessment: SeedAssessment): StudentResult[] {
 
   return students.map((student, index) => {
     if (assessment.status === 'draft' || index >= completed) {
-      const inProgress = assessment.status === 'active' && index < completed + 3;
+      const inProgress = assessment.status === 'open' && index < completed + 3;
       return {
         student_id: student.id,
         full_name: student.full_name,

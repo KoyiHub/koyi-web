@@ -76,6 +76,50 @@ export default tseslint.config(
     },
   },
 
+  /**
+   * The assessment runner is a separate surface and stays one.
+   *
+   * A child sitting an assessment holds a sitting session, not a teacher's JWT,
+   * and must never receive an answer key. The teacher surface legitimately
+   * carries `is_correct` — the question bank returns it, authoring sends it, and
+   * the review screen renders it — so the guarantee cannot be "no schema in the
+   * app has answers". It has to be "the runner cannot reach those schemas".
+   *
+   * Omitting the field is not enough on its own: an `.omit()` someone later
+   * deletes fails silently. This rule fails loudly instead, at lint time and in
+   * CI, and the runner keeps its own longhand schemas.
+   */
+  {
+    files: ['src/features/runner/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['../../*'],
+              message: 'Use the "@/" path alias instead of deep relative imports.',
+            },
+            {
+              group: ['@/features/teacher/*', '@/features/teacher/**'],
+              message:
+                'The runner must not import teacher modules: their schemas carry answer keys (is_correct). Write the runner shape longhand instead.',
+            },
+            {
+              group: ['@/features/school-admin/*', '@/features/school-admin/**'],
+              message: 'The runner must not import school management modules.',
+            },
+            {
+              group: ['@/lib/auth/token-store', '@/lib/api/client'],
+              message:
+                'The runner authenticates with X-Sitting-Session, not a JWT. Use @/lib/api/runner-client and @/lib/api/sitting-store.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
   // Tests may be looser than app code.
   {
     files: ['**/*.test.{ts,tsx}', 'src/test/**/*.{ts,tsx}'],

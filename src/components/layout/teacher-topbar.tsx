@@ -46,7 +46,7 @@ export function TeacherTopbar({ onOpenMenu }: TeacherTopbarProps) {
 
       <div className="ml-auto flex items-center gap-3">
         <Link
-          to={paths.teacher.assessment.setup}
+          to={paths.teacher.assessments.list}
           className="bg-koyi-primary hover:bg-koyi-primary-hover focus-visible:outline-koyi-primary rounded-koyi-md flex h-10 items-center gap-2 px-4 text-sm font-semibold text-white transition-colors focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           <PlayIcon className="size-4 fill-none stroke-current stroke-2" />

@@ -1,14 +1,8 @@
 import { http, HttpResponse } from 'msw';
 
 import type { AuthUser } from '@/features/auth/api/auth.schema';
-import type { User } from '@/features/users/api/user.schema';
 import { schoolAdminHandlers } from '@/mocks/school-admin-handlers';
 import { teacherHandlers } from '@/mocks/teacher-handlers';
-
-export const mockUsers: User[] = [
-  { id: 1, name: 'Ada Lovelace', email: 'ada@example.com', username: 'ada' },
-  { id: 2, name: 'Grace Hopper', email: 'grace@example.com', username: 'grace' },
-];
 
 export const mockAuthUser: AuthUser = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -58,7 +52,7 @@ export const handlers = [
   ...schoolAdminHandlers,
   ...teacherHandlers,
 
-  http.post('*/api/v1/schools/register/', async ({ request }) => {
+  http.post('*/api/v1/school/auth/register/', async ({ request }) => {
     const body = (await request.json()) as { schoolName: string; schoolEmail: string };
     const schoolId = `school-${String(mockSchools.size + 1)}`;
     mockSchools.set(schoolId, { schoolName: body.schoolName, schoolEmail: body.schoolEmail });
@@ -74,7 +68,7 @@ export const handlers = [
     );
   }),
 
-  http.post('*/api/v1/schools/verify-email/', async ({ request }) => {
+  http.post('*/api/v1/school/auth/register/verify/', async ({ request }) => {
     const body = (await request.json()) as { schoolId: string; code: string };
 
     if (body.code !== MOCK_VERIFICATION_CODE) {
@@ -89,7 +83,7 @@ export const handlers = [
     return HttpResponse.json({ schoolId: body.schoolId, verified: true });
   }),
 
-  http.post('*/api/v1/schools/verify-email/resend/', async ({ request }) => {
+  http.post('*/api/v1/school/auth/otp/resend/', async ({ request }) => {
     const body = (await request.json()) as { schoolId: string };
     const school = mockSchools.get(body.schoolId);
 
@@ -102,41 +96,12 @@ export const handlers = [
     return HttpResponse.json({ schoolEmail: school.schoolEmail, retryAfterSeconds: 30 });
   }),
 
-  http.get('*/api/users', () => HttpResponse.json(mockUsers)),
+  http.post('*/api/v1/teacher/auth/login/', async ({ request }) => {
+    const body = (await request.json()) as { teacher_id: string; password: string };
 
-  http.get('*/api/users/:userId', ({ params }) => {
-    const user = mockUsers.find((candidate) => String(candidate.id) === params.userId);
-    if (!user) return new HttpResponse(null, { status: 404 });
-    return HttpResponse.json(user);
-  }),
-
-  http.post('*/api/users', async ({ request }) => {
-    const body = (await request.json()) as Omit<User, 'id'>;
-    return HttpResponse.json({ ...body, id: 999 }, { status: 201 });
-  }),
-
-  http.post('*/api/v1/auth/register/', async ({ request }) => {
-    const body = (await request.json()) as { email: string; first_name: string; last_name: string };
-    return HttpResponse.json(
-      {
-        ...mockAuthUser,
-        email: body.email,
-        first_name: body.first_name,
-        last_name: body.last_name,
-        full_name: `${body.first_name} ${body.last_name}`.trim(),
-        email_verified: false,
-      },
-      { status: 201 },
-    );
-  }),
-
-  http.post('*/api/v1/auth/teacher/login/', async ({ request }) => {
-    const body = (await request.json()) as {
-      teacher_id: string;
-      school_id: string;
-      password: string;
-    };
-
+    // One message for a wrong password, an unknown id and a disabled account
+    // alike. Distinguishing them would let the form be used to discover which
+    // teacher ids exist, so the mock models the sameness too.
     if (body.password !== MOCK_PASSWORD) {
       return HttpResponse.json(
         errorEnvelope(
@@ -147,17 +112,27 @@ export const handlers = [
       );
     }
 
+    // Teacher ids are case insensitive on input.
+    const teacherId = body.teacher_id.toUpperCase();
+
     return HttpResponse.json({
       access: 'mock-access-token',
       refresh: 'mock-refresh-token',
-      user: mockAuthUser,
-      // Echoed back so the app remembers the ID the backend accepted rather
-      // than whatever casing the teacher happened to type.
-      school_id: body.school_id.toUpperCase(),
+      user: { id: mockAuthUser.id, email: mockAuthUser.email, role: 'teacher' },
+      teacher: {
+        id: mockAuthUser.id,
+        teacher_id: teacherId,
+        full_name: mockAuthUser.full_name,
+        school: {
+          id: '22222222-2222-4222-8222-222222222222',
+          name: 'Greenwood Primary School',
+        },
+        school_class: 'Grade 2 A',
+      },
     });
   }),
 
-  http.post('*/api/v1/auth/school-admin/login/', async ({ request }) => {
+  http.post('*/api/v1/school/auth/login/', async ({ request }) => {
     const body = (await request.json()) as { email: string; password: string };
 
     if (body.password !== MOCK_PASSWORD) {
@@ -185,7 +160,7 @@ export const handlers = [
     });
   }),
 
-  http.post('*/api/v1/auth/school-admin/verify-device/', async ({ request }) => {
+  http.post('*/api/v1/school/auth/login/verify/', async ({ request }) => {
     const body = (await request.json()) as { challenge_id: string; code: string };
 
     if (body.code !== MOCK_VERIFICATION_CODE) {
@@ -206,7 +181,7 @@ export const handlers = [
     HttpResponse.json({ access: 'mock-access-token-2', refresh: 'mock-refresh-token-2' }),
   ),
 
-  http.get('*/api/v1/auth/me/', ({ request }) => {
+  http.get('*/api/v1/teacher/auth/me/', ({ request }) => {
     const auth = request.headers.get('authorization');
     if (!auth) {
       return HttpResponse.json(

@@ -5,11 +5,11 @@ import type {
   QuestionType,
 } from '@/features/teacher/api/shared.schema';
 import type { Difficulty } from '@/features/teacher/assessments/api/assessment.schema';
+import type { BankStatus } from '@/features/teacher/bank/api/question-bank.schema';
 import type {
   AttentionPriority,
   InsightKind,
 } from '@/features/teacher/dashboard/api/dashboard.schema';
-import type { BankStatus } from '@/features/teacher/question-bank/api/question-bank.schema';
 
 /**
  * Teacher presentation helpers.

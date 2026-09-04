@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 
-import { provisionalSchoolAdminAuthEndpoints } from '@/features/school-admin/auth/api/endpoints';
+import { schoolAuthEndpoints } from '@/features/school-admin/auth/api/endpoints';
 import {
   schoolAdminLoginResponseSchema,
   schoolAdminVerifyDeviceResponseSchema,
@@ -60,7 +60,7 @@ export function useSchoolAdminSignup() {
 export function useSchoolAdminLogin() {
   return useMutation({
     mutationFn: (input: SchoolAdminLoginInput) =>
-      api.post(provisionalSchoolAdminAuthEndpoints.login, schoolAdminLoginResponseSchema, {
+      api.post(schoolAuthEndpoints.login, schoolAdminLoginResponseSchema, {
         email: input.email,
         password: input.password,
         remember_device: input.rememberMe ?? false,
@@ -76,11 +76,10 @@ export function useSchoolAdminLogin() {
 export function useSchoolAdminVerifyDevice() {
   return useMutation({
     mutationFn: (input: SchoolAdminVerifyDeviceInput) =>
-      api.post(
-        provisionalSchoolAdminAuthEndpoints.verifyDevice,
-        schoolAdminVerifyDeviceResponseSchema,
-        { challenge_id: input.challengeId, code: input.code },
-      ),
+      api.post(schoolAuthEndpoints.loginVerify, schoolAdminVerifyDeviceResponseSchema, {
+        challenge_id: input.challengeId,
+        code: input.code,
+      }),
     onSuccess: (data) => {
       setAuthTokens({ access: data.access, refresh: data.refresh });
     },

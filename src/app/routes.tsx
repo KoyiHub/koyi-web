@@ -1,7 +1,5 @@
 import type { RouteObject } from 'react-router';
 
-import { AssessmentLayout } from '@/app/assessment-layout';
-import { AuthLayout } from '@/app/auth-layout';
 import { LandingLayout } from '@/app/landing-layout';
 import { LoginLayout } from '@/app/login-layout';
 import { RedirectIfAuthenticated, RequireAuth } from '@/app/require-auth';
@@ -17,12 +15,16 @@ import { TeacherLayout } from '@/app/teacher-layout';
  * Route paths live in `@/config/paths` — never hand-write a URL string in a
  * component, so renames stay a one-file change.
  *
- * Four areas, in order:
+ * Four surfaces, in order:
  *   1. `/` — the public landing journey a visitor meets first.
  *   2. `/login/*` — the shared sign-in journey for both applications.
  *   3. `/school-admin/*` — the school administrator app.
- *   4. `/assessment/*` — the student FLN assessment player.
- *   5. `/teacher/*` — the teacher app (formerly mounted at the root).
+ *   4. `/assessment/*` — the assessment runner, the surface a child touches.
+ *   5. `/teacher/*` — the teacher app.
+ *
+ * The runner is deliberately top-level and never nested under `teacher`: a
+ * child sitting an assessment holds a sitting session, not a teacher's JWT,
+ * and `features/runner/**` may not import teacher modules (eslint.config.js).
  */
 export const routes: RouteObject[] = [
   {
@@ -255,10 +257,10 @@ export const routes: RouteObject[] = [
     ],
   },
   {
-    // The student FLN assessment player. Top-level rather than under `teacher`
-    // because a child sitting the assessment is not inside the teacher
-    // application — it has its own bare chrome and no sidebar. A teacher opens
-    // it from `paths.teacher.assessment.setup`.
+    // The assessment runner. Bare chrome, no sidebar, its own credential
+    // scheme. `/assessment` (the two-code entry) and `/assessment/instructions`
+    // (the section hub) arrive in Phase 2; the player below still runs on the
+    // local fixture until then.
     path: 'assessment',
     ErrorBoundary: RootErrorBoundary,
     Component: StudentAssessmentLayout,
@@ -266,13 +268,13 @@ export const routes: RouteObject[] = [
       {
         path: 'session',
         lazy: async () => ({
-          Component: (await import('@/features/assessment/routes/fln-session-page')).FlnSessionPage,
+          Component: (await import('@/features/runner/session/fln-session-page')).FlnSessionPage,
         }),
       },
       {
         path: 'session/summary',
         lazy: async () => ({
-          Component: (await import('@/features/assessment/routes/fln-summary-page')).FlnSummaryPage,
+          Component: (await import('@/features/runner/session/fln-summary-page')).FlnSummaryPage,
         }),
       },
     ],
@@ -281,45 +283,6 @@ export const routes: RouteObject[] = [
     path: 'teacher',
     ErrorBoundary: RootErrorBoundary,
     children: [
-      {
-        Component: RedirectIfAuthenticated,
-        children: [
-          {
-            Component: AuthLayout,
-            children: [
-              {
-                path: 'signup',
-                lazy: async () => ({
-                  Component: (await import('@/features/auth/routes/signup-page')).SignupPage,
-                }),
-              },
-            ],
-          },
-        ],
-      },
-      // The live assessment runs full-screen in its own layout, so it sits
-      // beside the teacher shell rather than inside it. A static path outranks
-      // the `*` fallback below, so this still wins the match.
-      {
-        path: 'assessment/session',
-        Component: AssessmentLayout,
-        children: [
-          {
-            index: true,
-            lazy: async () => ({
-              Component: (await import('@/features/assessment/routes/assessment-session-page'))
-                .AssessmentSessionPage,
-            }),
-          },
-          {
-            path: 'complete',
-            lazy: async () => ({
-              Component: (await import('@/features/assessment/routes/assessment-complete-page'))
-                .AssessmentCompletePage,
-            }),
-          },
-        ],
-      },
       {
         Component: RequireAuth,
         children: [
@@ -431,26 +394,6 @@ export const routes: RouteObject[] = [
                 ],
               },
               {
-                path: 'assessment',
-                children: [
-                  {
-                    index: true,
-                    lazy: async () => ({
-                      Component: (await import('@/features/assessment/routes/assessment-page'))
-                        .AssessmentPage,
-                    }),
-                  },
-                  {
-                    path: 'results',
-                    lazy: async () => ({
-                      Component: (
-                        await import('@/features/assessment/routes/assessment-results-page')
-                      ).AssessmentResultsPage,
-                    }),
-                  },
-                ],
-              },
-              {
                 path: 'students',
                 children: [
                   {
@@ -466,15 +409,16 @@ export const routes: RouteObject[] = [
                       {
                         index: true,
                         lazy: async () => ({
-                          Component: (await import('@/features/students/routes/groups-page'))
+                          Component: (await import('@/features/teacher/groups/routes/groups-page'))
                             .GroupsPage,
                         }),
                       },
                       {
                         path: ':groupId',
                         lazy: async () => ({
-                          Component: (await import('@/features/students/routes/group-detail-page'))
-                            .GroupDetailPage,
+                          Component: (
+                            await import('@/features/teacher/groups/routes/group-detail-page')
+                          ).GroupDetailPage,
                         }),
                       },
                     ],
@@ -492,22 +436,22 @@ export const routes: RouteObject[] = [
               {
                 path: 'progress',
                 lazy: async () => ({
-                  Component: (await import('@/features/progress/routes/progress-page'))
+                  Component: (await import('@/features/teacher/progress/routes/progress-page'))
                     .ProgressPage,
                 }),
               },
               {
                 path: 'question-bank',
                 lazy: async () => ({
-                  Component: (
-                    await import('@/features/teacher/question-bank/routes/question-bank-page')
-                  ).QuestionBankPage,
+                  Component: (await import('@/features/teacher/bank/routes/question-bank-page'))
+                    .QuestionBankPage,
                 }),
               },
               {
                 path: 'profile',
                 lazy: async () => ({
-                  Component: (await import('@/features/profile/routes/profile-page')).ProfilePage,
+                  Component: (await import('@/features/teacher/profile/routes/profile-page'))
+                    .ProfilePage,
                 }),
               },
               {
@@ -523,24 +467,6 @@ export const routes: RouteObject[] = [
                   Component: (await import('@/features/teacher/routes/placeholder-pages'))
                     .TeacherHelpPage,
                 }),
-              },
-              {
-                path: 'users',
-                children: [
-                  {
-                    index: true,
-                    lazy: async () => ({
-                      Component: (await import('@/features/users/routes/users-page')).UsersPage,
-                    }),
-                  },
-                  {
-                    path: ':userId',
-                    lazy: async () => ({
-                      Component: (await import('@/features/users/routes/user-detail-page'))
-                        .UserDetailPage,
-                    }),
-                  },
-                ],
               },
               {
                 path: '*',
