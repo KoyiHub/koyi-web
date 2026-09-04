@@ -149,9 +149,13 @@ export const authoredQuestionSchema = z.object({
 });
 export type AuthoredQuestion = z.infer<typeof authoredQuestionSchema>;
 
-export const sectionQuestionsSchema = z.object({
-  questions: z.array(authoredQuestionSchema),
-});
+/**
+ * The doc shows `GET`/`PUT .../questions/` wrapped in `{questions: [...]}`,
+ * but the live backend returns (and the `PUT` echoes back) a bare array —
+ * observed directly from a `ZodError` against the real server, the same
+ * "reality over doc" call made elsewhere in this file for `covers`.
+ */
+export const sectionQuestionsSchema = z.array(authoredQuestionSchema);
 export type SectionQuestions = z.infer<typeof sectionQuestionsSchema>;
 
 /* -------------------------------------------------------------------------- */

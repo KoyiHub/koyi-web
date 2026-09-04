@@ -346,7 +346,7 @@ export const teacherHandlers = [
     if (!assessment) return notFound('That assessment does not exist.');
     const section = findStoredSection(assessment, String(params.sectionId));
     if (!section) return notFound('That section does not exist.');
-    return HttpResponse.json({ questions: section.questions });
+    return HttpResponse.json(section.questions);
   }),
 
   http.put(
@@ -380,7 +380,7 @@ export const teacherHandlers = [
         };
       });
 
-      return HttpResponse.json({ questions: section.questions });
+      return HttpResponse.json(section.questions);
     },
   ),
 

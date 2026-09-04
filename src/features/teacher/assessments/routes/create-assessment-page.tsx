@@ -275,7 +275,7 @@ function QuestionsStep({ assessmentId, sectionId }: { assessmentId: string; sect
   if (drafts === null && existingQuestions.data && skills.data) {
     const skillsData = skills.data;
     setDrafts(
-      existingQuestions.data.questions.map((question) => {
+      existingQuestions.data.map((question) => {
         const resolved = findSubskill(skillsData, question.subskill_id);
         return {
           key: nextKey(),
