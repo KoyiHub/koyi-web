@@ -44,6 +44,12 @@ export const paths = {
     teacher: '/login/teacher',
     /** Device check an admin login can be sent to when the backend asks for one. */
     verifyDevice: '/login/verify-device',
+    /** Three-step OTP-code wizard: email → code → new password (§4.1). */
+    schoolAdminForgotPassword: '/login/school-admin/forgot-password',
+    /** Requests an emailed reset link — a teacher never enters a code here. */
+    teacherForgotPassword: '/login/teacher/forgot-password',
+    /** Where the emailed link lands, `?token=...` in hand, to set a new password. */
+    teacherResetPassword: '/login/teacher/reset-password',
   },
 
   /**

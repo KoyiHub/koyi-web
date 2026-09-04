@@ -3,6 +3,10 @@ import { z } from 'zod';
 
 import { teacherLoginResponseSchema } from '@/features/auth/api/auth.schema';
 import { authEndpoints, teacherAuthEndpoints } from '@/features/auth/api/endpoints';
+import {
+  confirmTeacherPasswordResetResponseSchema,
+  requestTeacherPasswordResetResponseSchema,
+} from '@/features/auth/api/password-reset.schema';
 import { api } from '@/lib/api/client';
 import { clearAuthToken, getRefreshToken, setAuthTokens } from '@/lib/auth/token-store';
 
@@ -29,6 +33,33 @@ export function useTeacherLogin() {
     onSuccess: (data) => {
       setAuthTokens({ access: data.access, refresh: data.refresh });
     },
+  });
+}
+
+/**
+ * Password reset — link/token based, not the school admin's OTP-code flow.
+ * The request step always resolves, so the form can never be used to
+ * discover which teacher ids exist.
+ */
+export function useRequestTeacherPasswordReset() {
+  return useMutation({
+    mutationFn: (teacherId: string) =>
+      api.post(
+        teacherAuthEndpoints.resetPasswordRequest,
+        requestTeacherPasswordResetResponseSchema,
+        { teacher_id: teacherId },
+      ),
+  });
+}
+
+export function useConfirmTeacherPasswordReset() {
+  return useMutation({
+    mutationFn: (input: { token: string; password: string }) =>
+      api.post(
+        teacherAuthEndpoints.resetPasswordConfirm,
+        confirmTeacherPasswordResetResponseSchema,
+        input,
+      ),
   });
 }
 

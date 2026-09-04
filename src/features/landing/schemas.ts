@@ -1,36 +1,43 @@
 import { z } from 'zod';
 
-/** Accepted logo formats and size cap, shared by the schema and the drop field. */
-export const LOGO_ACCEPT = 'image/png,image/jpeg,image/svg+xml';
-export const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-
 /**
- * School setup (journey step 4). The field list is fixed by the product brief:
- * school name, school email, school logo, password, class system, current
- * session. Anything else shown in the design reference is deliberately out.
- *
- * The logo is optional — a school should never be blocked from registering
- * because it has no image file to hand; it can be added later in settings.
+ * School setup (journey step 4) — `frontend-integration.md` §4.1's register
+ * body, field for field: name, abbreviation, email, password (+ confirm),
+ * class system. The logo and the current session are **not** part of
+ * registration in the guide — logo has no confirmed upload mechanism
+ * anywhere, and the session is set later in school settings (§4.2) once the
+ * admin is signed in, sourced from `/v1/school/sessions/`.
  */
-export const schoolSetupSchema = z.object({
-  schoolName: z.string().trim().min(2, 'Enter your school name'),
-  schoolEmail: z
-    .string()
-    .trim()
-    .min(1, 'School email is required')
-    .email('Enter a valid email address'),
-  schoolLogo: z
-    .instanceof(File, { message: 'Upload a PNG, JPG or SVG file' })
-    .refine((file) => file.size <= LOGO_MAX_BYTES, 'Logo must be 2MB or smaller')
-    .nullable(),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[a-zA-Z]/, 'Password must include a letter')
-    .regex(/\d/, 'Password must include a number'),
-  classSystem: z.enum(['grade', 'primary'], { message: 'Choose a class system' }),
-  currentSession: z.string().min(1, 'Select the current session'),
-});
+export const schoolSetupSchema = z
+  .object({
+    schoolName: z.string().trim().min(2, 'Enter your school name'),
+    schoolEmail: z
+      .string()
+      .trim()
+      .min(1, 'School email is required')
+      .email('Enter a valid email address'),
+    /**
+     * 2–12 uppercase letters/digits, globally unique, and becomes the prefix
+     * of every student and teacher id this school ever issues. It cannot be
+     * changed afterwards — the form says so.
+     */
+    abbreviation: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9]{2,12}$/, '2–12 letters or numbers, no spaces or symbols'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[a-zA-Z]/, 'Password must include a letter')
+      .regex(/\d/, 'Password must include a number'),
+    passwordConfirm: z.string().min(1, 'Confirm your password'),
+    classSystem: z.enum(['grade', 'primary'], { message: 'Choose a class system' }),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: 'Passwords do not match',
+    path: ['passwordConfirm'],
+  });
 
 export type SchoolSetupFormValues = z.infer<typeof schoolSetupSchema>;
 

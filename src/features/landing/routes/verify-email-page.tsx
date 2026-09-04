@@ -60,7 +60,7 @@ export function VerifyEmailPage() {
   async function onSubmit(values: VerifyEmailFormValues) {
     if (!school) return;
     try {
-      await verify.mutateAsync({ schoolId: school.schoolId, code: values.code });
+      await verify.mutateAsync({ email: school.email, code: values.code });
       await navigate(paths.landing.ready, { state: school });
     } catch {
       // Surfaced through `verify.error` below.
@@ -70,8 +70,8 @@ export function VerifyEmailPage() {
   async function handleResend() {
     if (!school || cooldown > 0) return;
     try {
-      const result = await resend.mutateAsync({ schoolId: school.schoolId });
-      setCooldown(result.retryAfterSeconds);
+      const result = await resend.mutateAsync({ email: school.email });
+      setCooldown(result.retry_after_seconds);
     } catch {
       // Surfaced through `resend.error` below.
     }
@@ -96,7 +96,7 @@ export function VerifyEmailPage() {
       <StepHeader
         stepKey="verify-email"
         title="Verify your school email"
-        subtitle={`We sent a ${String(VERIFICATION_CODE_LENGTH)}-digit code to ${school.schoolEmail}. Enter it below to confirm the address belongs to ${school.schoolName}.`}
+        subtitle={`We sent a ${String(VERIFICATION_CODE_LENGTH)}-digit code to ${school.email}. Enter it below to confirm the address belongs to ${school.name}.`}
       />
 
       <form
@@ -140,7 +140,7 @@ export function VerifyEmailPage() {
 
         {resend.isSuccess && cooldown > 0 && (
           <p role="status" className="text-koyi-success text-sm">
-            A new code is on its way to {school.schoolEmail}.
+            A new code is on its way to {school.email}.
           </p>
         )}
 

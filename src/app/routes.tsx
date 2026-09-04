@@ -131,6 +131,30 @@ export const routes: RouteObject[] = [
           ).SchoolAdminVerifyDevicePage,
         }),
       },
+      // Forgot/reset password. Not guarded, same reasoning as verify-device —
+      // a visitor here holds no tokens yet.
+      {
+        path: 'school-admin/forgot-password',
+        lazy: async () => ({
+          Component: (
+            await import('@/features/school-admin/auth/routes/school-admin-forgot-password-page')
+          ).SchoolAdminForgotPasswordPage,
+        }),
+      },
+      {
+        path: 'teacher/forgot-password',
+        lazy: async () => ({
+          Component: (await import('@/features/auth/routes/teacher-forgot-password-page'))
+            .TeacherForgotPasswordPage,
+        }),
+      },
+      {
+        path: 'teacher/reset-password',
+        lazy: async () => ({
+          Component: (await import('@/features/auth/routes/teacher-reset-password-page'))
+            .TeacherResetPasswordPage,
+        }),
+      },
       {
         path: '*',
         lazy: async () => ({ Component: (await import('@/app/not-found')).NotFound }),

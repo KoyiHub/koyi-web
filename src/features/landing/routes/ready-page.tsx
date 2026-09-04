@@ -24,7 +24,7 @@ export function ReadyPage() {
         title="Your school is ready for smarter learning"
         subtitle={
           school
-            ? `${school.schoolName} is set up on Koyi. Head to your dashboard to invite teachers and start assessing learners.`
+            ? `${school.name} is set up on Koyi. Head to your dashboard to invite teachers and start assessing learners.`
             : 'Your school is set up on Koyi. Head to your dashboard to invite teachers and start assessing learners.'
         }
       />

@@ -2,25 +2,15 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 
-import { FileDropField } from '@/components/ui/file-drop-field';
-import { LockIcon, MailIcon } from '@/components/ui/icons';
+import { MailIcon } from '@/components/ui/icons';
+import { PasswordField } from '@/components/ui/password-field';
 import { RadioCardGroup } from '@/components/ui/radio-card-group';
-import { SelectField } from '@/components/ui/select-field';
 import { TextField } from '@/components/ui/text-field';
 import { paths } from '@/config/paths';
 import { useRegisterSchool } from '@/features/landing/api/mutations';
 import { StepActions } from '@/features/landing/components/step-actions';
 import { StepHeader } from '@/features/landing/components/step-header';
-import {
-  academicSessionOptions,
-  currentSessionValue,
-} from '@/features/landing/lib/academic-sessions';
-import {
-  LOGO_ACCEPT,
-  LOGO_MAX_BYTES,
-  type SchoolSetupFormValues,
-  schoolSetupSchema,
-} from '@/features/landing/schemas';
+import { type SchoolSetupFormValues, schoolSetupSchema } from '@/features/landing/schemas';
 import { ApiError } from '@/lib/api/errors';
 
 const CLASS_SYSTEM_OPTIONS = [
@@ -31,14 +21,15 @@ const CLASS_SYSTEM_OPTIONS = [
 /**
  * Step 4 of the public journey, at "/get-started" — the first onboarding form.
  *
- * Layout: the two identifying fields sit full width, then password and session
- * pair up on a row (both short), with the class-system cards and the logo
- * dropzone given their own width because each is taller than a text input.
+ * Fields match `frontend-integration.md` §4.1's register body exactly: name,
+ * abbreviation, email, password, class system. Logo and the current session
+ * are deliberately not here — the logo has no confirmed upload endpoint
+ * anywhere, and the session is set later in school settings once the admin
+ * is signed in.
  */
 export function GetStartedPage() {
   const navigate = useNavigate();
   const registerSchool = useRegisterSchool();
-  const sessionOptions = academicSessionOptions();
 
   const {
     register,
@@ -50,30 +41,26 @@ export function GetStartedPage() {
     defaultValues: {
       schoolName: '',
       schoolEmail: '',
-      schoolLogo: null,
+      abbreviation: '',
       password: '',
+      passwordConfirm: '',
       classSystem: 'primary',
-      currentSession: currentSessionValue(),
     },
   });
 
   async function onSubmit(values: SchoolSetupFormValues) {
     try {
-      const school = await registerSchool.mutateAsync({
-        schoolName: values.schoolName,
-        schoolEmail: values.schoolEmail,
+      await registerSchool.mutateAsync({
+        name: values.schoolName,
+        abbreviation: values.abbreviation,
+        email: values.schoolEmail,
         password: values.password,
-        classSystem: values.classSystem,
-        currentSession: values.currentSession,
-        logoFileName: values.schoolLogo?.name,
+        password_confirm: values.passwordConfirm,
+        class_system: values.classSystem,
       });
 
       await navigate(paths.landing.verifyEmail, {
-        state: {
-          schoolId: school.schoolId,
-          schoolName: school.schoolName,
-          schoolEmail: school.schoolEmail,
-        },
+        state: { name: values.schoolName, email: values.schoolEmail },
       });
     } catch {
       // Surfaced through `registerSchool.error` below.
@@ -121,47 +108,28 @@ export function GetStartedPage() {
           {...register('schoolEmail')}
         />
 
-        <Controller
-          control={control}
-          name="schoolLogo"
-          render={({ field, fieldState }) => (
-            <FileDropField
-              label="School logo"
-              optional
-              accept={LOGO_ACCEPT}
-              maxBytes={LOGO_MAX_BYTES}
-              hint="PNG, JPG or SVG, up to 2MB"
-              value={field.value}
-              onChange={field.onChange}
-              error={fieldState.error?.message}
-            />
-          )}
+        <TextField
+          label="School abbreviation"
+          type="text"
+          autoCapitalize="characters"
+          placeholder="e.g. BFA"
+          hint="2–12 letters or numbers. This cannot be changed later — it becomes the prefix on every student and teacher ID your school issues."
+          error={errors.abbreviation?.message}
+          {...register('abbreviation')}
         />
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <TextField
-            label="Password"
-            type="password"
+          <PasswordField
             autoComplete="new-password"
-            icon={<LockIcon />}
             error={errors.password?.message}
             {...register('password')}
           />
 
-          <Controller
-            control={control}
-            name="currentSession"
-            render={({ field, fieldState }) => (
-              <SelectField
-                label="Current session"
-                options={sessionOptions}
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                name={field.name}
-                error={fieldState.error?.message}
-              />
-            )}
+          <PasswordField
+            label="Confirm password"
+            autoComplete="new-password"
+            error={errors.passwordConfirm?.message}
+            {...register('passwordConfirm')}
           />
         </div>
 

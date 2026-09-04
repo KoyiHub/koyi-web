@@ -91,7 +91,7 @@ export function TeacherLoginPage() {
 
         <PasswordField
           autoComplete="current-password"
-          labelAction={<ForgotPasswordLink />}
+          labelAction={<ForgotPasswordLink to={paths.login.teacherForgotPassword} />}
           error={errors.password?.message}
           {...register('password')}
         />
