@@ -57,10 +57,22 @@ export function AssessmentDetailPage() {
           ) : (
             <div className="flex flex-wrap gap-3">
               <Link
+                to={paths.teacher.assessments.reviewQueue(data.id)}
+                className={buttonClasses('secondary')}
+              >
+                Review queue
+              </Link>
+              <Link
                 to={paths.teacher.assessments.roster(data.id)}
                 className={buttonClasses('secondary')}
               >
                 Printable roster
+              </Link>
+              <Link
+                to={paths.teacher.assessments.analytics(data.id)}
+                className={buttonClasses('secondary')}
+              >
+                View analytics
               </Link>
               <Link to={paths.teacher.assessments.assignFor(data.id)} className={buttonClasses()}>
                 Assign to students

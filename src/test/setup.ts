@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll } from 'vitest';
 import { clearSitting } from '@/lib/api/sitting-store';
 import { clearAuthToken } from '@/lib/auth/token-store';
 import { resetAssignmentState } from '@/mocks/data/assignment-seed';
+import { resetResultsState } from '@/mocks/data/results-seed';
 import { resetRunnerState } from '@/mocks/data/runner-seed';
 import { server } from '@/mocks/server';
 
@@ -29,6 +30,7 @@ afterEach(() => {
   clearSitting();
   resetRunnerState();
   resetAssignmentState();
+  resetResultsState();
 });
 
 afterAll(() => {

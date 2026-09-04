@@ -408,6 +408,22 @@ export const routes: RouteObject[] = [
                           ).RosterPage,
                         }),
                       },
+                      {
+                        path: 'responses/:studentId',
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/response-review-page')
+                          ).ResponseReviewPage,
+                        }),
+                      },
+                      {
+                        path: 'review-queue',
+                        lazy: async () => ({
+                          Component: (
+                            await import('@/features/teacher/assessments/routes/review-queue-page')
+                          ).ReviewQueuePage,
+                        }),
+                      },
                     ],
                   },
                 ],

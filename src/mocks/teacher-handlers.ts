@@ -19,6 +19,16 @@ import {
   withdrawAssignment,
 } from '@/mocks/data/assignment-seed';
 import { bankQuestions } from '@/mocks/data/bank-seed';
+import {
+  computeAnalytics,
+  computeReviewQueue,
+  computeStudentSkills,
+  findStudentResult,
+  getResults,
+  toAnalyticsRosterRow,
+  toResultsRow,
+  toStudentResponses,
+} from '@/mocks/data/results-seed';
 import { skills } from '@/mocks/data/taxonomy-seed';
 import { activity, classPerformance, priorityCounts } from '@/mocks/data/teacher-activity-seed';
 import {
@@ -30,7 +40,6 @@ import {
   students,
   teacherProfile,
 } from '@/mocks/data/teacher-seed';
-import { buildLearningProfile } from '@/mocks/data/teacher-student-seed';
 
 /**
  * MSW handlers standing in for the Teacher Portal API.
@@ -482,6 +491,72 @@ export const teacherHandlers = [
   http.get(`${BASE}/classes/`, () => HttpResponse.json(listClasses())),
 
   /* ---------------------------------------------------------------------- */
+  /* Results, analytics and review — frontend-integration.md §5.5           */
+  /* ---------------------------------------------------------------------- */
+
+  http.get(`${BASE}/assessments/:assessmentId/results/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const results = getResults(assessment.id);
+    return HttpResponse.json((results?.students ?? []).map(toResultsRow));
+  }),
+
+  http.get(`${BASE}/assessments/:assessmentId/results/:studentId/responses/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const result = findStudentResult(assessment.id, String(params.studentId));
+    if (!result) return notFound('That child is not assigned to this paper.');
+    if (!result.submitted) {
+      return validationError({ status: ['This child has not submitted this paper yet.'] });
+    }
+    return HttpResponse.json(toStudentResponses(assessment, result));
+  }),
+
+  http.get(`${BASE}/assessments/:assessmentId/review-queue/`, ({ params }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const results = getResults(assessment.id);
+    return HttpResponse.json(results ? computeReviewQueue(results) : []);
+  }),
+
+  http.get(`${BASE}/assessments/:assessmentId/analytics/`, ({ params, request }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const results = getResults(assessment.id);
+    if (!results) return notFound('That assessment does not exist.');
+
+    const url = new URL(request.url);
+    const includeNarrative = url.searchParams.get('narrative') !== 'false';
+    return HttpResponse.json(computeAnalytics(results, includeNarrative));
+  }),
+
+  http.get(`${BASE}/assessments/:assessmentId/analytics/roster/`, ({ params, request }) => {
+    const assessment = findStored(String(params.assessmentId));
+    if (!assessment) return notFound('That assessment does not exist.');
+    const results = getResults(assessment.id);
+    if (!results) return HttpResponse.json([]);
+
+    const url = new URL(request.url);
+    const domain = filterValue(url, 'domain');
+    const level = filterValue(url, 'level');
+
+    const rows = results.students
+      .filter((student) => student.submitted)
+      .map(toAnalyticsRosterRow)
+      .filter((row) => {
+        if (domain === 'literacy' && row.literacy_level === null) return false;
+        if (domain === 'numeracy' && row.numeracy_level === null) return false;
+        if (level) {
+          const target = Number(level);
+          if (row.literacy_level !== target && row.numeracy_level !== target) return false;
+        }
+        return true;
+      });
+
+    return HttpResponse.json(rows);
+  }),
+
+  /* ---------------------------------------------------------------------- */
   /* Students                                                               */
   /* ---------------------------------------------------------------------- */
 
@@ -514,11 +589,14 @@ export const teacherHandlers = [
     return HttpResponse.json({ ...paginate(rows, url, 10), level_counts: levelCounts });
   }),
 
-  http.get(`${BASE}/students/:studentId/learning-profile/`, ({ params }) => {
-    const profile = buildLearningProfile(String(params.studentId));
-    if (!profile) return notFound('That student is not in your class.');
-
-    return HttpResponse.json(profile);
+  http.get(`${BASE}/students/:studentId/skills/`, ({ params }) => {
+    const studentId = String(params.studentId);
+    if (!students.some((entry) => entry.id === studentId)) {
+      return notFound('That student is not in your class.');
+    }
+    const studentSkills = computeStudentSkills(studentId);
+    if (!studentSkills) return notFound('This child has not sat an assessment yet.');
+    return HttpResponse.json(studentSkills);
   }),
 
   http.get(`${BASE}/students/:studentId/`, ({ params }) => {

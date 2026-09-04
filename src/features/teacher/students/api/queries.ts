@@ -2,10 +2,8 @@ import { queryOptions } from '@tanstack/react-query';
 
 import { teacherEndpoints } from '@/features/teacher/api/endpoints';
 import { teacherKeys } from '@/features/teacher/api/queries';
-import {
-  learningProfileSchema,
-  studentListSchema,
-} from '@/features/teacher/students/api/student.schema';
+import { studentSkillsSchema } from '@/features/teacher/students/api/skills.schema';
+import { studentListSchema } from '@/features/teacher/students/api/student.schema';
 import { api } from '@/lib/api/client';
 
 export interface StudentListFilters {
@@ -32,11 +30,11 @@ export const studentListQuery = (filters: StudentListFilters) =>
     placeholderData: (previous) => previous,
   });
 
-/** One child's learning profile: breakdown, interpretation, next steps, question log. */
-export const learningProfileQuery = (studentId: string) =>
+/** One child, by skill — `frontend-integration.md` §5.5. Two levels, movement, weak subskills. */
+export const studentSkillsQuery = (studentId: string) =>
   queryOptions({
     queryKey: teacherKeys.studentProfile(studentId),
     queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.students.profile(studentId), learningProfileSchema, { signal }),
+      api.get(teacherEndpoints.students.skills(studentId), studentSkillsSchema, { signal }),
     staleTime: 60_000,
   });

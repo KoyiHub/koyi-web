@@ -76,11 +76,8 @@ export const teacherEndpoints = {
   students: {
     list: `${BASE}/students/`,
     detail: (studentId: string) => `${BASE}/students/${studentId}/`,
-    // `/skills/` is the §5.5 contract for the per-skill breakdown; the student
-    // profile screen still reads the pre-refactor `/learning-profile/` shape
-    // via `profile` until it is rebuilt in Phase 4, so both stay wired.
+    /** §5.5 — the per-skill breakdown, level context a percentage alone can't carry. */
     skills: (studentId: string) => `${BASE}/students/${studentId}/skills/`,
-    profile: (studentId: string) => `${BASE}/students/${studentId}/learning-profile/`,
     lessonPlan: (studentId: string) => `${BASE}/students/${studentId}/lesson-plan/`,
   },
 

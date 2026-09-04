@@ -14,6 +14,13 @@ import {
   rosterSchema,
   teacherClassListSchema,
 } from '@/features/teacher/assessments/api/assignment.schema';
+import {
+  analyticsRosterSchema,
+  analyticsSchema,
+  resultsListSchema,
+  reviewQueueListSchema,
+  studentResponsesSchema,
+} from '@/features/teacher/assessments/api/results.schema';
 import { api } from '@/lib/api/client';
 
 /**
@@ -37,6 +44,14 @@ export const assessmentKeys = {
   classes: () => [...assessmentKeys.all, 'classes'] as const,
   assignableStudents: (params: AssignableStudentParams) =>
     [...assessmentKeys.all, 'assignable-students', params] as const,
+  results: (id: string) => [...assessmentKeys.all, id, 'results'] as const,
+  responses: (id: string, studentId: string) =>
+    [...assessmentKeys.all, id, 'responses', studentId] as const,
+  reviewQueue: (id: string) => [...assessmentKeys.all, id, 'review-queue'] as const,
+  analytics: (id: string, narrative: boolean) =>
+    [...assessmentKeys.all, id, 'analytics', narrative] as const,
+  analyticsRoster: (id: string, filters: AnalyticsRosterFilters) =>
+    [...assessmentKeys.all, id, 'analytics-roster', filters] as const,
 };
 
 export interface AssessmentListParams {
@@ -133,4 +148,70 @@ export const assignableStudentsQuery = (params: AssignableStudentParams = {}) =>
         params: params as Record<string, unknown>,
       }),
     placeholderData: (previous) => previous,
+  });
+
+/* -------------------------------------------------------------------------- */
+/* Results, analytics and review — frontend-integration.md §5.5              */
+/* -------------------------------------------------------------------------- */
+
+/** Every assigned child: progress, score, level. Folded into the analytics page as a table. */
+export const resultsQuery = (assessmentId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.results(assessmentId),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.results(assessmentId), resultsListSchema, { signal }),
+  });
+
+/** One child's paper, in sitting order, annotated with what happened. */
+export const studentResponsesQuery = (assessmentId: string, studentId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.responses(assessmentId, studentId),
+    queryFn: ({ signal }) =>
+      api.get(
+        teacherEndpoints.assessments.studentResponses(assessmentId, studentId),
+        studentResponsesSchema,
+        { signal },
+      ),
+  });
+
+/** Responses the AI could not settle — read-only, no resolution endpoint exists yet. */
+export const reviewQueueQuery = (assessmentId: string) =>
+  queryOptions({
+    queryKey: assessmentKeys.reviewQueue(assessmentId),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.reviewQueue(assessmentId), reviewQueueListSchema, {
+        signal,
+      }),
+  });
+
+/**
+ * Numbers computed deterministically, with an AI narrative laid over them.
+ * `narrative: false` skips generating the prose — the key stays `null`
+ * rather than being dropped, so a tile that doesn't want it need not branch
+ * on key existence.
+ */
+export const analyticsQuery = (assessmentId: string, narrative = true) =>
+  queryOptions({
+    queryKey: assessmentKeys.analytics(assessmentId, narrative),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.analytics(assessmentId), analyticsSchema, {
+        signal,
+        params: { narrative },
+      }),
+  });
+
+export interface AnalyticsRosterFilters {
+  domain?: string | undefined;
+  level?: string | undefined;
+}
+
+/** Who needs help — filterable by domain/level. */
+export const analyticsRosterQuery = (assessmentId: string, filters: AnalyticsRosterFilters = {}) =>
+  queryOptions({
+    queryKey: assessmentKeys.analyticsRoster(assessmentId, filters),
+    queryFn: ({ signal }) =>
+      api.get(teacherEndpoints.assessments.analyticsRoster(assessmentId), analyticsRosterSchema, {
+        signal,
+        params: filters as Record<string, unknown>,
+      }),
   });
