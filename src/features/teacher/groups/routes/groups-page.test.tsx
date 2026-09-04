@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { renderRoute, screen, within } from '@/test/test-utils';
+import { renderRoute, screen } from '@/test/test-utils';
 
+/**
+ * Groups overview — `frontend-integration.md` §5.6. Unpaginated: a group is
+ * a small working set by design, never a whole-school roster.
+ */
 describe('GroupsPage', () => {
   it('renders the Groups Overview heading', async () => {
     renderRoute('/teacher/students/groups');
@@ -9,32 +13,29 @@ describe('GroupsPage', () => {
     expect(await screen.findByRole('heading', { name: 'Groups Overview' })).toBeInTheDocument();
   });
 
-  it('renders the three group fixtures', async () => {
+  it('renders the seeded groups with their size and resource tier', async () => {
     renderRoute('/teacher/students/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
-    expect(screen.getByRole('heading', { name: 'Phonics Focus' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Addition Masters' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Early Readers' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Word Reading Focus' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Subtraction Support' })).toBeInTheDocument();
   });
 
-  it("renders each group's student count, primary need and status", async () => {
+  it('flags a group that has got small', async () => {
     renderRoute('/teacher/students/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
-    const phonics = screen.getByRole('heading', { name: 'Phonics Focus' }).closest('article')!;
-    expect(within(phonics).getByText('8')).toBeInTheDocument();
-    expect(within(phonics).getByText('Letter Sounds & Blending')).toBeInTheDocument();
-    expect(within(phonics).getByText('Needs Intervention')).toBeInTheDocument();
+    const thinHeading = await screen.findByRole('heading', { name: 'Subtraction Support' });
+    const thin = thinHeading.closest('article')!;
+    expect(thin).toHaveTextContent('Getting small');
+  });
 
-    const addition = screen.getByRole('heading', { name: 'Addition Masters' }).closest('article')!;
-    expect(within(addition).getByText('12')).toBeInTheDocument();
-    expect(within(addition).getByText('Advanced Number Bonds')).toBeInTheDocument();
-    expect(within(addition).getByText('Exceeding Expectations')).toBeInTheDocument();
+  it('opens the create-group dialog', async () => {
+    const { user } = renderRoute('/teacher/students/groups');
+    await screen.findByRole('heading', { name: 'Groups Overview' });
 
-    const earlyReaders = screen.getByRole('heading', { name: 'Early Readers' }).closest('article')!;
-    expect(within(earlyReaders).getByText('6')).toBeInTheDocument();
-    expect(within(earlyReaders).getByText('Sight Words & Fluency')).toBeInTheDocument();
-    expect(within(earlyReaders).getByText('On Track')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Create New Group' }));
+
+    expect(await screen.findByRole('dialog', { name: 'Create a group' })).toBeInTheDocument();
   });
 });

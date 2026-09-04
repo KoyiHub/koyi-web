@@ -19,6 +19,18 @@ import {
 } from '@/mocks/data/assignment-seed';
 import { bankQuestions } from '@/mocks/data/bank-seed';
 import {
+  addMember,
+  archiveGroup,
+  findGroup,
+  generateGroupLessonPlan,
+  getGroupLessonPlan,
+  getStudentLessonPlan,
+  groups,
+  removeMember,
+  type SeedGroup,
+  setLessonPlanFeedback,
+} from '@/mocks/data/groups-seed';
+import {
   computeAnalytics,
   computeReviewQueue,
   computeStudentSkills,
@@ -131,6 +143,26 @@ function toAssignmentRow(assignment: StoredAssignment) {
     submitted_at: assignment.submitted_at,
     link_sent_at: assignment.link_sent_at,
   };
+}
+
+/** Below 4 current members, a group is flagged rather than dissolved — §5.6. */
+function toGroupResponse(group: SeedGroup) {
+  const currentSize = group.members.filter((member) => member.left_at === null).length;
+  return {
+    id: group.id,
+    name: group.name,
+    domain: group.domain,
+    resource_tier: group.resource_tier,
+    criteria: group.criteria,
+    size: currentSize,
+    stable_until: group.stable_until,
+    is_thin: currentSize < 4,
+    archived: group.archived,
+  };
+}
+
+function toGroupDetailResponse(group: SeedGroup) {
+  return { ...toGroupResponse(group), members: group.members };
 }
 
 const BASE = '*/api/v1/teacher';
@@ -565,5 +597,114 @@ export const teacherHandlers = [
     const studentSkills = computeStudentSkills(studentId);
     if (!studentSkills) return notFound('This child has not sat an assessment yet.');
     return HttpResponse.json(studentSkills);
+  }),
+
+  http.get(`${BASE}/students/:studentId/lesson-plan/`, ({ params }) => {
+    const plan = getStudentLessonPlan(String(params.studentId));
+    if (!plan) return notFound('The group plan already covers this child.');
+    return HttpResponse.json(plan);
+  }),
+
+  /* ---------------------------------------------------------------------- */
+  /* Groups and lesson plans — frontend-integration.md §5.6                 */
+  /* ---------------------------------------------------------------------- */
+
+  http.get(`${BASE}/groups/`, ({ request }) => {
+    const url = new URL(request.url);
+    const status = filterValue(url, 'status');
+    const filtered =
+      status === 'archived'
+        ? groups.filter((group) => group.archived)
+        : groups.filter((group) => !group.archived);
+    return HttpResponse.json(filtered.map(toGroupResponse));
+  }),
+
+  http.post(`${BASE}/groups/`, async ({ request }) => {
+    const body = (await readBody(request)) as {
+      name?: string;
+      domain?: string;
+      resource_tier?: string;
+      criteria?: unknown[];
+    };
+    if (!Array.isArray(body.criteria) || body.criteria.length === 0) {
+      return validationError({ criteria: ['A group needs at least one criterion.'] });
+    }
+    if (!asString(body.name)) return validationError({ name: ['This field is required.'] });
+
+    const created: SeedGroup = {
+      id: `grp-${String(Date.now())}`,
+      name: asString(body.name),
+      domain: body.domain === 'numeracy' ? 'numeracy' : 'literacy',
+      resource_tier:
+        body.resource_tier === 'minimal' || body.resource_tier === 'equipped'
+          ? body.resource_tier
+          : 'basic',
+      criteria: body.criteria as Record<string, unknown>[],
+      stable_until: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+      archived: false,
+      members: [],
+    };
+    groups.push(created);
+    return HttpResponse.json(toGroupDetailResponse(created), { status: 201 });
+  }),
+
+  http.post(`${BASE}/groups/form/`, () =>
+    HttpResponse.json(groups.filter((g) => !g.archived).map(toGroupResponse)),
+  ),
+
+  http.get(`${BASE}/groups/:groupId/`, ({ params }) => {
+    const group = findGroup(String(params.groupId));
+    if (!group) return notFound('That group does not exist.');
+    return HttpResponse.json(toGroupDetailResponse(group));
+  }),
+
+  http.delete(`${BASE}/groups/:groupId/`, ({ params }) => {
+    const ok = archiveGroup(String(params.groupId));
+    if (!ok) return notFound('That group does not exist.');
+    return HttpResponse.json({});
+  }),
+
+  http.get(`${BASE}/groups/:groupId/members/`, ({ params, request }) => {
+    const group = findGroup(String(params.groupId));
+    if (!group) return notFound('That group does not exist.');
+    const url = new URL(request.url);
+    const currentOnly = url.searchParams.get('current') === 'true';
+    const rows = currentOnly ? group.members.filter((m) => m.left_at === null) : group.members;
+    return HttpResponse.json(rows);
+  }),
+
+  http.post(`${BASE}/groups/:groupId/members/`, async ({ params, request }) => {
+    const body = (await readBody(request)) as { student_id?: string };
+    const created = addMember(String(params.groupId), asString(body.student_id));
+    if (!created) return notFound('That group or student does not exist.');
+    return HttpResponse.json(created, { status: 201 });
+  }),
+
+  http.delete(`${BASE}/groups/:groupId/members/:studentId/`, ({ params }) => {
+    const ok = removeMember(String(params.groupId), String(params.studentId));
+    if (!ok) return notFound('That student is not a current member of this group.');
+    return HttpResponse.json({});
+  }),
+
+  http.get(`${BASE}/groups/:groupId/lesson-plan/`, ({ params }) => {
+    const plan = getGroupLessonPlan(String(params.groupId));
+    if (!plan) return notFound('No plan has been generated yet.');
+    return HttpResponse.json(plan);
+  }),
+
+  http.post(`${BASE}/groups/:groupId/lesson-plan/`, ({ params }) => {
+    const group = findGroup(String(params.groupId));
+    if (!group) return notFound('That group does not exist.');
+    // Instant in the mock, but the shape still carries `status` correctly
+    // so the polling UI is exercised by tests.
+    const plan = generateGroupLessonPlan(group.id);
+    return HttpResponse.json(plan, { status: 202 });
+  }),
+
+  http.post(`${BASE}/lesson-plans/:lessonPlanId/feedback/`, async ({ params, request }) => {
+    const body = (await readBody(request)) as { was_helpful?: boolean };
+    const ok = setLessonPlanFeedback(String(params.lessonPlanId), Boolean(body.was_helpful));
+    if (!ok) return notFound('That lesson plan does not exist.');
+    return HttpResponse.json({});
   }),
 ];

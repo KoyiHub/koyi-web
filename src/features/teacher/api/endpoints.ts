@@ -92,6 +92,8 @@ export const teacherEndpoints = {
 
   groups: {
     list: `${BASE}/groups/`,
+    /** Auto-forms groups for shared weaknesses. */
+    form: `${BASE}/groups/form/`,
     detail: (groupId: string) => `${BASE}/groups/${groupId}/`,
     members: (groupId: string) => `${BASE}/groups/${groupId}/members/`,
     member: (groupId: string, studentId: string) =>

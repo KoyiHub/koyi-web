@@ -1,81 +1,76 @@
 import { describe, expect, it } from 'vitest';
 
-import { renderRoute, screen, within } from '@/test/test-utils';
+import { renderRoute, screen, waitFor, within } from '@/test/test-utils';
 
+/**
+ * One group — `frontend-integration.md` §5.6. Criteria, membership history
+ * (`join_reason`/`left_at`), and the lesson plan panel, `status`-driven —
+ * `fallback` is shown normally, not as an error.
+ */
 describe('GroupDetailPage', () => {
-  it('renders the Phonics Focus heading', async () => {
-    renderRoute('/teacher/students/groups/grp-phonics-focus');
+  it('renders the group heading and criteria', async () => {
+    renderRoute('/teacher/students/groups/grp-word-reading');
 
-    expect(await screen.findByRole('heading', { name: 'Phonics Focus' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Word Reading Focus' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Criteria' })).toBeInTheDocument();
+    expect(screen.getByText(/Level ≤ 2/)).toBeInTheDocument();
   });
 
-  it('renders the group metrics', async () => {
-    renderRoute('/teacher/students/groups/grp-phonics-focus');
-    await screen.findByRole('heading', { name: 'Phonics Focus' });
-
-    expect(screen.getByText('42%')).toBeInTheDocument();
-    expect(screen.getByText('+15%')).toBeInTheDocument();
-    expect(screen.getByText('Critical Needs')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
-    expect(screen.getByText('2 Days Ago')).toBeInTheDocument();
-  });
-
-  it('renders the students preview', async () => {
-    renderRoute('/teacher/students/groups/grp-phonics-focus');
-    await screen.findByRole('heading', { name: 'Phonics Focus' });
+  it('shows current members, distinguishing matched from added', async () => {
+    renderRoute('/teacher/students/groups/grp-word-reading');
+    await screen.findByRole('heading', { name: 'Word Reading Focus' });
 
     const roster = screen
       .getByRole('heading', { name: 'Students in This Group' })
       .closest('section')!;
-    expect(within(roster).getByText('Aisha O.')).toBeInTheDocument();
-    expect(within(roster).getByText('Struggling with CVC words')).toBeInTheDocument();
-    expect(within(roster).getByText('Needs Help')).toBeInTheDocument();
-    expect(within(roster).getByText('Emeka I.')).toBeInTheDocument();
-    expect(within(roster).getByText('Improving on Digraphs')).toBeInTheDocument();
-    expect(within(roster).getByText('Fatima K.')).toBeInTheDocument();
-    expect(within(roster).getByText('Consistent progress')).toBeInTheDocument();
+    expect(within(roster).getByText('Fatima Bello')).toBeInTheDocument();
+    expect(within(roster).getAllByText(/Matched by criteria/).length).toBeGreaterThan(0);
+    expect(within(roster).getByText('Amina Yusuf')).toBeInTheDocument();
+    expect(within(roster).getByText(/Added by hand/)).toBeInTheDocument();
   });
 
-  it('renders common skill gaps', async () => {
-    renderRoute('/teacher/students/groups/grp-phonics-focus');
-    await screen.findByRole('heading', { name: 'Phonics Focus' });
+  it('removes a current member', async () => {
+    const { user } = renderRoute('/teacher/students/groups/grp-word-reading');
+    await screen.findByRole('heading', { name: 'Word Reading Focus' });
 
-    const gaps = screen.getByRole('heading', { name: 'Common Skill Gaps' }).closest('section')!;
-    expect(within(gaps).getByText('CVC Word Blending')).toBeInTheDocument();
-    expect(within(gaps).getByText('6/8 Struggling')).toBeInTheDocument();
-    expect(within(gaps).getByText('Initial Consonant Sounds')).toBeInTheDocument();
-    expect(within(gaps).getByText('4/8 Struggling')).toBeInTheDocument();
+    const roster = screen
+      .getByRole('heading', { name: 'Students in This Group' })
+      .closest('section')!;
+    const aminaRow = within(roster).getByText('Amina Yusuf').closest('li')!;
+    await user.click(within(aminaRow).getByRole('button', { name: 'Remove' }));
+
+    await waitFor(() => {
+      expect(within(roster).queryByText('Amina Yusuf')).not.toBeInTheDocument();
+    });
   });
 
-  it('renders recent assessments', async () => {
-    renderRoute('/teacher/students/groups/grp-phonics-focus');
-    await screen.findByRole('heading', { name: 'Phonics Focus' });
+  it('generates a lesson plan when none exists yet', async () => {
+    const { user } = renderRoute('/teacher/students/groups/grp-word-reading');
+    await screen.findByRole('heading', { name: 'Word Reading Focus' });
 
-    const recent = screen.getByRole('heading', { name: 'Recent Assessments' }).closest('section')!;
-    expect(within(recent).getByText('Oct 12, 2023')).toBeInTheDocument();
-    expect(within(recent).getByText('Consonant Blends')).toBeInTheDocument();
-    expect(within(recent).getByText('45%')).toBeInTheDocument();
-    expect(within(recent).getByText('Oct 05, 2023')).toBeInTheDocument();
-    expect(within(recent).getByText('Vowel Sounds')).toBeInTheDocument();
-    expect(within(recent).getByText('38%')).toBeInTheDocument();
+    await screen.findByText('No plan has been generated yet.');
+    await user.click(screen.getByRole('button', { name: 'Generate lesson plan' }));
+
+    expect(await screen.findByRole('heading', { name: 'Lesson plan' })).toBeInTheDocument();
+    expect(await screen.findByText(/Blend two-syllable words fluently/)).toBeInTheDocument();
   });
 
-  it('sends the teacher to the assessment library when Reassess Group is clicked', async () => {
-    // Reassessing means authoring or picking a paper, not opening a sitting:
-    // a child sits an assessment on the runner surface, never inside the
-    // teacher shell.
-    const { user } = renderRoute('/teacher/students/groups/grp-phonics-focus');
-    await screen.findByRole('heading', { name: 'Phonics Focus' });
+  it('renders a fallback plan normally, not as an error', async () => {
+    const { user } = renderRoute('/teacher/students/groups/grp-subtraction-support');
+    await screen.findByRole('heading', { name: 'Subtraction Support' });
 
-    await user.click(screen.getByRole('button', { name: 'Reassess Group' }));
+    await screen.findByText('No plan has been generated yet.');
+    await user.click(screen.getByRole('button', { name: 'Generate lesson plan' }));
 
-    expect(await screen.findByRole('heading', { name: 'Assessments' })).toBeInTheDocument();
+    expect(
+      await screen.findByText('Canonical plan — adaptation did not apply'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Build confidence borrowing across zero/)).toBeInTheDocument();
   });
 
   it('shows a safe not-found state for an unknown group ID', async () => {
     renderRoute('/teacher/students/groups/does-not-exist');
 
-    expect(await screen.findByRole('heading', { name: 'Group not found' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Back to Groups/ })).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toHaveTextContent('That group does not exist.');
   });
 });

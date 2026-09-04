@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/ui/error-state';
 import { BookOpenIcon, CalculatorIcon, SparklesIcon, UserIcon } from '@/components/ui/icons';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
+import { studentLessonPlanQuery } from '@/features/teacher/groups/api/queries';
 import { studentSkillsQuery } from '@/features/teacher/students/api/queries';
 import type { SkillBreakdown } from '@/features/teacher/students/api/skills.schema';
 import type { Domain, FlnLevel } from '@/lib/api/contracts';
@@ -78,6 +79,34 @@ function SkillRow({ skill }: { skill: SkillBreakdown }) {
         </ul>
       )}
     </li>
+  );
+}
+
+/**
+ * A short note beside the group plan — `frontend-integration.md` §5.6. A
+ * `404` means the group plan already covers this child, which is the
+ * normal case, not a gap, so it renders nothing rather than an error.
+ */
+function StudentLessonPlanNote({ studentId }: { studentId: string }) {
+  const plan = useQuery(studentLessonPlanQuery(studentId));
+
+  if (plan.isPending || (plan.isError && plan.error instanceof ApiError && plan.error.isNotFound)) {
+    return null;
+  }
+  if (plan.isError) return null;
+  if (!plan.data.content) return null;
+
+  return (
+    <Card
+      title="Personal note"
+      icon={<SparklesIcon className="size-5" />}
+      bodyClassName="space-y-2"
+    >
+      <p className="text-koyi-text text-sm leading-relaxed">{plan.data.content.objective}</p>
+      {plan.data.content.note && (
+        <p className="text-koyi-muted text-xs italic">{plan.data.content.note}</p>
+      )}
+    </Card>
   );
 }
 
@@ -189,6 +218,8 @@ export function StudentProfilePage() {
           )}
         </Card>
       </div>
+
+      <StudentLessonPlanNote studentId={studentId} />
     </div>
   );
 }
