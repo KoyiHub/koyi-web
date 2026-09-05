@@ -121,9 +121,11 @@ export type PutResponseInput = z.infer<typeof putResponseInputSchema>;
  * Submitting the last section finalises the paper on its own — `status:
  * "finished"` means go straight to the summary screen. There is no further
  * submit call and no confirm step (§9).
+ *
+ * The doc reads as if this were `{status, assessment}`, but the live
+ * response is the refreshed overview itself, flat — the same shape `GET
+ * /v1/student/assessment/` returns, whose own `status` field already carries
+ * exactly `"in_progress"`/`"finished"` at this point in the flow.
  */
-export const submitSectionResponseSchema = z.object({
-  status: z.enum(['in_progress', 'finished']),
-  assessment: assessmentOverviewSchema,
-});
+export const submitSectionResponseSchema = assessmentOverviewSchema;
 export type SubmitSectionResponse = z.infer<typeof submitSectionResponseSchema>;

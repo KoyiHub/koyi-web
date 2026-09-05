@@ -165,9 +165,9 @@ export const studentHandlers = [
     const overview = overviewPayload();
     const finished = overview.sections.every((candidate) => candidate.status === 'submitted');
 
-    return HttpResponse.json({
-      status: finished ? 'finished' : 'in_progress',
-      assessment: overview,
-    });
+    // The live response is the refreshed overview itself, flat — not
+    // {status, assessment} — with its own `status` field reflecting the
+    // outcome directly.
+    return HttpResponse.json({ ...overview, status: finished ? 'finished' : 'in_progress' });
   }),
 ];
