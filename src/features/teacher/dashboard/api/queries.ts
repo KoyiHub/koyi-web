@@ -4,7 +4,6 @@ import { teacherEndpoints } from '@/features/teacher/api/endpoints';
 import { teacherKeys } from '@/features/teacher/api/queries';
 import {
   activityListSchema,
-  attentionListSchema,
   classPerformanceSchema,
   dashboardSchema,
   insightsSchema,
@@ -34,28 +33,6 @@ export const activityQuery = (filters: ActivityFilters) =>
       if (filters.type !== 'all') search.set('type', filters.type);
 
       return api.get(`${teacherEndpoints.activity}?${search.toString()}`, activityListSchema, {
-        signal,
-      });
-    },
-    staleTime: 30_000,
-    placeholderData: (previous) => previous,
-  });
-
-interface AttentionFilters {
-  /** `all`, or an `AttentionPriority`. */
-  priority: string;
-  page: number;
-}
-
-/** The full students-needing-attention list behind the dashboard's "View all". */
-export const attentionQuery = (filters: AttentionFilters) =>
-  queryOptions({
-    queryKey: teacherKeys.attention(filters),
-    queryFn: ({ signal }) => {
-      const search = new URLSearchParams({ page: String(filters.page) });
-      if (filters.priority !== 'all') search.set('priority', filters.priority);
-
-      return api.get(`${teacherEndpoints.attention}?${search.toString()}`, attentionListSchema, {
         signal,
       });
     },

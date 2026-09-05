@@ -6,13 +6,7 @@
  * of `teacher-seed.ts`.
  */
 
-import {
-  attentionRows,
-  CLASS_NAME,
-  distributionSegments,
-  students,
-  TERM_LABEL,
-} from './teacher-seed';
+import { CLASS_NAME, students, TERM_LABEL } from './teacher-seed';
 
 export interface SeedActivity {
   id: string;
@@ -184,6 +178,17 @@ export const activity: SeedActivity[] = [
 
 const assessedCount = students.filter((student) => student.level !== 'beginner').length;
 
+function share(count: number): number {
+  return Math.round((count / assessedCount) * 100);
+}
+
+const BAND_LABEL = { strong: 'Strong', intermediate: 'Intermediate', struggling: 'Struggling' };
+
+const distributionSegments = (['strong', 'intermediate', 'struggling'] as const).map((band) => {
+  const count = students.filter((student) => student.level === band).length;
+  return { band, label: BAND_LABEL[band], students: count, percentage: share(count) };
+});
+
 /**
  * Band movement since the baseline. `change` is a headcount delta, not a
  * percentage — the design's "+3" reads as three more children, which is the
@@ -345,10 +350,4 @@ export const classPerformance = {
       change: 9,
     },
   ],
-};
-
-export const priorityCounts = {
-  high: attentionRows.filter((row) => row.priority === 'high').length,
-  medium: attentionRows.filter((row) => row.priority === 'medium').length,
-  low: attentionRows.filter((row) => row.priority === 'low').length,
 };

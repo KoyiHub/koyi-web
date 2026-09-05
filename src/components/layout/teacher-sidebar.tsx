@@ -5,7 +5,7 @@ import { InitialsAvatar } from '@/components/ui/avatar';
 import { Logo } from '@/components/ui/logo';
 import type { AppNavItem } from '@/config/app-nav';
 import { teacherNav } from '@/config/teacher-nav';
-import { teacherProfileQuery } from '@/features/teacher/api/queries';
+import { teacherDashboardQuery } from '@/features/teacher/dashboard/api/queries';
 import { cn } from '@/lib/utils/cn';
 
 interface TeacherSidebarProps {
@@ -77,7 +77,7 @@ function NavRow({ item, onNavigate }: NavRowProps) {
  * and Help.
  */
 export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
-  const { data: profile } = useQuery(teacherProfileQuery());
+  const { data: dashboard } = useQuery(teacherDashboardQuery());
 
   return (
     <>
@@ -100,12 +100,12 @@ export function TeacherSidebar({ open, onClose }: TeacherSidebarProps) {
         </div>
 
         <div className="border-koyi-border flex items-center gap-3 border-y px-5 py-4">
-          <InitialsAvatar name={profile?.full_name ?? 'Koyi Teacher'} />
+          <InitialsAvatar name={dashboard?.teacher_name ?? 'Koyi Teacher'} />
           <div className="min-w-0">
             <p className="text-koyi-text truncate text-sm leading-snug font-bold">
-              {profile?.full_name ?? ' '}
+              {dashboard?.teacher_name ?? ' '}
             </p>
-            <p className="text-koyi-muted truncate text-xs">{profile?.class_name ?? ' '}</p>
+            <p className="text-koyi-muted truncate text-xs">{dashboard?.school_class ?? ' '}</p>
           </div>
         </div>
 

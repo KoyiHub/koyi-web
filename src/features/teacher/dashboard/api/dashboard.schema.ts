@@ -7,80 +7,76 @@ import {
 } from '@/features/teacher/api/shared.schema';
 
 /**
- * PROVISIONAL Teacher dashboard contracts — see `../../api/endpoints.ts`.
+ * `GET /v1/teacher/dashboard/` — `frontend-integration.md` §5.1, matched
+ * field-for-field. Five things about this endpoint are deliberately not how
+ * the rest of the API behaves:
  *
- * Every band, label and percentage below is read straight off the response.
- * Nothing here is derived in the browser, because the score-to-band mapping is
- * a scoring rule that belongs to the backend.
+ * - `class_distribution` is the ONE place literacy and numeracy collapse
+ *   into a single band per child (their weaker domain) — a declared
+ *   exception to §9, used nowhere else.
+ * - `attention_count` is exactly `class_distribution.struggling`, not an
+ *   independent number.
+ * - There is no trend arrow — a mocked-up "12 ↑2%" was rejected rather than
+ *   faked, since nothing here stores a historical snapshot to diff against.
+ * - `insight` is a template over `students_needing_attention`, not a real
+ *   recommendation engine; `group_id` is set only when one of the
+ *   teacher's own groups already targets that exact skill, and is `null`
+ *   far more often than not — hide "View Lesson Plan" rather than show a
+ *   dead link when it is.
+ * - `students_needing_attention` is capped at 5 and is NOT paginated — a
+ *   dashboard preview, not the roster. The full list with filters is
+ *   `/v1/teacher/assessments/{id}/analytics/roster/` (§5.5), scoped to one
+ *   assessment.
  */
-
-/** A headline figure on the dashboard, with its own movement caption. */
-const statSchema = z.object({
-  value: z.number(),
-  /** Server-authored caption, e.g. "+4 this week". `null` when there is nothing to say. */
-  delta_label: z.string().nullable(),
-  /** Drives the caption colour without the client interpreting the wording. */
-  delta_direction: z.enum(['up', 'down', 'flat']),
+export const classDistributionSchema = z.object({
+  strong: z.number(),
+  intermediate: z.number(),
+  struggling: z.number(),
+  not_yet_assessed: z.number(),
 });
-export type DashboardStat = z.infer<typeof statSchema>;
+export type ClassDistribution = z.infer<typeof classDistributionSchema>;
 
-/** One band's slice of the class. */
-export const distributionSegmentSchema = z.object({
-  band: performanceBandSchema,
-  label: z.string(),
-  students: z.number(),
-  percentage: z.number(),
+export const dashboardInsightSchema = z.object({
+  // Loosened from the strict `literacy`/`numeracy` enum: the live backend
+  // has been observed sending a `domain` that is neither of those two
+  // values nor `null`, despite the doc's own example always showing a
+  // concrete domain. Rather than guess at the real value (a third domain
+  // name? different casing? a category label?), this accepts whatever
+  // arrives and the UI only renders the domain/skill line when it happens
+  // to be exactly `literacy` or `numeracy` — anything else degrades to
+  // "no domain line" instead of a crash.
+  domain: z.string().nullable(),
+  skill_name: z.string().nullable(),
+  summary: z.string(),
+  group_id: z.string().nullable(),
 });
-export type DistributionSegment = z.infer<typeof distributionSegmentSchema>;
+export type DashboardInsight = z.infer<typeof dashboardInsightSchema>;
 
-export const attentionPrioritySchema = z.enum(['high', 'medium', 'low']);
-export type AttentionPriority = z.infer<typeof attentionPrioritySchema>;
-
-/** A child the class dashboard is flagging, with the action the server suggests. */
-export const attentionRowSchema = z.object({
+export const attentionPreviewRowSchema = z.object({
   student_id: z.string(),
   full_name: z.string(),
-  student_code: z.string(),
-  priority: attentionPrioritySchema,
-  identified_issue: z.string(),
-  subject: assessmentSubjectSchema,
-  last_assessment: z.string(),
-  last_assessment_label: z.string(),
-  recommended_action: z.string(),
+  primary_gap: z.string(),
+  last_assessed_at: z.string().nullable(),
 });
-export type AttentionRow = z.infer<typeof attentionRowSchema>;
+export type AttentionPreviewRow = z.infer<typeof attentionPreviewRowSchema>;
 
 export const dashboardSchema = z.object({
-  class_name: z.string(),
-  term_label: z.string(),
-  /** The server owns the clock, so the greeting never disagrees with the report data. */
-  time_of_day: z.enum(['morning', 'afternoon', 'evening']),
-  stats: z.object({
-    total_students: statSchema,
-    assessed: statSchema,
-    needs_attention: statSchema,
-  }),
-  distribution: z.object({
-    assessed_count: z.number(),
-    updated_label: z.string(),
-    segments: z.array(distributionSegmentSchema),
-  }),
-  ai_insight: z.object({
-    id: z.string(),
-    headline: z.string(),
-    body: z.string(),
-    focus_skill: z.string(),
-    affected_students: z.number(),
-  }),
-  attention: z.object({
-    total: z.number(),
-    rows: z.array(attentionRowSchema),
-  }),
+  teacher_name: z.string(),
+  /** `null` — a teacher with no class assigned yet gets zeroes throughout, not a `404`. */
+  school_class: z.string().nullable(),
+  total_students: z.number(),
+  assessed_students: z.number(),
+  attention_count: z.number(),
+  class_distribution: classDistributionSchema,
+  insight: dashboardInsightSchema.nullable(),
+  students_needing_attention: z.array(attentionPreviewRowSchema),
 });
 export type TeacherDashboard = z.infer<typeof dashboardSchema>;
 
 /* -------------------------------------------------------------------------- */
-/* Recent activity                                                            */
+/* Recent activity — no doc anchor (no teacher-scoped activity feed exists). */
+/* Left exactly as built per an explicit scope decision — see               */
+/* refactor-plan.md's contract-realignment writeup.                         */
 /* -------------------------------------------------------------------------- */
 
 export const activityTypeSchema = z.enum([
@@ -110,20 +106,8 @@ export type ActivityItem = z.infer<typeof activityItemSchema>;
 export const activityListSchema = paginatedSchema(activityItemSchema);
 
 /* -------------------------------------------------------------------------- */
-/* Students needing attention                                                 */
-/* -------------------------------------------------------------------------- */
-
-export const attentionListSchema = paginatedSchema(attentionRowSchema).extend({
-  priority_counts: z.object({
-    high: z.number(),
-    medium: z.number(),
-    low: z.number(),
-  }),
-});
-export type AttentionList = z.infer<typeof attentionListSchema>;
-
-/* -------------------------------------------------------------------------- */
-/* AI insights                                                                */
+/* AI insights — no doc anchor (only one `insight` object exists, embedded  */
+/* in `/dashboard/`). Left exactly as built per the same scope decision.    */
 /* -------------------------------------------------------------------------- */
 
 export const insightKindSchema = z.enum([
@@ -157,7 +141,9 @@ export const insightsSchema = z.object({
 export type Insights = z.infer<typeof insightsSchema>;
 
 /* -------------------------------------------------------------------------- */
-/* Class performance                                                          */
+/* Class performance — no doc anchor (the per-skill grid is                 */
+/* `analytics.skill_matrix`, scoped to one assessment). Left exactly as     */
+/* built per the same scope decision.                                       */
 /* -------------------------------------------------------------------------- */
 
 /** One skill's class-wide average, with the movement since the previous assessment. */

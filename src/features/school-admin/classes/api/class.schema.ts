@@ -1,38 +1,21 @@
 import { z } from 'zod';
 
-import { classTeacherSchema, paginatedSchema } from '@/features/school-admin/api/shared.schema';
-import { studentListItemSchema } from '@/features/school-admin/students/api/student.schema';
-
 /**
- * Classes. PROVISIONAL — see `@/features/school-admin/api/endpoints`.
+ * Classes — `frontend-integration.md` §4.3. **Unpaginated** — a bare array,
+ * both from the list and from `POST`'s `201`.
  *
- * A class belongs to one grade and carries several teachers, exactly one of
- * whom is the form teacher. Grade and class name are modelled separately
- * (`Primary 3` + `Class A`) rather than as one free-text label, which is what
- * makes the Add Class form a grade select plus a name field.
+ * A class belongs to one grade and carries its own arm name (`Primary 3` +
+ * `Class A`), which is what makes the Add Class form a grade select plus a
+ * name field. There is no class detail endpoint — `grade` holds the grade's
+ * uuid (the field the guide's `POST` body uses, not `grade_id`).
  */
-
-export const classListItemSchema = z.object({
+export const classSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  grade_id: z.string(),
+  grade: z.string(),
   grade_name: z.string(),
-  display_name: z.string(),
-  term: z.string(),
-  room: z.string().nullable(),
-  capacity: z.number(),
-  student_count: z.number(),
-  average_score: z.number(),
-  literacy_score: z.number(),
-  numeracy_score: z.number(),
-  teachers: z.array(classTeacherSchema),
+  name: z.string(),
+  label: z.string(),
 });
-export type ClassListItem = z.infer<typeof classListItemSchema>;
+export type SchoolClass = z.infer<typeof classSchema>;
 
-export const classListSchema = paginatedSchema(classListItemSchema);
-
-export const classDetailSchema = classListItemSchema.extend({
-  created_at: z.string(),
-  students: z.array(studentListItemSchema),
-});
-export type ClassDetail = z.infer<typeof classDetailSchema>;
+export const classListSchema = z.array(classSchema);

@@ -33,3 +33,7 @@ pnpm-debug.log*
 # Tooling caches
 .eslintcache
 .vite
+
+refactor-plan.md
+frontend-integration.md
+SESSION-HANDOFF.md

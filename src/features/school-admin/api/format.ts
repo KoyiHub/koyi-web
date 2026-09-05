@@ -18,3 +18,16 @@ export {
   LEVEL_LABEL,
   SUBJECT_LABEL,
 } from '@/lib/api/format';
+
+/** Computed client-side from `date_of_birth` — §4.5's student shape has no `age` field. */
+export function ageFromDob(dateOfBirth: string): number {
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return 0;
+  const now = new Date();
+  let age = now.getFullYear() - dob.getFullYear();
+  const hasHadBirthdayThisYear =
+    now.getMonth() > dob.getMonth() ||
+    (now.getMonth() === dob.getMonth() && now.getDate() >= dob.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age;
+}

@@ -15,7 +15,7 @@ import {
 import { ApiError } from '@/lib/api/errors';
 
 interface DeviceChallenge {
-  challengeId: string;
+  challenge: string;
   email: string;
 }
 
@@ -23,8 +23,8 @@ interface DeviceChallenge {
 function readChallenge(state: unknown): DeviceChallenge | null {
   if (typeof state !== 'object' || state === null) return null;
   const candidate = state as Partial<DeviceChallenge>;
-  if (typeof candidate.challengeId !== 'string' || typeof candidate.email !== 'string') return null;
-  return { challengeId: candidate.challengeId, email: candidate.email };
+  if (typeof candidate.challenge !== 'string' || typeof candidate.email !== 'string') return null;
+  return { challenge: candidate.challenge, email: candidate.email };
 }
 
 /**
@@ -58,7 +58,7 @@ export function SchoolAdminVerifyDevicePage() {
   async function onSubmit(values: SchoolAdminVerifyDeviceFormValues) {
     if (!challenge) return;
     try {
-      await verify.mutateAsync({ challengeId: challenge.challengeId, code: values.code });
+      await verify.mutateAsync({ challenge: challenge.challenge, code: values.code });
       void navigate(paths.schoolAdmin.dashboard);
     } catch {
       // Surfaced via `verifyError` below.

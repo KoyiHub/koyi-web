@@ -5,7 +5,7 @@ import { getAuthToken } from '@/lib/auth/token-store';
 import { server } from '@/mocks/server';
 import { renderRoute, screen, waitFor } from '@/test/test-utils';
 
-const LOGIN_URL = '*/api/v1/auth/school-admin/login/';
+const LOGIN_URL = '*/api/v1/school/auth/login/';
 
 async function signIn(user: ReturnType<typeof renderRoute>['user'], password = 'password123') {
   await user.type(screen.getByLabelText('Email Address'), 'admin@school.edu');
@@ -43,14 +43,10 @@ describe('SchoolAdminLoginPage', () => {
     expect(getAuthToken()).toBe('mock-access-token');
   });
 
-  it('hands off to the device check, without a session, when the backend asks for one', async () => {
+  it('hands off to the OTP check, without a session, when the backend asks for one', async () => {
     server.use(
       http.post(LOGIN_URL, () =>
-        HttpResponse.json({
-          verification_required: true,
-          challenge_id: 'mock-device-challenge',
-          email: 'admin@school.edu',
-        }),
+        HttpResponse.json({ otp_required: true, challenge: 'mock-otp-challenge' }),
       ),
     );
 
@@ -105,11 +101,7 @@ describe('SchoolAdminVerifyDevicePage', () => {
   it('issues a session only after the code clears', async () => {
     server.use(
       http.post(LOGIN_URL, () =>
-        HttpResponse.json({
-          verification_required: true,
-          challenge_id: 'mock-device-challenge',
-          email: 'admin@school.edu',
-        }),
+        HttpResponse.json({ otp_required: true, challenge: 'mock-otp-challenge' }),
       ),
     );
 

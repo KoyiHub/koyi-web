@@ -1,7 +1,7 @@
 import { queryOptions } from '@tanstack/react-query';
 
-import { authUserSchema } from '@/features/auth/api/auth.schema';
-import { authEndpoints } from '@/features/auth/api/endpoints';
+import { teacherMeSchema } from '@/features/auth/api/auth.schema';
+import { teacherAuthEndpoints } from '@/features/auth/api/endpoints';
 import { api } from '@/lib/api/client';
 
 export const authKeys = {
@@ -9,9 +9,9 @@ export const authKeys = {
   me: () => [...authKeys.all, 'me'] as const,
 };
 
-/** `MeView` — the authenticated user's own record. */
+/** The acting teacher's own record. Surface-specific: school admins read `/v1/school/profile/`. */
 export const meQuery = () =>
   queryOptions({
     queryKey: authKeys.me(),
-    queryFn: ({ signal }) => api.get(authEndpoints.me, authUserSchema, { signal }),
+    queryFn: ({ signal }) => api.get(teacherAuthEndpoints.me, teacherMeSchema, { signal }),
   });

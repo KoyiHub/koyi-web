@@ -96,7 +96,7 @@ export function SchoolAdminSidebar({ open, onClose }: SchoolAdminSidebarProps) {
         </div>
 
         <div className="border-koyi-border flex items-center gap-3 border-y px-5 py-4">
-          <SchoolCrest name={school?.name ?? 'Koyi School'} logoUrl={school?.logo_url} />
+          <SchoolCrest name={school?.name ?? 'Koyi School'} logoUrl={school?.logo?.url} />
           <p className="text-koyi-text text-sm leading-snug font-bold">{school?.name ?? ' '}</p>
         </div>
 

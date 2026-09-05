@@ -1,63 +1,40 @@
 import { z } from 'zod';
 
+import { assessmentStatusSchema } from '@/lib/api/contracts';
+
 /**
- * School dashboard analytics. PROVISIONAL — see
- * `@/features/school-admin/api/endpoints`.
+ * School overview — `frontend-integration.md` §4.7 exactly.
  *
- * Every figure, including the FLN band counts, is computed server-side and
- * read straight off the response. The dashboard renders what it is given.
+ * `level_distribution.levels` keys every Level 1–5 per domain, even at
+ * zero — a chart that dropped empty levels would read as a narrower spread
+ * than the class actually has. `unplaced` is per domain and counts active
+ * children no assessment has reached yet — "usually the most actionable
+ * figure on the dashboard", per the doc, so it gets its own called-out
+ * line rather than folding into the chart. `average_graded_score` averages
+ * across two independent domains and describes neither — kept because a
+ * school that has always had one will look for it, but never the headline.
  */
-
-/** Terms the dashboard can be scoped to. Sent as `?term=`. */
-export const termFilterSchema = z.enum(['this_term', 'last_term', 'ytd']);
-export type TermFilter = z.infer<typeof termFilterSchema>;
-
-export const TERM_FILTER_LABEL: Record<TermFilter, string> = {
-  this_term: 'This Term',
-  last_term: 'Last Term',
-  ytd: 'YTD',
-};
-
-export const TERM_FILTERS: TermFilter[] = ['this_term', 'last_term', 'ytd'];
-
-const statSchema = z.object({
-  value: z.number(),
-  /** Percentage change against the previous period; `null` when not tracked. */
-  change_percentage: z.number().nullable(),
-});
-
-/** One category (a grade or a subject) split across the three FLN bands. */
-const bandBreakdownSchema = z.object({
-  label: z.string(),
-  strong: z.number(),
-  intermediate: z.number(),
-  struggling: z.number(),
-});
-export type BandBreakdown = z.infer<typeof bandBreakdownSchema>;
-
-const trendPointSchema = z.object({
-  label: z.string(),
-  value: z.number(),
-});
-export type TrendPoint = z.infer<typeof trendPointSchema>;
-
-export const dashboardSummarySchema = z.object({
-  term: termFilterSchema,
-  school_name: z.string(),
-  location: z.string(),
-  stats: z.object({
-    total_teachers: statSchema,
-    total_students: statSchema,
-    active_classes: statSchema,
+export const levelDistributionSchema = z.object({
+  levels: z.object({
+    literacy: z.record(z.string(), z.number()),
+    numeracy: z.record(z.string(), z.number()),
   }),
-  learning_levels: z.object({
-    by_grade: z.array(bandBreakdownSchema),
-    by_subject: z.array(bandBreakdownSchema),
-  }),
-  progress_trend: z.object({
-    points: z.array(trendPointSchema),
-    net_improvement_percentage: z.number(),
+  unplaced: z.object({
+    literacy: z.number(),
+    numeracy: z.number(),
   }),
 });
+export type LevelDistribution = z.infer<typeof levelDistributionSchema>;
 
-export type DashboardSummary = z.infer<typeof dashboardSummarySchema>;
+export const overviewSchema = z.object({
+  students: z.number(),
+  teachers: z.number(),
+  assessments: z.number(),
+  active_assessments: z.number(),
+  assessment_status_breakdown: z.record(assessmentStatusSchema, z.number()),
+  level_distribution: levelDistributionSchema,
+  average_graded_score: z.string(),
+  /** A bare string, e.g. `"2025/2026"` — not the `current_session` object §4.2's profile carries. */
+  current_session: z.string(),
+});
+export type Overview = z.infer<typeof overviewSchema>;

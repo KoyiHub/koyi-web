@@ -49,7 +49,6 @@ export type LearningLevel = PerformanceBand | 'beginner';
 
 export const CLASS_NAME = 'Primary 4 — Class A';
 export const TERM_LABEL = 'Term 1 · 2026/2027';
-export const SCHOOL_NAME = 'Bright Future Primary School';
 
 export const bandLabels: Record<LearningLevel, string> = {
   strong: 'Strong',
@@ -58,25 +57,18 @@ export const bandLabels: Record<LearningLevel, string> = {
   beginner: 'Not yet assessed',
 };
 
-/**
- * The signed-in teacher. `short_name` is what the dashboard greeting uses, so
- * the greeting never has to slice a full name apart in the browser.
- */
-export const teacherProfile = {
-  id: 'tch-amina-sulaiman',
-  full_name: 'Amina Sulaiman',
-  title: 'Mrs.',
-  short_name: 'Amina',
-  email: 'amina.sulaiman@brightfuture.ng',
-  avatar_url: null,
-  school_name: SCHOOL_NAME,
-  class_name: CLASS_NAME,
-  student_count: 32,
-};
+/** The signed-in teacher, shown in the dashboard greeting. */
+export const TEACHER_NAME = 'Amina Sulaiman';
 
 export interface SeedStudent {
   id: string;
+  /** The human-readable id — `frontend-integration.md` §5.6's `student_id`. */
+  student_id: string;
   full_name: string;
+  first_name: string;
+  last_name: string;
+  date_of_birth: string;
+  gender: 'female' | 'male';
   student_code: string;
   class_name: string;
   age: number;
@@ -225,17 +217,35 @@ const BAND_RANGE: Record<PerformanceBand, [number, number]> = {
   struggling: [28, 49],
 };
 
+/** Splits "Amina Yusuf" into `{first: "Amina", last: "Yusuf"}` — good enough for a mock. */
+function nameParts(fullName: string): { first: string; last: string } {
+  const [first, ...rest] = fullName.split(' ');
+  return { first: first ?? fullName, last: rest.join(' ') || fullName };
+}
+
+/** A plausible date of birth for a child of `age` at the start of the school year. */
+function dobFromAge(age: number): string {
+  return new Date(Date.UTC(2026 - age, 8, between(1, 28))).toISOString().slice(0, 10);
+}
+
 function buildStudents(): SeedStudent[] {
   const list: SeedStudent[] = NAMED_STUDENTS.map((entry, index) => {
     const band = entry.level === 'beginner' ? 'intermediate' : entry.level;
     const [min, max] = BAND_RANGE[band];
+    const { first, last } = nameParts(entry.full_name);
+    const age = between(8, 10);
 
     return {
       id: entry.id,
+      student_id: `2026-04A-${String(index + 1).padStart(2, '0')}`,
       full_name: entry.full_name,
+      first_name: first,
+      last_name: last,
+      date_of_birth: dobFromAge(age),
+      gender: index % 2 === 0 ? 'female' : 'male',
       student_code: `2026-04A-${String(index + 1).padStart(2, '0')}`,
       class_name: CLASS_NAME,
-      age: between(8, 10),
+      age,
       level: entry.level,
       avatar_url: null,
       latest_score: between(min, max),
@@ -256,13 +266,21 @@ function buildStudents(): SeedStudent[] {
       : pick(['strong', 'intermediate', 'intermediate', 'struggling'] as const);
     const gap = level === 'strong' || notAssessed ? null : pick(GAP_POOL);
     const [min, max] = level === 'beginner' ? [0, 0] : BAND_RANGE[level];
+    const { first, last } = nameParts(name);
+    const age = between(8, 10);
+    const studentId = `2026-04A-${String(NAMED_STUDENTS.length + index + 1).padStart(2, '0')}`;
 
     list.push({
       id: `stu-${name.toLowerCase().replace(/\s+/g, '-')}`,
+      student_id: studentId,
       full_name: name,
-      student_code: `2026-04A-${String(NAMED_STUDENTS.length + index + 1).padStart(2, '0')}`,
+      first_name: first,
+      last_name: last,
+      date_of_birth: dobFromAge(age),
+      gender: index % 2 === 0 ? 'female' : 'male',
+      student_code: studentId,
       class_name: CLASS_NAME,
-      age: between(8, 10),
+      age,
       level,
       avatar_url: null,
       latest_score: notAssessed ? null : between(min, max),
@@ -284,120 +302,42 @@ export function findStudent(studentId: string): SeedStudent | undefined {
   return students.find((student) => student.id === studentId);
 }
 
-export const levelCounts = {
-  all: students.length,
-  strong: students.filter((student) => student.level === 'strong').length,
-  intermediate: students.filter((student) => student.level === 'intermediate').length,
-  struggling: students.filter((student) => student.level === 'struggling').length,
-  beginner: students.filter((student) => student.level === 'beginner').length,
-};
-
 const assessedStudents = students.filter((student) => student.level !== 'beginner');
 const attentionStudents = students.filter(
   (student) => student.level !== 'beginner' && student.needs_attention,
 );
 
-/** Priority is a server judgement in production; here it follows the band. */
-function priorityFor(student: SeedStudent): 'high' | 'medium' | 'low' {
-  if (student.level === 'struggling') return 'high';
-  if (student.learning_gaps.length > 1) return 'medium';
-  return 'low';
-}
-
-const ACTIONS: Record<string, string> = {
-  'Word reading': 'Run a 10-minute decoding drill daily this week',
-  'Reading comprehension': 'Pair with a strong reader for guided retelling',
-  'Letter sounds': 'Revisit blending with the phonics card set',
-  Subtraction: 'Reteach borrowing with counters before the next topic',
-  'Place value': 'Use the base-ten blocks in Monday’s numeracy block',
-  'Basic addition': 'Practise number bonds to 20 in the warm-up',
-};
-
-export const attentionRows = attentionStudents.map((student) => {
-  const issue = student.primary_gap ?? student.learning_gaps[0] ?? 'Reading comprehension';
-
-  return {
+/**
+ * `GET /v1/teacher/dashboard/` — `frontend-integration.md` §5.1, matched
+ * field-for-field. `attention_count` is exactly `class_distribution.
+ * struggling`, not an independent number; there is no trend arrow.
+ */
+export const dashboard = {
+  teacher_name: TEACHER_NAME,
+  school_class: CLASS_NAME,
+  total_students: students.length,
+  assessed_students: assessedStudents.length,
+  attention_count: students.filter((student) => student.level === 'struggling').length,
+  class_distribution: {
+    strong: students.filter((student) => student.level === 'strong').length,
+    intermediate: students.filter((student) => student.level === 'intermediate').length,
+    struggling: students.filter((student) => student.level === 'struggling').length,
+    not_yet_assessed: students.filter((student) => student.level === 'beginner').length,
+  },
+  insight: {
+    domain: 'literacy' as const,
+    skill_name: 'Word reading',
+    summary:
+      'Children who scored below the benchmark on Term 1 Literacy Baseline missed the same kind of item: decoding two-syllable words.',
+    // No groups seed exists yet (Phase C) — `null` is the documented common case.
+    group_id: null,
+  },
+  students_needing_attention: attentionStudents.slice(0, 5).map((student) => ({
     student_id: student.id,
     full_name: student.full_name,
-    student_code: student.student_code,
-    priority: priorityFor(student),
-    identified_issue: issue,
-    subject:
-      issue === 'Subtraction' || issue === 'Place value' || issue === 'Basic addition'
-        ? 'numeracy'
-        : 'literacy',
-    last_assessment: student.last_assessed ?? LAST_ASSESSED,
-    last_assessment_label: student.last_assessed_label,
-    recommended_action: ACTIONS[issue] ?? 'Review with a small focus group this week',
-  };
-});
-
-const strongCount = students.filter((student) => student.level === 'strong').length;
-const intermediateCount = students.filter((student) => student.level === 'intermediate').length;
-const strugglingCount = students.filter((student) => student.level === 'struggling').length;
-
-function share(count: number): number {
-  return Math.round((count / assessedStudents.length) * 100);
-}
-
-export const distributionSegments = [
-  {
-    band: 'strong' as const,
-    label: 'Strong',
-    students: strongCount,
-    percentage: share(strongCount),
-  },
-  {
-    band: 'intermediate' as const,
-    label: 'Intermediate',
-    students: intermediateCount,
-    percentage: share(intermediateCount),
-  },
-  {
-    band: 'struggling' as const,
-    label: 'Struggling',
-    students: strugglingCount,
-    percentage: share(strugglingCount),
-  },
-];
-
-export const dashboard = {
-  class_name: CLASS_NAME,
-  term_label: TERM_LABEL,
-  time_of_day: 'morning' as const,
-  stats: {
-    total_students: {
-      value: students.length,
-      delta_label: '2 joined this term',
-      delta_direction: 'up' as const,
-    },
-    assessed: {
-      value: assessedStudents.length,
-      delta_label: `${String(students.length - assessedStudents.length)} still to sit Term 1 baseline`,
-      delta_direction: 'flat' as const,
-    },
-    needs_attention: {
-      value: attentionStudents.length,
-      delta_label: '2 fewer than last week',
-      delta_direction: 'down' as const,
-    },
-  },
-  distribution: {
-    assessed_count: assessedStudents.length,
-    updated_label: `Updated ${LAST_ASSESSED_LABEL}`,
-    segments: distributionSegments,
-  },
-  ai_insight: {
-    id: 'ins-emerging-gap',
-    headline: 'Word reading is holding a third of the class back',
-    body: 'Children who scored below the benchmark on Term 1 Literacy Baseline missed the same kind of item: decoding two-syllable words. Their comprehension scores are higher than their decoding scores, which usually means the words, not the meaning, are the obstacle.',
-    focus_skill: 'Word reading',
-    affected_students: 9,
-  },
-  attention: {
-    total: attentionStudents.length,
-    rows: attentionRows.slice(0, 4),
-  },
+    primary_gap: student.primary_gap ?? student.learning_gaps[0] ?? 'Reading comprehension',
+    last_assessed_at: student.last_assessed,
+  })),
 };
 
 export const insights = {
@@ -415,7 +355,7 @@ export const insights = {
         'Six of them are already on the attention list for a related gap',
       ],
       focus_skill: 'Word reading',
-      student_ids: attentionRows.slice(0, 9).map((row) => row.student_id),
+      student_ids: attentionStudents.slice(0, 9).map((student) => student.id),
       generated_at: '2026-08-18T09:12:00Z',
     },
     {

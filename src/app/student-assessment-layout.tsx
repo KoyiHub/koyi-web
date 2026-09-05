@@ -1,9 +1,10 @@
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router';
 
 import { ArrowLeftIcon, HelpIcon, MoreIcon } from '@/components/ui/icons';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { paths } from '@/config/paths';
+import { setSittingExpiredHandler } from '@/lib/api/runner-client';
 
 /**
  * Chrome for the student FLN assessment player.
@@ -12,11 +13,25 @@ import { paths } from '@/config/paths';
  * out, and help — nothing else. No sidebar, no teacher navigation, no account
  * menu. The teacher shell is a different application (see CLAUDE.md).
  *
- * The bar is `sticky` rather than `fixed` so long passages (question 12) scroll
- * under it without the page needing a compensating top padding.
+ * The bar is `sticky` rather than `fixed` so long passages scroll under it
+ * without the page needing a compensating top padding.
+ *
+ * Registers the sitting-expiry handler here, once, for the whole runner: a
+ * `401` from any request means the sitting is over (§7.5) — the child goes
+ * back to `/assessment` to re-enter their two codes, never to a login page,
+ * because they have no account to log in to.
  */
 export function StudentAssessmentLayout() {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setSittingExpiredHandler(() => {
+      void navigate(paths.assessment.entry, { replace: true });
+    });
+    return () => {
+      setSittingExpiredHandler(null);
+    };
+  }, [navigate]);
 
   return (
     <div className="bg-koyi-canvas text-koyi-text flex min-h-dvh flex-col">
@@ -25,7 +40,7 @@ export function StudentAssessmentLayout() {
           <button
             type="button"
             onClick={() => {
-              void navigate(paths.teacher.assessment.setup);
+              void navigate(paths.assessment.entry);
             }}
             aria-label="Leave assessment"
             className="text-koyi-primary hover:bg-koyi-surface border-koyi-border flex size-10 shrink-0 items-center justify-center rounded-full border transition-colors"

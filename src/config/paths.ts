@@ -12,6 +12,9 @@
  * Teacher and School Admin are separate applications per product
  * requirements; namespacing them here makes an accidental cross-link a
  * type error rather than a runtime surprise.
+ *
+ * There is no teacher signup path: a school admin creates teacher accounts,
+ * so self-registration would produce logins that belong to no school.
  */
 export const paths = {
   /** Public six-step onboarding journey. Step order is defined in `@/config/landing-steps`. */
@@ -41,24 +44,29 @@ export const paths = {
     teacher: '/login/teacher',
     /** Device check an admin login can be sent to when the backend asks for one. */
     verifyDevice: '/login/verify-device',
+    /** Three-step OTP-code wizard: email → code → new password (§4.1). */
+    schoolAdminForgotPassword: '/login/school-admin/forgot-password',
+    /** Requests an emailed reset link — a teacher never enters a code here. */
+    teacherForgotPassword: '/login/teacher/forgot-password',
+    /** Where the emailed link lands, `?token=...` in hand, to set a new password. */
+    teacherResetPassword: '/login/teacher/reset-password',
   },
 
   /**
-   * The student-facing FLN assessment player. Deliberately outside `teacher`:
-   * a child sitting the assessment is not inside the teacher application, and
-   * the player renders its own bare "Koyi Assessment" chrome with no sidebar.
-   * A teacher launches it from `teacher.assessment.setup`.
+   * The assessment runner — the surface a child touches. Deliberately outside
+   * `teacher`: a child holds a sitting session, not a teacher's JWT, and the
+   * runner renders its own bare chrome with no sidebar.
    */
   assessment: {
+    /** The two-code sign-in. Accepts `?a=<assessment>&c=<personal>` from a guardian link. */
+    entry: '/assessment',
+    /** The section hub — returned to after every section submit. */
+    instructions: '/assessment/instructions',
     session: '/assessment/session',
     summary: '/assessment/session/summary',
   },
 
   teacher: {
-    auth: {
-      signup: '/teacher/signup',
-    },
-
     dashboard: '/teacher/dashboard',
 
     /**
@@ -73,33 +81,36 @@ export const paths = {
       classPerformance: '/teacher/dashboard/class-performance',
     },
 
-    /**
-     * Running an assessment with a child, one question at a time. Distinct
-     * from `assessments` below, which is the library of assessments a teacher
-     * authors and assigns. Singular vs plural is load-bearing here.
-     */
-    assessment: {
-      setup: '/teacher/assessment',
-      session: '/teacher/assessment/session',
-      complete: '/teacher/assessment/session/complete',
-      results: '/teacher/assessment/results',
-    },
-
     /** Authoring and reviewing assessments: library, builder, results. */
     assessments: {
       list: '/teacher/assessments',
       create: '/teacher/assessments/create',
-      /** Step 2 of the builder — schedule and pick who sits it. */
+      /**
+       * Step 2 of the builder — schedule and pick who sits it. A fixed path
+       * rather than `/:assessmentId/assign` so it reads as "the next builder
+       * step", but it still needs `?assessmentId=` — build the link with
+       * `assignFor`, don't hand-roll the query string.
+       */
       assign: '/teacher/assessments/create/assign',
+      assignFor: (assessmentId: string) =>
+        `/teacher/assessments/create/assign?assessmentId=${assessmentId}`,
       detail: (assessmentId: string) => `/teacher/assessments/${assessmentId}`,
       analytics: (assessmentId: string) => `/teacher/assessments/${assessmentId}/analytics`,
+      /** The printable code sheet — one row per assigned child. */
+      roster: (assessmentId: string) => `/teacher/assessments/${assessmentId}/roster`,
+      /** One child's paper, question by question — green/red straight from `is_correct`/`was_selected`. */
+      responses: (assessmentId: string, studentId: string) =>
+        `/teacher/assessments/${assessmentId}/responses/${studentId}`,
     },
 
     students: {
       list: '/teacher/students',
       detail: (studentId: string) => `/teacher/students/${studentId}`,
-      groups: '/teacher/students/groups',
-      groupDetail: (groupId: string) => `/teacher/students/groups/${groupId}`,
+    },
+
+    groups: {
+      list: '/teacher/groups',
+      detail: (groupId: string) => `/teacher/groups/${groupId}`,
     },
 
     progress: '/teacher/progress',
@@ -107,10 +118,6 @@ export const paths = {
     settings: '/teacher/settings',
     help: '/teacher/help',
     profile: '/teacher/profile',
-    users: {
-      list: '/teacher/users',
-      detail: (userId: string | number) => `/teacher/users/${String(userId)}`,
-    },
   },
 
   schoolAdmin: {
@@ -118,6 +125,10 @@ export const paths = {
     // (`landing.getStarted`) and signed in through `login.schoolAdmin`, so
     // there are no auth routes under /school-admin/*.
     dashboard: '/school-admin/dashboard',
+    /** Server-authored feed of who-did-what — §4.6. Rendered verbatim, never reconstructed. */
+    activity: '/school-admin/activity',
+    /** School-wide oversight, not authoring — §4.8. */
+    assessments: '/school-admin/assessments',
     teachers: {
       list: '/school-admin/teachers',
       new: '/school-admin/teachers/new',
@@ -127,6 +138,8 @@ export const paths = {
       list: '/school-admin/students',
       new: '/school-admin/students/new',
       detail: (studentId: string) => `/school-admin/students/${studentId}`,
+      /** Multi-select and whole-class bulk moves — §4.5. */
+      transfer: '/school-admin/students/transfer',
     },
     classes: {
       list: '/school-admin/classes',

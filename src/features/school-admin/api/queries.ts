@@ -1,7 +1,11 @@
 import { queryOptions } from '@tanstack/react-query';
 
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
-import { gradeListSchema, schoolSchema } from '@/features/school-admin/api/shared.schema';
+import {
+  gradeListSchema,
+  schoolSchema,
+  sessionListSchema,
+} from '@/features/school-admin/api/shared.schema';
 import { api } from '@/lib/api/client';
 
 /**
@@ -13,30 +17,33 @@ import { api } from '@/lib/api/client';
 export const schoolAdminKeys = {
   all: ['school-admin'] as const,
 
-  school: () => [...schoolAdminKeys.all, 'school'] as const,
+  profile: () => [...schoolAdminKeys.all, 'profile'] as const,
   grades: () => [...schoolAdminKeys.all, 'grades'] as const,
-  dashboard: (term: string) => [...schoolAdminKeys.all, 'dashboard', term] as const,
+  sessions: () => [...schoolAdminKeys.all, 'sessions'] as const,
+  overview: () => [...schoolAdminKeys.all, 'overview'] as const,
+  activity: (filters: { action: string; teacher: string; student: string; schoolClass: string }) =>
+    [...schoolAdminKeys.all, 'activity', filters] as const,
 
   teachers: () => [...schoolAdminKeys.all, 'teachers'] as const,
-  teacherList: (filters: { search: string; page: number }) =>
+  teacherList: (filters: { search: string; schoolClass: string; page: number }) =>
     [...schoolAdminKeys.teachers(), 'list', filters] as const,
   teacherDetail: (teacherId: string) =>
     [...schoolAdminKeys.teachers(), 'detail', teacherId] as const,
 
   students: () => [...schoolAdminKeys.all, 'students'] as const,
-  studentList: (filters: { search: string; page: number; classId: string }) =>
+  studentList: (filters: { search: string; page: number; schoolClass: string }) =>
     [...schoolAdminKeys.students(), 'list', filters] as const,
   studentDetail: (studentId: string) =>
     [...schoolAdminKeys.students(), 'detail', studentId] as const,
+  studentFln: (studentId: string) => [...schoolAdminKeys.students(), 'fln', studentId] as const,
 
+  /** Unpaginated — the whole list is one cache entry per grade filter. */
   classes: () => [...schoolAdminKeys.all, 'classes'] as const,
-  classList: (filters: { gradeId: string }) =>
-    [...schoolAdminKeys.classes(), 'list', filters] as const,
-  classDetail: (classId: string) => [...schoolAdminKeys.classes(), 'detail', classId] as const,
+  classList: (gradeId: string) => [...schoolAdminKeys.classes(), 'list', gradeId] as const,
 
-  settings: () => [...schoolAdminKeys.all, 'settings'] as const,
-  academicSettings: () => [...schoolAdminKeys.settings(), 'academic'] as const,
-  accountSettings: () => [...schoolAdminKeys.settings(), 'account'] as const,
+  assessments: () => [...schoolAdminKeys.all, 'assessments'] as const,
+  assessmentList: (filters: { page: number }) =>
+    [...schoolAdminKeys.assessments(), 'list', filters] as const,
 };
 
 /**
@@ -46,16 +53,23 @@ export const schoolAdminKeys = {
  */
 export const schoolQuery = () =>
   queryOptions({
-    queryKey: schoolAdminKeys.school(),
-    queryFn: ({ signal }) => api.get(schoolAdminEndpoints.school, schoolSchema, { signal }),
+    queryKey: schoolAdminKeys.profile(),
+    queryFn: ({ signal }) => api.get(schoolAdminEndpoints.profile, schoolSchema, { signal }),
     staleTime: 10 * 60_000,
   });
 
-/** Grade levels the school runs. Drives the Add Class grade select. */
+/** Grades we define, §4.3 — unpaginated. Drives the Add Class grade select. */
 export const gradesQuery = () =>
   queryOptions({
     queryKey: schoolAdminKeys.grades(),
     queryFn: ({ signal }) => api.get(schoolAdminEndpoints.grades, gradeListSchema, { signal }),
     staleTime: 10 * 60_000,
-    select: (data) => data.results,
+  });
+
+/** §4.3 — unpaginated. Feeds the current-session picker in settings. */
+export const sessionsQuery = () =>
+  queryOptions({
+    queryKey: schoolAdminKeys.sessions(),
+    queryFn: ({ signal }) => api.get(schoolAdminEndpoints.sessions, sessionListSchema, { signal }),
+    staleTime: 10 * 60_000,
   });

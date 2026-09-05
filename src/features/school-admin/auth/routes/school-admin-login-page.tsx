@@ -34,16 +34,19 @@ export function SchoolAdminLoginPage() {
     formState: { errors },
   } = useForm<SchoolAdminLoginFormValues>({
     resolver: zodResolver(schoolAdminLoginSchema),
-    defaultValues: { email: '', password: '', rememberMe: false },
+    defaultValues: { email: '', password: '' },
   });
 
   async function onSubmit(values: SchoolAdminLoginFormValues) {
     try {
       const result = await login.mutateAsync(values);
 
-      if (result.verification_required) {
+      if (result.otp_required) {
+        // The guide's challenge response carries no email — the admin just
+        // typed it, so it travels in route state from here rather than
+        // waiting to be echoed back.
         void navigate(paths.login.verifyDevice, {
-          state: { challengeId: result.challenge_id, email: result.email },
+          state: { challenge: result.challenge, email: values.email },
         });
         return;
       }
@@ -83,16 +86,8 @@ export function SchoolAdminLoginPage() {
           {...register('password')}
         />
 
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <label className="text-koyi-text flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="border-koyi-border text-koyi-primary size-4 rounded-sm"
-              {...register('rememberMe')}
-            />
-            Remember me
-          </label>
-          <ForgotPasswordLink />
+        <div className="flex justify-end">
+          <ForgotPasswordLink to={paths.login.schoolAdminForgotPassword} />
         </div>
 
         {errorMessage && (

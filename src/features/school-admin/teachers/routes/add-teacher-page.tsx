@@ -41,7 +41,7 @@ function generatePassword(): string {
 export function AddTeacherPage() {
   const navigate = useNavigate();
   const createTeacher = useCreateTeacher();
-  const classesQuery = useQuery(classListQuery({ gradeId: 'all' }));
+  const classesQuery = useQuery(classListQuery('all'));
 
   const {
     register,
@@ -53,9 +53,9 @@ export function AddTeacherPage() {
     defaultValues: { firstName: '', lastName: '', email: '', password: '', classId: '' },
   });
 
-  const classOptions = (classesQuery.data?.results ?? []).map((schoolClass) => ({
+  const classOptions = (classesQuery.data ?? []).map((schoolClass) => ({
     value: schoolClass.id,
-    label: schoolClass.display_name,
+    label: schoolClass.label,
   }));
 
   async function onSubmit(values: AddTeacherFormValues) {
@@ -103,7 +103,7 @@ export function AddTeacherPage() {
           placeholder="teacher@school.edu"
           autoComplete="email"
           icon={<MailIcon />}
-          hint="The teacher signs in with this address."
+          hint="The teacher signs in with the teacher ID generated on save, not this address."
           error={errors.email?.message}
           {...register('email')}
         />

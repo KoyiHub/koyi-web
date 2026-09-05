@@ -1,297 +1,230 @@
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 
-import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ErrorState } from '@/components/ui/error-state';
-import {
-  AlertCircleIcon,
-  ArrowLeftIcon,
-  LightbulbIcon,
-  TrendingUpIcon,
-} from '@/components/ui/icons';
+import { AlertCircleIcon, ArrowRightIcon, SparklesIcon } from '@/components/ui/icons';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { StatBar } from '@/components/ui/stat-bar';
 import { paths } from '@/config/paths';
-import { BAND_BAR_CLASS, formatChange, QUESTION_TYPE_LABEL } from '@/features/teacher/api/format';
-import { assessmentAnalyticsQuery } from '@/features/teacher/assessments/api/queries';
-import { cn } from '@/lib/utils/cn';
-
-type Tone = 'positive' | 'watch' | 'action';
-
-const TONE_CLASS: Record<Tone, string> = {
-  positive: 'border-koyi-band-strong/40 bg-koyi-band-strong-soft',
-  watch: 'border-koyi-band-intermediate/40 bg-koyi-band-intermediate-soft',
-  action: 'border-koyi-band-struggling/40 bg-koyi-band-struggling-soft',
-};
-
-const TONE_INK: Record<Tone, string> = {
-  positive: 'text-koyi-band-strong-ink',
-  watch: 'text-koyi-band-intermediate-ink',
-  action: 'text-koyi-band-struggling-ink',
-};
-
-const TONE_ICON = {
-  positive: TrendingUpIcon,
-  watch: LightbulbIcon,
-  action: AlertCircleIcon,
-};
-
-const TONE_LABEL: Record<Tone, string> = {
-  positive: 'Working well',
-  watch: 'Keep an eye on',
-  action: 'Needs action',
-};
+import {
+  analyticsQuery,
+  assessmentQuery,
+  resultsQuery,
+} from '@/features/teacher/assessments/api/queries';
+import { DataTable } from '@/features/teacher/components/data-table';
+import { ASSIGNMENT_STATUS_CLASS, ASSIGNMENT_STATUS_LABEL } from '@/lib/api/format';
+import { DOMAIN_LABEL, levelDistributionRows, levelLabel } from '@/lib/fln/level';
 
 /**
- * The headline figure with its own dial.
+ * Assessment analytics — `frontend-integration.md` §5.5, §7.4.
  *
- * A percentage on its own reads the same at 41% and 91%; the ring makes the
- * distance to a full class visible before the number is read.
+ * Ordered the way the guide says to read it: `marking_status`/`warnings`
+ * first (A.2 — a teacher opening this early is looking at settling numbers),
+ * then `level_distribution` as the headline rather than an average
+ * (both domains, every level keyed even at zero), the skill × level matrix,
+ * `most_missed`, the narrative (null-safe throughout — A.3), and only then
+ * the per-student results table. The results endpoint has no separate route
+ * — the guide's own page table never adds one — so it lives here.
  */
-function Dial({
-  label,
-  value,
-  caption,
-  change,
-}: {
-  label: string;
-  value: number;
-  caption: string;
-  change?: number;
-}) {
-  const clamped = Math.min(100, Math.max(0, value));
+const DOMAINS = ['literacy', 'numeracy'] as const;
 
-  return (
-    <Card bodyClassName="flex items-center gap-5">
-      <div
-        role="img"
-        aria-label={`${label}: ${String(value)}%`}
-        className="grid size-24 shrink-0 place-items-center rounded-full"
-        style={{
-          background: `conic-gradient(var(--color-koyi-primary) ${String(clamped * 3.6)}deg, var(--color-koyi-surface) 0deg)`,
-        }}
-      >
-        <span className="bg-koyi-card text-koyi-text font-display grid size-18 place-items-center rounded-full text-xl font-extrabold">
-          {value}%
-        </span>
-      </div>
-
-      <div className="min-w-0">
-        <p className="text-koyi-text text-sm font-bold">{label}</p>
-        <p className="text-koyi-muted mt-1 text-sm leading-relaxed">{caption}</p>
-        {change !== undefined && (
-          <p
-            className={cn(
-              'mt-2 text-xs font-bold',
-              change > 0
-                ? 'text-koyi-band-strong-ink'
-                : change < 0
-                  ? 'text-koyi-band-struggling-ink'
-                  : 'text-koyi-muted',
-            )}
-          >
-            {formatChange(change)} points on the previous assessment
-          </p>
-        )}
-      </div>
-    </Card>
-  );
-}
-
-/**
- * The analytics view of a completed assessment.
- *
- * The detail screen answers "who"; this one answers "what went wrong and what
- * do I teach next". Everything shown is computed server-side — no score
- * becomes a band, and no missed question is paired with its correct answer.
- */
 export function AssessmentAnalyticsPage() {
   const { assessmentId = '' } = useParams();
-  const navigate = useNavigate();
+  const assessment = useQuery({ ...assessmentQuery(assessmentId), enabled: Boolean(assessmentId) });
+  const analytics = useQuery({ ...analyticsQuery(assessmentId), enabled: Boolean(assessmentId) });
+  const results = useQuery({ ...resultsQuery(assessmentId), enabled: Boolean(assessmentId) });
 
-  const analytics = useQuery(assessmentAnalyticsQuery(assessmentId));
-
-  if (analytics.isPending) return <PageSpinner />;
-
-  if (analytics.isError) {
-    return (
-      <ErrorState
-        error={analytics.error}
-        onRetry={() => {
-          void analytics.refetch();
-        }}
-      />
-    );
+  if (assessment.isPending || analytics.isPending) return <PageSpinner />;
+  if (assessment.isError || !assessment.data) {
+    return <ErrorState error={assessment.error} onRetry={() => void assessment.refetch()} />;
+  }
+  if (analytics.isError || !analytics.data) {
+    return <ErrorState error={analytics.error} onRetry={() => void analytics.refetch()} />;
   }
 
-  const report = analytics.data;
-  const peak = Math.max(...report.score_distribution.map((bucket) => bucket.students), 1);
+  const data = analytics.data;
+  const maxDistribution = Math.max(
+    1,
+    ...DOMAINS.flatMap((domain) =>
+      levelDistributionRows(data.level_distribution[domain]).map((row) => row.students),
+    ),
+  );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-5xl space-y-6">
       <PageHeader
-        title="Assessment analytics"
-        subtitle={`${report.title} · ${report.class_name} · ${report.completed_label}`}
-        actions={
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void navigate(paths.teacher.assessments.detail(report.id));
-            }}
-          >
-            <ArrowLeftIcon aria-hidden="true" className="size-4" />
-            Back to results
-          </Button>
-        }
+        title={assessment.data.name}
+        subtitle={`${String(data.participation.submitted)} of ${String(data.participation.assigned)} assigned children have submitted.`}
       />
 
-      <section aria-labelledby="trends-heading">
-        <h2 id="trends-heading" className="text-koyi-text text-lg font-bold">
-          Class trends and insights
-        </h2>
-        <p className="text-koyi-muted mt-1 text-sm">
-          Written with the report, so the wording matches the numbers below.
-        </p>
+      {(data.marking_status.pending > 0 || data.warnings.length > 0) && (
+        <div className="rounded-koyi-md space-y-1.5 border border-amber-200 bg-amber-50 p-4">
+          <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+            <AlertCircleIcon className="size-4 shrink-0" />
+            {data.marking_status.marked} of {data.marking_status.total} answers marked
+            {data.marking_status.pending > 0 &&
+              ` — ${String(data.marking_status.pending)} still settling`}
+          </p>
+          {data.warnings.map((warning) => (
+            <p key={warning} className="text-sm text-amber-800">
+              {warning}
+            </p>
+          ))}
+        </div>
+      )}
 
-        <ul className="mt-4 grid gap-4 lg:grid-cols-3">
-          {report.trends.map((trend) => {
-            const Icon = TONE_ICON[trend.tone];
-
-            return (
-              <li
-                key={trend.id}
-                className={cn('rounded-koyi-xl border p-5', TONE_CLASS[trend.tone])}
-              >
-                <p
-                  className={cn(
-                    'flex items-center gap-2 text-xs font-bold uppercase',
-                    TONE_INK[trend.tone],
-                  )}
-                >
-                  <Icon aria-hidden="true" className="size-4" />
-                  {TONE_LABEL[trend.tone]}
-                </p>
-                <h3 className="text-koyi-text mt-3 font-bold text-balance">{trend.headline}</h3>
-                <p className="text-koyi-muted mt-2 text-sm leading-relaxed">{trend.body}</p>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Dial
-          label="Class average score"
-          value={report.class_average}
-          caption={report.class_average_caption}
-          change={report.class_average_change}
-        />
-        <Dial
-          label="Participation rate"
-          value={report.participation_rate}
-          caption={report.participation_caption}
-        />
-      </div>
-
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card
-          title="Score distribution"
-          subtitle="How the class spread out across the score bands."
-        >
-          <ul className="flex h-56 items-end gap-3">
-            {report.score_distribution.map((bucket) => (
-              <li key={bucket.id} className="flex h-full min-w-0 flex-1 flex-col justify-end">
-                <p className="text-koyi-text text-center text-sm font-bold">{bucket.students}</p>
-                <div
-                  role="img"
-                  aria-label={`${bucket.label}: ${String(bucket.students)} children, ${String(bucket.percentage)}%`}
-                  className={cn(
-                    'mt-2 w-full rounded-t-md',
-                    BAND_BAR_CLASS[bucket.band],
-                    bucket.students === 0 && 'bg-koyi-surface',
-                  )}
-                  style={{
-                    height: `${String(Math.max(4, (bucket.students / peak) * 100))}%`,
-                  }}
-                />
-                <p className="text-koyi-muted mt-2 text-center text-xs font-semibold">
-                  {bucket.label}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </Card>
-
-        <Card title="Skill performance" subtitle="Average score per skill, and the movement on it.">
-          <ul className="space-y-4">
-            {report.skill_performance.map((skill) => (
-              <li key={skill.id}>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {DOMAINS.map((domain) => (
+          <Card key={domain} title={`${DOMAIN_LABEL[domain]} — level distribution`}>
+            <div className="space-y-3">
+              {levelDistributionRows(data.level_distribution[domain]).map((row) => (
                 <StatBar
-                  label={skill.skill}
-                  valueLabel={`${String(skill.average_score)}%`}
-                  percentage={skill.average_score}
+                  key={row.level}
+                  label={levelLabel(row.level)}
+                  valueLabel={`${String(row.students)} ${row.students === 1 ? 'child' : 'children'}`}
+                  percentage={(row.students / maxDistribution) * 100}
                 />
-                <p
-                  className={cn(
-                    'mt-1.5 text-xs font-semibold',
-                    skill.change > 0
-                      ? 'text-koyi-band-strong-ink'
-                      : skill.change < 0
-                        ? 'text-koyi-band-struggling-ink'
-                        : 'text-koyi-muted',
-                  )}
-                >
-                  {formatChange(skill.change)} points since the last assessment
-                </p>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      {data.skill_matrix.length > 0 && (
+        <Card
+          title="Skill × level matrix"
+          subtitle="How many children passed each skill, at each level probed."
+        >
+          <DataTable
+            caption="Skill by level pass rate"
+            columns={[
+              { key: 'skill', label: 'Skill' },
+              { key: 'levels', label: 'Levels probed' },
+            ]}
+          >
+            {data.skill_matrix.map((skill) => (
+              <tr key={`${skill.domain}-${skill.skill_name}`} className="hover:bg-koyi-surface/60">
+                <td className="px-5 py-3">
+                  <p className="text-koyi-text font-semibold">{skill.skill_name}</p>
+                  <p className="text-koyi-muted text-xs">{DOMAIN_LABEL[skill.domain]}</p>
+                </td>
+                <td className="px-5 py-3">
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(skill.levels)
+                      .sort(([a], [b]) => Number(a) - Number(b))
+                      .map(([level, counts]) => (
+                        <span
+                          key={level}
+                          className="bg-koyi-surface text-koyi-text rounded-full px-2.5 py-1 text-xs font-medium"
+                        >
+                          L{level}: {counts.passed}/{counts.total}
+                        </span>
+                      ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        </Card>
+      )}
+
+      {data.most_missed.length > 0 && (
+        <Card
+          title="Most missed"
+          subtitle="By subskill at a level — teachable, unlike a bare question number."
+        >
+          <ul className="space-y-2">
+            {data.most_missed.map((entry) => (
+              <li
+                key={`${entry.subskill_name}-${String(entry.fln_level)}`}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="text-koyi-text">
+                  {entry.subskill_name} at Level {entry.fln_level}
+                </span>
+                <span className="text-koyi-muted font-semibold">{entry.failed_pct}% missed</span>
               </li>
             ))}
           </ul>
         </Card>
-      </div>
+      )}
+
+      {data.narrative && (
+        <Card
+          title="AI interpretation"
+          icon={<SparklesIcon className="size-5" />}
+          bodyClassName="space-y-3"
+        >
+          <p className="text-koyi-text text-sm leading-relaxed">{data.narrative.summary}</p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <p className="text-koyi-muted text-xs font-bold uppercase">Needs attention</p>
+              <p className="text-koyi-text text-sm">{data.narrative.attention}</p>
+            </div>
+            <div>
+              <p className="text-koyi-muted text-xs font-bold uppercase">Strength</p>
+              <p className="text-koyi-text text-sm">{data.narrative.strength}</p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       <Card
-        title="Most missed questions"
-        subtitle="What the wrong answers had in common — the correct answers stay on the server."
-        bodyClassName="space-y-3"
+        title="Every assigned child"
+        subtitle="Progress, score and level — 'not yet submitted' is normal, not an error."
       >
-        {report.most_missed.map((question) => (
-          <article
-            key={question.question_id}
-            className="border-koyi-border rounded-koyi-lg flex flex-wrap items-start gap-4 border p-4"
+        {results.isPending && <PageSpinner />}
+        {results.data?.rows.length === 0 && (
+          <p className="text-koyi-muted text-sm">Nobody is assigned to this paper yet.</p>
+        )}
+        {results.data && results.data.rows.length > 0 && (
+          <DataTable
+            caption="Results by student"
+            columns={[
+              { key: 'student', label: 'Student' },
+              { key: 'status', label: 'Status' },
+              { key: 'items', label: 'Items correct' },
+              { key: 'score', label: 'Score', align: 'right' },
+              { key: 'open', label: 'Open', align: 'right', labelHidden: true },
+            ]}
           >
-            <span className="bg-koyi-nav-active text-koyi-primary grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold">
-              {question.order}
-            </span>
-
-            <div className="min-w-0 flex-1">
-              <h3 className="text-koyi-text text-sm font-bold text-balance">{question.text}</h3>
-              <p className="text-koyi-muted mt-1 text-xs font-semibold">
-                {question.skill} · {QUESTION_TYPE_LABEL[question.question_type]}
-              </p>
-              <p className="text-koyi-muted mt-2 text-sm leading-relaxed">
-                {question.common_error}
-              </p>
-            </div>
-
-            <div className="w-full shrink-0 sm:w-40">
-              <p className="text-koyi-band-struggling-ink text-right text-sm font-bold">
-                {question.miss_rate}% missed
-              </p>
-              <div
-                role="img"
-                aria-label={`${String(question.miss_rate)}% of children answered incorrectly`}
-                className="bg-koyi-surface mt-2 h-2 w-full overflow-hidden rounded-full"
-              >
-                <div
-                  className="bg-koyi-band-struggling h-full rounded-full"
-                  style={{ width: `${String(question.miss_rate)}%` }}
-                />
-              </div>
-            </div>
-          </article>
-        ))}
+            {results.data.rows.map((row) => (
+              <tr key={row.student_id} className="hover:bg-koyi-surface/60">
+                <td className="px-5 py-3">
+                  <p className="text-koyi-text font-semibold">{row.full_name}</p>
+                  <p className="text-koyi-muted text-xs">{row.school_class}</p>
+                </td>
+                <td className="px-5 py-3">
+                  <span
+                    className={`rounded-koyi-sm px-2.5 py-1 text-xs font-semibold ${ASSIGNMENT_STATUS_CLASS[row.status]}`}
+                  >
+                    {ASSIGNMENT_STATUS_LABEL[row.status]}
+                  </span>
+                </td>
+                <td className="text-koyi-muted px-5 py-3">
+                  {row.items_correct} / {row.items_attempted}
+                </td>
+                <td className="text-koyi-text px-5 py-3 text-right font-bold">
+                  {row.percentage ? `${row.percentage}%` : '—'}
+                </td>
+                <td className="px-5 py-3 text-right">
+                  {(row.status === 'finished' || row.status === 'graded') && (
+                    <Link
+                      aria-label={`Review ${row.full_name}'s paper`}
+                      to={paths.teacher.assessments.responses(assessmentId, row.student_id)}
+                      className="text-koyi-primary inline-flex items-center gap-1 text-sm font-bold hover:underline"
+                    >
+                      Review
+                      <ArrowRightIcon aria-hidden="true" className="size-4" />
+                    </Link>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </DataTable>
+        )}
       </Card>
     </div>
   );

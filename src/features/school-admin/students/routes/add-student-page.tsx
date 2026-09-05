@@ -39,7 +39,7 @@ const RELATIONSHIP_OPTIONS = GUARDIAN_RELATIONSHIPS.map((relationship) => ({
 export function AddStudentPage() {
   const navigate = useNavigate();
   const createStudent = useCreateStudent();
-  const classesQuery = useQuery(classListQuery({ gradeId: 'all' }));
+  const classesQuery = useQuery(classListQuery('all'));
 
   const {
     register,
@@ -53,23 +53,22 @@ export function AddStudentPage() {
       dateOfBirth: '',
       gender: '',
       classId: '',
-      studentId: '',
       guardianName: '',
       guardianPhone: '',
-      triggerBaselineAssessment: true,
+      guardianEmail: '',
     },
   });
 
-  const classOptions = (classesQuery.data?.results ?? []).map((schoolClass) => ({
+  const classOptions = (classesQuery.data ?? []).map((schoolClass) => ({
     value: schoolClass.id,
-    label: schoolClass.display_name,
+    label: schoolClass.label,
   }));
 
   async function onSubmit(values: AddStudentFormValues) {
     try {
       const student = await createStudent.mutateAsync({
         ...values,
-        studentId: values.studentId,
+        guardianEmail: values.guardianEmail === '' ? undefined : values.guardianEmail,
       });
       void navigate(paths.schoolAdmin.students.detail(student.id));
     } catch {
@@ -123,13 +122,9 @@ export function AddStudentPage() {
           />
         </FormRow>
 
-        <TextField
-          label="Student ID (Optional)"
-          placeholder="Auto-generated if left blank"
-          hint="Leave empty and the system issues the next ID in sequence."
-          error={errors.studentId?.message}
-          {...register('studentId')}
-        />
+        <p className="text-koyi-muted text-xs">
+          The student ID is generated automatically and shown once the student is saved.
+        </p>
       </FormSection>
 
       <FormSection title="Academic Placement" icon={<LayersIcon className="size-4" />}>
@@ -143,25 +138,6 @@ export function AddStudentPage() {
             {...register('classId')}
           />
         </FormRow>
-
-        <div className="bg-koyi-nav-active rounded-koyi-md border-koyi-primary border-l-4 p-4">
-          <label className="flex items-start gap-3">
-            <input
-              type="checkbox"
-              className="border-koyi-border text-koyi-primary mt-0.5 size-4 shrink-0 rounded-sm"
-              {...register('triggerBaselineAssessment')}
-            />
-            <span>
-              <span className="text-koyi-text block text-sm font-bold">
-                Trigger Learning Level Assessment
-              </span>
-              <span className="text-koyi-muted mt-1 block text-xs">
-                Queue a baseline diagnostic test for this student upon creation. This helps
-                instantly map their foundational literacy and numeracy gaps.
-              </span>
-            </span>
-          </label>
-        </div>
       </FormSection>
 
       <FormSection title="Parent / Guardian Info" icon={<UserGroupIcon className="size-4" />}>
@@ -179,7 +155,7 @@ export function AddStudentPage() {
             type="tel"
             placeholder="+234 XXX XXXX"
             autoComplete="tel"
-            hint="Used for assessment result updates."
+            hint="Informational only — never used to send an assessment link."
             error={errors.guardianPhone?.message}
             {...register('guardianPhone')}
           />
@@ -191,6 +167,16 @@ export function AddStudentPage() {
             {...register('guardianRelationship')}
           />
         </FormRow>
+
+        <TextField
+          label="Guardian Email (Optional)"
+          type="email"
+          placeholder="guardian@example.com"
+          autoComplete="email"
+          hint="Where an assessment link is sent. Many guardians won't have one — that's fine."
+          error={errors.guardianEmail?.message}
+          {...register('guardianEmail')}
+        />
       </FormSection>
     </FormPage>
   );

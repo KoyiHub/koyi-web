@@ -17,6 +17,24 @@ export const authUserSchema = z.object({
 
 export type AuthUser = z.infer<typeof authUserSchema>;
 
+/**
+ * `GET /v1/teacher/auth/me/` — `frontend-integration.md` §5.1, matched
+ * exactly. Not the generic `authUserSchema` above: this is teacher-specific
+ * and carries `teacher_id`/`school` instead of the split name/verification
+ * fields a generic Django user serializer would.
+ */
+export const teacherMeSchema = z.object({
+  id: z.string(),
+  teacher_id: z.string(),
+  full_name: z.string(),
+  email: z.string(),
+  school: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+});
+export type TeacherMe = z.infer<typeof teacherMeSchema>;
+
 /** `apps.users.views.LoginView` response — SimpleJWT pair plus the custom `user` claim. */
 export const tokenPairResponseSchema = z.object({
   access: z.string(),
@@ -50,29 +68,60 @@ export const registerRequestSchema = z
 
 export type RegisterRequest = z.infer<typeof registerRequestSchema>;
 
-/** `RegisterView` returns the created user, with no tokens — registration does not log the user in. */
-export const registerResponseSchema = authUserSchema;
-
 /**
- * Teacher sign-in request. PROVISIONAL — teachers identify themselves with the
- * Teacher ID their school issued plus that school's ID, not an email address,
- * and no Django contract for this exists yet (see `api/endpoints.ts`).
+ * Teacher sign-in request.
+ *
+ * **A teacher signs in with their teacher id, not an email.** It is what the
+ * school issued them, it carries the school abbreviation as a prefix
+ * (`GHS-T-00007`), and it is globally unique — so no separate school field is
+ * needed. Input is case insensitive server-side.
  */
 export const teacherLoginRequestSchema = z.object({
   teacher_id: z.string().min(1),
-  school_id: z.string().min(1),
   password: z.string().min(1),
 });
 
 export type TeacherLoginRequest = z.infer<typeof teacherLoginRequestSchema>;
 
+/** The teacher record returned alongside the token pair. */
+export const teacherAccountSchema = z.object({
+  id: z.string(),
+  teacher_id: z.string(),
+  full_name: z.string(),
+  school: z.object({
+    id: z.string(),
+    name: z.string(),
+  }),
+  school_class: z.string().nullable(),
+});
+
+export type TeacherAccount = z.infer<typeof teacherAccountSchema>;
+
 /**
- * Teacher sign-in response. PROVISIONAL. Shaped as the confirmed SimpleJWT
- * pair plus the school the teacher belongs to, so the app can remember the
- * School ID the backend actually accepted rather than the typed one.
+ * Teacher sign-in response — the SimpleJWT pair, the user, and the teacher.
+ *
+ * A wrong password, an unknown id and a disabled account all return the same
+ * `401` message. That sameness is the security property: it stops the form
+ * being used to discover which teacher ids exist, so the message is shown
+ * verbatim and never decorated with "check your teacher id" hints.
  */
-export const teacherLoginResponseSchema = tokenPairResponseSchema.extend({
-  school_id: z.string(),
+export const teacherLoginResponseSchema = z.object({
+  access: z.string(),
+  refresh: z.string(),
+  user: authUserSchema
+    .partial({
+      first_name: true,
+      last_name: true,
+      full_name: true,
+      email_verified: true,
+      created_at: true,
+    })
+    .extend({
+      id: z.string(),
+      email: z.string(),
+      role: z.string().optional(),
+    }),
+  teacher: teacherAccountSchema,
 });
 
 export type TeacherLoginResponse = z.infer<typeof teacherLoginResponseSchema>;

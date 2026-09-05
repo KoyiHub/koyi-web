@@ -4,7 +4,12 @@ import { configure } from '@testing-library/dom';
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll } from 'vitest';
 
+import { clearSitting } from '@/lib/api/sitting-store';
 import { clearAuthToken } from '@/lib/auth/token-store';
+import { resetAssignmentState } from '@/mocks/data/assignment-seed';
+import { resetGroupsState } from '@/mocks/data/groups-seed';
+import { resetResultsState } from '@/mocks/data/results-seed';
+import { resetRunnerState } from '@/mocks/data/runner-seed';
 import { server } from '@/mocks/server';
 
 // Routes are lazy chunks that fetch through MSW, so the first render in a file
@@ -21,6 +26,13 @@ afterEach(() => {
   server.resetHandlers();
   // Auth tests store real tokens — never let one test's session leak into the next.
   clearAuthToken();
+  // Same for a child's sitting — a session or a section's state left `in_progress`
+  // by one test must not be there when the next test verifies a fresh sitting.
+  clearSitting();
+  resetRunnerState();
+  resetAssignmentState();
+  resetResultsState();
+  resetGroupsState();
 });
 
 afterAll(() => {

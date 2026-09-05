@@ -1,41 +1,58 @@
 /**
- * PROVISIONAL School Portal endpoints.
+ * School management endpoints, grouped under the `/v1/school/` surface.
  *
- * No confirmed Django/OpenAPI contract exists for any School Admin resource
- * yet — the backend ships `apps.common` and `apps.users` only. These paths are
- * answered by MSW (`src/mocks/school-admin-handlers.ts`) in development and
- * are NOT verified against the backend.
- *
- * They live in one file on purpose: when the real contract lands this is the
- * only module that changes. The query hooks, the Zod schemas and every screen
- * that uses them stay as they are.
+ * Paths follow `frontend-integration.md` §4. Several resources there are still
+ * marked *Planned*; those are answered by MSW
+ * (`src/mocks/school-admin-handlers.ts`) until the backend lands them, and the
+ * handler is written to match the guide's JSON exactly so switching over is a
+ * base-URL change.
  */
-const BASE = '/v1/school-admin';
+const BASE = '/v1/school';
 
 export const schoolAdminEndpoints = {
-  school: `${BASE}/school/`,
-  dashboard: `${BASE}/dashboard/`,
+  /** §4.2 — name, logo, current session. Abbreviation is read-only after registration. */
+  profile: `${BASE}/profile/`,
+  profilePassword: `${BASE}/profile/password/change/`,
+  /** §4.7 — counts, a status breakdown, and (once placement lands) level distribution. */
+  overview: `${BASE}/overview/`,
   grades: `${BASE}/grades/`,
+  /** Unpaginated reference data — feeds the current-session picker in settings. */
+  sessions: `${BASE}/sessions/`,
+  /** §4.6 — every core action, with server-authored label/description. */
+  activity: `${BASE}/activity/`,
+  /** §4.8 — every assessment across every teacher, for oversight, not authoring. */
+  assessments: `${BASE}/assessments/`,
 
   teachers: {
     list: `${BASE}/teachers/`,
     detail: (teacherId: string) => `${BASE}/teachers/${teacherId}/`,
-    resetPassword: (teacherId: string) => `${BASE}/teachers/${teacherId}/reset-password/`,
+    disable: (teacherId: string) => `${BASE}/teachers/${teacherId}/disable/`,
+    enable: (teacherId: string) => `${BASE}/teachers/${teacherId}/enable/`,
+    /** Note the word order — the guide's path, not `reset-password`. */
+    passwordReset: (teacherId: string) => `${BASE}/teachers/${teacherId}/password-reset/`,
+    deleteRequest: (teacherId: string) => `${BASE}/teachers/${teacherId}/delete/request/`,
+    deleteConfirm: (teacherId: string) => `${BASE}/teachers/${teacherId}/delete/confirm/`,
   },
 
   students: {
     list: `${BASE}/students/`,
     detail: (studentId: string) => `${BASE}/students/${studentId}/`,
+    fln: (studentId: string) => `${BASE}/students/${studentId}/fln/`,
+    disable: (studentId: string) => `${BASE}/students/${studentId}/disable/`,
+    enable: (studentId: string) => `${BASE}/students/${studentId}/enable/`,
+    deleteRequest: (studentId: string) => `${BASE}/students/${studentId}/delete/request/`,
+    deleteConfirm: (studentId: string) => `${BASE}/students/${studentId}/delete/confirm/`,
+    transfer: `${BASE}/students/transfer/`,
+    transferClass: `${BASE}/students/transfer-class/`,
   },
 
+  /**
+   * §4.3 — unpaginated. There is no `GET .../{id}/` detail endpoint; a class
+   * is looked up client-side from the already-fetched list. `detail` below
+   * exists only to build the `DELETE` URL, which the guide does document.
+   */
   classes: {
     list: `${BASE}/classes/`,
     detail: (classId: string) => `${BASE}/classes/${classId}/`,
-  },
-
-  settings: {
-    academic: `${BASE}/settings/academic/`,
-    account: `${BASE}/settings/account/`,
-    accountPassword: `${BASE}/settings/account/password/`,
   },
 } as const;

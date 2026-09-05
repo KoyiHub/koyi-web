@@ -1,32 +1,34 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
-import { BuildingIcon, IdCardIcon } from '@/components/ui/icons';
+import { IdCardIcon } from '@/components/ui/icons';
 import { PasswordField } from '@/components/ui/password-field';
 import { TextField } from '@/components/ui/text-field';
 import { paths } from '@/config/paths';
 import { useTeacherLogin } from '@/features/auth/api/mutations';
 import { AuthCard } from '@/features/auth/components/auth-card';
 import { ForgotPasswordLink } from '@/features/auth/components/forgot-password-link';
-import {
-  forgetSchoolId,
-  getRememberedSchoolId,
-  rememberSchoolId,
-} from '@/features/auth/lib/school-id-store';
 import { type TeacherLoginFormValues, teacherLoginSchema } from '@/features/auth/schemas';
 import { ApiError } from '@/lib/api/errors';
 
 /**
- * Teacher sign-in at "/login/teacher". Teachers do not register themselves —
- * their school issues a Teacher ID — so the credential pair is
- * (Teacher ID, School ID) plus a password.
+ * Teacher sign-in at "/login/teacher".
  *
- * The School ID is remembered on the device after a successful sign-in and
- * prefilled next time. It stays a visible, editable field: staff-room devices
- * are shared, and a hidden field nobody can correct is worse than one extra
- * prefilled box.
+ * **One identifier and a password.** A teacher signs in with the id their
+ * school issued them — `GHS-T-00007` — which carries the school's abbreviation
+ * as a prefix and is globally unique, so there is no school field to fill in
+ * and nothing to remember between visits.
+ *
+ * There is no "sign up" link. Teachers do not self-register: a school admin
+ * creates the account, and that is what ties the login to a school.
+ *
+ * SECURITY: a wrong password, an unknown id and a disabled account all come
+ * back as the same `401` with the same message. That sameness is the point — it
+ * stops the form being used to discover which teacher ids exist — so the
+ * server's message is shown verbatim and never decorated with a hint about
+ * which half was wrong.
  */
 export function TeacherLoginPage() {
   const navigate = useNavigate();
@@ -34,38 +36,21 @@ export function TeacherLoginPage() {
   const login = useTeacherLogin();
   const successMessage = (location.state as { successMessage?: string } | null)?.successMessage;
 
-  const rememberedSchoolId = getRememberedSchoolId();
-
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<TeacherLoginFormValues>({
     resolver: zodResolver(teacherLoginSchema),
-    defaultValues: {
-      teacherId: '',
-      schoolId: rememberedSchoolId ?? '',
-      password: '',
-      rememberMe: true,
-    },
+    defaultValues: { teacherId: '', password: '' },
   });
 
   async function onSubmit(values: TeacherLoginFormValues) {
     try {
-      const result = await login.mutateAsync({
+      await login.mutateAsync({
         teacherId: values.teacherId,
-        schoolId: values.schoolId,
         password: values.password,
       });
-
-      // Remember the School ID the backend accepted, not the typed one, so a
-      // corrected or normalised value is what comes back next time.
-      if (values.rememberMe) {
-        rememberSchoolId(result.school_id);
-      } else {
-        forgetSchoolId();
-      }
-
       void navigate(paths.teacher.dashboard);
     } catch {
       // Surfaced via login.error below — nothing further to do here.
@@ -95,42 +80,21 @@ export function TeacherLoginPage() {
       >
         <TextField
           label="Teacher ID"
-          placeholder="TCH-2016-031"
+          placeholder="GHS-T-00007"
           autoComplete="username"
+          autoCapitalize="characters"
           icon={<IdCardIcon />}
           error={errors.teacherId?.message}
+          hint="The ID your school issued you. It is not your email address."
           {...register('teacherId')}
-        />
-
-        <TextField
-          label="School ID"
-          placeholder="KOY-SCH-0042"
-          autoComplete="organization"
-          icon={<BuildingIcon className="size-4 fill-none stroke-current stroke-2" />}
-          error={errors.schoolId?.message}
-          hint={
-            rememberedSchoolId
-              ? 'Saved from your last sign-in on this device — change it if you are signing in for a different school.'
-              : 'Your school administrator has this.'
-          }
-          {...register('schoolId')}
         />
 
         <PasswordField
           autoComplete="current-password"
-          labelAction={<ForgotPasswordLink />}
+          labelAction={<ForgotPasswordLink to={paths.login.teacherForgotPassword} />}
           error={errors.password?.message}
           {...register('password')}
         />
-
-        <label className="text-koyi-text flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="border-koyi-border text-koyi-primary size-4 rounded-sm"
-            {...register('rememberMe')}
-          />
-          Remember my School ID on this device
-        </label>
 
         {errorMessage && (
           <p role="alert" className="text-koyi-danger text-sm">
@@ -149,13 +113,8 @@ export function TeacherLoginPage() {
       </form>
 
       <p className="text-koyi-muted mt-6 text-center text-sm">
-        Don&apos;t have an account?{' '}
-        <Link
-          to={paths.teacher.auth.signup}
-          className="text-koyi-primary font-medium hover:underline"
-        >
-          Sign up
-        </Link>
+        Teacher accounts are created by your school administrator. Ask them if you do not have your
+        Teacher ID.
       </p>
     </AuthCard>
   );

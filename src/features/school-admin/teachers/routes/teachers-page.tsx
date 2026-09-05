@@ -11,25 +11,36 @@ import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { Pagination } from '@/components/ui/pagination';
 import { SearchInput } from '@/components/ui/search-input';
+import { SelectField } from '@/components/ui/select-field';
 import { paths } from '@/config/paths';
+import { classListQuery } from '@/features/school-admin/classes/api/queries';
 import { teacherListQuery } from '@/features/school-admin/teachers/api/queries';
 import { useDebouncedValue } from '@/lib/hooks/use-debounced-value';
 import { cn } from '@/lib/utils/cn';
 
 /**
- * Teacher roster (design reference page 10).
+ * Teacher roster — `frontend-integration.md` §4.4.
  *
- * Search and paging are server-side: the query key carries both, so a filtered
- * page is cached on its own rather than being sliced out of a full list the
- * browser had to download.
+ * Search and paging are server-side: the query key carries both, so a
+ * filtered page is cached on its own rather than being sliced out of a full
+ * list the browser had to download. The class filter is the one §4.4
+ * actually documents (`?search=&school_class=`) — there is no `status`
+ * query param, so the earlier active/disabled segmented control is gone.
  */
 export function TeachersPage() {
   const [search, setSearch] = useState('');
+  const [schoolClass, setSchoolClass] = useState('all');
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search);
 
-  const listQuery = useQuery(teacherListQuery({ search: debouncedSearch, page }));
+  const classes = useQuery(classListQuery('all'));
+  const listQuery = useQuery(teacherListQuery({ search: debouncedSearch, schoolClass, page }));
   const teachers = listQuery.data?.results ?? [];
+
+  const classOptions = [
+    { value: 'all', label: 'All classes' },
+    ...(classes.data ?? []).map((entry) => ({ value: entry.id, label: entry.label })),
+  ];
 
   return (
     <div className="space-y-6">
@@ -47,6 +58,17 @@ export function TeachersPage() {
                 // A new query invalidates the current page number.
                 setPage(1);
               }}
+            />
+            <SelectField
+              label="Filter by class"
+              labelHidden
+              options={classOptions}
+              value={schoolClass}
+              onChange={(event) => {
+                setSchoolClass(event.target.value);
+                setPage(1);
+              }}
+              wrapperClassName="w-44"
             />
             <Link to={paths.schoolAdmin.teachers.new} className={cn(buttonClasses(), 'shrink-0')}>
               <PlusIcon aria-hidden="true" />
@@ -104,7 +126,14 @@ export function TeachersPage() {
                         <div className="flex items-center gap-3">
                           <InitialsAvatar name={teacher.full_name} />
                           <div className="min-w-0">
-                            <p className="text-koyi-text truncate font-bold">{teacher.full_name}</p>
+                            <p className="text-koyi-text flex items-center gap-2 truncate font-bold">
+                              {teacher.full_name}
+                              {!teacher.is_active && (
+                                <span className="bg-koyi-surface text-koyi-muted rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase">
+                                  Disabled
+                                </span>
+                              )}
+                            </p>
                             <p className="text-koyi-muted truncate text-xs">{teacher.email}</p>
                           </div>
                         </div>
@@ -113,11 +142,9 @@ export function TeachersPage() {
                       <td className="text-koyi-text px-5 py-4">{teacher.teacher_id}</td>
 
                       <td className="px-5 py-4">
-                        {teacher.class_assigned ? (
+                        {teacher.school_class ? (
                           <span className="bg-koyi-band-intermediate-soft text-koyi-primary inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold">
-                            {teacher.class_assigned}
-                            {teacher.additional_class_count > 0 &&
-                              ` +${String(teacher.additional_class_count)}`}
+                            {teacher.school_class.label}
                           </span>
                         ) : (
                           <span className="text-koyi-muted text-xs">Not assigned</span>

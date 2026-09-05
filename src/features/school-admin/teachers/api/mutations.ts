@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
 
 import { schoolAdminEndpoints } from '@/features/school-admin/api/endpoints';
 import { schoolAdminKeys } from '@/features/school-admin/api/queries';
 import {
-  teacherDetailSchema,
+  deleteRequestSchema,
   teacherPasswordResetSchema,
+  teacherSchema,
 } from '@/features/school-admin/teachers/api/teacher.schema';
 import { api } from '@/lib/api/client';
 
@@ -22,12 +24,12 @@ export function useCreateTeacher() {
 
   return useMutation({
     mutationFn: (input: CreateTeacherInput) =>
-      api.post(schoolAdminEndpoints.teachers.list, teacherDetailSchema, {
-        first_name: input.firstName,
-        last_name: input.lastName,
+      api.post(schoolAdminEndpoints.teachers.list, teacherSchema, {
         email: input.email,
         password: input.password,
-        class_id: input.classId || null,
+        first_name: input.firstName,
+        last_name: input.lastName,
+        school_class: input.classId || null,
       }),
     onSuccess: async () => {
       // The roster count on the classes screen moves too, so both lists go.
@@ -39,35 +41,65 @@ export function useCreateTeacher() {
   });
 }
 
-export type ResetTeacherPasswordInput =
-  | { teacherId: string; mode: 'generate' }
-  | { teacherId: string; mode: 'manual'; password: string; confirmPassword: string };
-
 /**
- * Resets a teacher's password.
- *
- * Two modes, the admin's choice: ask the server to generate a temporary
- * password (returned once so it can be handed over, and flagged
- * must-change-on-next-login), or set one manually. Generation happens on the
- * server — the browser never invents a credential — and a manually set
- * password is never echoed back in the response.
+ * Emails a reset link — `frontend-integration.md` §4.4. Unlike the modal
+ * this replaces, no password or mode is chosen here: the server owns
+ * generating and delivering the credential, and never echoes it back.
  */
 export function useResetTeacherPassword() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: ResetTeacherPasswordInput) =>
-      api.post(
-        schoolAdminEndpoints.teachers.resetPassword(input.teacherId),
-        teacherPasswordResetSchema,
-        input.mode === 'manual'
-          ? { mode: 'manual', password: input.password, confirm_password: input.confirmPassword }
-          : { mode: 'generate' },
-      ),
-    onSuccess: async (_data, variables) => {
-      await queryClient.invalidateQueries({
-        queryKey: schoolAdminKeys.teacherDetail(variables.teacherId),
-      });
+    mutationFn: (teacherId: string) =>
+      api.post(schoolAdminEndpoints.teachers.passwordReset(teacherId), teacherPasswordResetSchema),
+    onSuccess: async (_data, teacherId) => {
+      await queryClient.invalidateQueries({ queryKey: schoolAdminKeys.teacherDetail(teacherId) });
+    },
+  });
+}
+
+function invalidateTeacher(queryClient: ReturnType<typeof useQueryClient>, teacherId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: schoolAdminKeys.teacherDetail(teacherId) }),
+    queryClient.invalidateQueries({ queryKey: schoolAdminKeys.teachers() }),
+  ]);
+}
+
+export function useDisableTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (teacherId: string) =>
+      api.post(schoolAdminEndpoints.teachers.disable(teacherId), teacherSchema),
+    onSuccess: (_data, teacherId) => invalidateTeacher(queryClient, teacherId),
+  });
+}
+
+export function useEnableTeacher() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (teacherId: string) =>
+      api.post(schoolAdminEndpoints.teachers.enable(teacherId), teacherSchema),
+    onSuccess: (_data, teacherId) => invalidateTeacher(queryClient, teacherId),
+  });
+}
+
+/** Two-step delete behind an emailed 2FA code — `frontend-integration.md` §4.4. */
+export function useRequestTeacherDelete() {
+  return useMutation({
+    mutationFn: (teacherId: string) =>
+      api.post(schoolAdminEndpoints.teachers.deleteRequest(teacherId), deleteRequestSchema),
+  });
+}
+
+export function useConfirmTeacherDelete() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { teacherId: string; code: string }) =>
+      api.post(schoolAdminEndpoints.teachers.deleteConfirm(input.teacherId), z.unknown(), {
+        code: input.code,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: schoolAdminKeys.teachers() });
     },
   });
 }
