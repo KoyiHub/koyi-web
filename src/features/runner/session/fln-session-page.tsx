@@ -86,6 +86,11 @@ export function FlnSessionPage() {
   const [responses, setResponses] = useState<Record<string, QuizResponse>>({});
   const headingRef = useRef<HTMLHeadingElement>(null);
   const startedRef = useRef<string | null>(null);
+  const pendingSaveRef = useRef<{
+    timeoutId: number;
+    questionId: string;
+    input: PutResponseInput;
+  } | null>(null);
 
   useEffect(() => {
     if (!sectionId || startedRef.current === sectionId) return;
@@ -150,14 +155,32 @@ export function FlnSessionPage() {
     if (!question || timedOut) return;
     const current = responses[question.id];
     if (!current) return;
+    const input = buildResponseInput(question, current);
     const timeout = window.setTimeout(() => {
-      putResponse.mutate({ questionId: question.id, input: buildResponseInput(question, current) });
+      pendingSaveRef.current = null;
+      putResponse.mutate({ questionId: question.id, input });
     }, 500);
+    pendingSaveRef.current = { timeoutId: timeout, questionId: question.id, input };
     return () => {
       window.clearTimeout(timeout);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question, responses[question?.id ?? '']]);
+
+  /**
+   * Flushes a pending debounced save immediately rather than letting it fire
+   * on its own timer. Without this, answering the last question and
+   * finishing the section quickly races submit/ ahead of the debounce: the
+   * section is already "submitted" by the time the late PUT lands, and the
+   * server rejects it with a 400 — the last answer never actually saved.
+   */
+  async function flushPendingSave() {
+    const pending = pendingSaveRef.current;
+    if (!pending) return;
+    window.clearTimeout(pending.timeoutId);
+    pendingSaveRef.current = null;
+    await putResponse.mutateAsync({ questionId: pending.questionId, input: pending.input });
+  }
 
   const answeredCount = useMemo(
     () => questions.filter((item) => isAnswered(item, responses[item.id])).length,
@@ -192,21 +215,23 @@ export function FlnSessionPage() {
   }
 
   function goNext() {
-    if (!isLast) {
-      setIndex((current) => Math.min(current + 1, total - 1));
-      return;
-    }
-    submitSection.mutate(sectionId, {
-      onSuccess: (data) => {
-        if (data.status === 'finished') {
-          void navigate(paths.assessment.summary, {
-            replace: true,
-            state: { answeredCount, total },
-          });
-        } else {
-          void navigate(paths.assessment.instructions, { replace: true });
-        }
-      },
+    void flushPendingSave().then(() => {
+      if (!isLast) {
+        setIndex((current) => Math.min(current + 1, total - 1));
+        return;
+      }
+      submitSection.mutate(sectionId, {
+        onSuccess: (data) => {
+          if (data.status === 'finished') {
+            void navigate(paths.assessment.summary, {
+              replace: true,
+              state: { answeredCount, total },
+            });
+          } else {
+            void navigate(paths.assessment.instructions, { replace: true });
+          }
+        },
+      });
     });
   }
 
