@@ -463,14 +463,6 @@ export const routes: RouteObject[] = [
                           ).ResponseReviewPage,
                         }),
                       },
-                      {
-                        path: 'review-queue',
-                        lazy: async () => ({
-                          Component: (
-                            await import('@/features/teacher/assessments/routes/review-queue-page')
-                          ).ReviewQueuePage,
-                        }),
-                      },
                     ],
                   },
                 ],

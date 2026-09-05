@@ -168,24 +168,3 @@ export const studentResponsesSchema = z.object({
   questions: z.array(reviewQuestionSchema),
 });
 export type StudentResponses = z.infer<typeof studentResponsesSchema>;
-
-/* -------------------------------------------------------------------------- */
-/* Review queue — no JSON in the guide either; no resolution endpoint at all  */
-/* -------------------------------------------------------------------------- */
-
-/** Why a response is still pending — mirrors the guide's own prose on the subject. */
-export const reviewQueueReasonSchema = z.enum(['ai_unavailable', 'low_confidence', 'file_upload']);
-export type ReviewQueueReason = z.infer<typeof reviewQueueReasonSchema>;
-
-export const reviewQueueItemSchema = z.object({
-  student_id: z.string(),
-  full_name: z.string(),
-  question_id: z.string(),
-  question_text: z.string(),
-  question_type: questionTypeSchema,
-  subskill_name: z.string(),
-  reason: reviewQueueReasonSchema,
-  reason_label: z.string(),
-});
-export type ReviewQueueItem = z.infer<typeof reviewQueueItemSchema>;
-export const reviewQueueListSchema = z.array(reviewQueueItemSchema);

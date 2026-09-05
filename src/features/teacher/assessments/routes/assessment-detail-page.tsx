@@ -57,12 +57,6 @@ export function AssessmentDetailPage() {
           ) : (
             <div className="flex flex-wrap gap-3">
               <Link
-                to={paths.teacher.assessments.reviewQueue(data.id)}
-                className={buttonClasses('secondary')}
-              >
-                Review queue
-              </Link>
-              <Link
                 to={paths.teacher.assessments.roster(data.id)}
                 className={buttonClasses('secondary')}
               >

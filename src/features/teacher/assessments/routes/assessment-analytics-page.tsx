@@ -57,14 +57,6 @@ export function AssessmentAnalyticsPage() {
       <PageHeader
         title={assessment.data.name}
         subtitle={`${String(data.participation.submitted)} of ${String(data.participation.assigned)} assigned children have submitted.`}
-        actions={
-          <Link
-            to={paths.teacher.assessments.reviewQueue(assessmentId)}
-            className="text-koyi-primary text-sm font-bold hover:underline"
-          >
-            Review queue →
-          </Link>
-        }
       />
 
       {(data.marking_status.pending > 0 || data.warnings.length > 0) && (

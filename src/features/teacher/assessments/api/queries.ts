@@ -17,7 +17,6 @@ import {
   analyticsRosterSchema,
   analyticsSchema,
   resultsSchema,
-  reviewQueueListSchema,
   studentResponsesSchema,
 } from '@/features/teacher/assessments/api/results.schema';
 import { api } from '@/lib/api/client';
@@ -45,7 +44,6 @@ export const assessmentKeys = {
   results: (id: string) => [...assessmentKeys.all, id, 'results'] as const,
   responses: (id: string, studentId: string) =>
     [...assessmentKeys.all, id, 'responses', studentId] as const,
-  reviewQueue: (id: string) => [...assessmentKeys.all, id, 'review-queue'] as const,
   analytics: (id: string, narrative: boolean) =>
     [...assessmentKeys.all, id, 'analytics', narrative] as const,
   analyticsRoster: (id: string, filters: AnalyticsRosterFilters) =>
@@ -162,16 +160,6 @@ export const studentResponsesQuery = (assessmentId: string, studentId: string) =
         studentResponsesSchema,
         { signal },
       ),
-  });
-
-/** Responses the AI could not settle — read-only, no resolution endpoint exists yet. */
-export const reviewQueueQuery = (assessmentId: string) =>
-  queryOptions({
-    queryKey: assessmentKeys.reviewQueue(assessmentId),
-    queryFn: ({ signal }) =>
-      api.get(teacherEndpoints.assessments.reviewQueue(assessmentId), reviewQueueListSchema, {
-        signal,
-      }),
   });
 
 /**

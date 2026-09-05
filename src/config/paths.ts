@@ -101,8 +101,6 @@ export const paths = {
       /** One child's paper, question by question — green/red straight from `is_correct`/`was_selected`. */
       responses: (assessmentId: string, studentId: string) =>
         `/teacher/assessments/${assessmentId}/responses/${studentId}`,
-      /** Responses the AI could not settle. Read-only — no resolution endpoint exists yet. */
-      reviewQueue: (assessmentId: string) => `/teacher/assessments/${assessmentId}/review-queue`,
     },
 
     students: {

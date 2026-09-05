@@ -76,7 +76,6 @@ export const teacherEndpoints = {
     results: (assessmentId: string) => `${BASE}/assessments/${assessmentId}/results/`,
     studentResponses: (assessmentId: string, studentId: string) =>
       `${BASE}/assessments/${assessmentId}/results/${studentId}/responses/`,
-    reviewQueue: (assessmentId: string) => `${BASE}/assessments/${assessmentId}/review-queue/`,
     analytics: (assessmentId: string) => `${BASE}/assessments/${assessmentId}/analytics/`,
     analyticsRoster: (assessmentId: string) =>
       `${BASE}/assessments/${assessmentId}/analytics/roster/`,

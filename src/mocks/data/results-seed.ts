@@ -316,9 +316,9 @@ export function resetResultsState(): void {
 
 /**
  * The computed-and-cached result set for one assessment. Every screen this
- * phase builds (analytics, the results table, the roster, review-queue, one
- * child's response review, and that child's cross-assessment `/skills/`)
- * reads through this, so the numbers agree everywhere they overlap.
+ * phase builds (analytics, the results table, the roster, one child's
+ * response review, and that child's cross-assessment `/skills/`) reads
+ * through this, so the numbers agree everywhere they overlap.
  */
 export function getResults(assessmentId: string): AssessmentResults | null {
   const cached = cache.get(assessmentId);
@@ -469,64 +469,6 @@ export function toAnalyticsRosterRow(result: StudentResult) {
     numeracy_level: result.levels.numeracy ?? null,
     weak_subskills: Array.from(new Set(weak)).slice(0, 5),
   };
-}
-
-/**
- * The reasons a response stays pending mirror the guide's own prose:
- * "when the model was unavailable, when its confidence was too low to act
- * on, or when a recording failed." `file_upload` is the one deterministic
- * case; the other two are functionally identical (both just `null`), so
- * which label a given item gets is itself a stable hash pick, for variety.
- */
-function pendingReason(
-  studentId: string,
-  questionId: string,
-  questionType: string,
-): 'file_upload' | 'ai_unavailable' | 'low_confidence' {
-  if (questionType === 'file_upload') return 'file_upload';
-  return ratio(studentId, questionId, 'reason') < 0.5 ? 'ai_unavailable' : 'low_confidence';
-}
-
-const REVIEW_QUEUE_REASON_LABEL: Record<
-  'file_upload' | 'ai_unavailable' | 'low_confidence',
-  string
-> = {
-  file_upload: 'Uploaded file — needs a teacher to mark it',
-  ai_unavailable: 'The AI marker was unavailable',
-  low_confidence: "The AI marker's confidence was too low to act on",
-};
-
-export function computeReviewQueue(results: AssessmentResults) {
-  const items: {
-    student_id: string;
-    full_name: string;
-    question_id: string;
-    question_text: string;
-    question_type: string;
-    subskill_name: string;
-    reason: 'file_upload' | 'ai_unavailable' | 'low_confidence';
-    reason_label: string;
-  }[] = [];
-
-  for (const student of results.students) {
-    if (!student.submitted) continue;
-    for (const item of student.items) {
-      if (item.outcome.kind !== 'answered' || item.outcome.isCorrect !== null) continue;
-      const questionId = item.question.id ?? '';
-      const reason = pendingReason(student.studentId, questionId, item.question.question_type);
-      items.push({
-        student_id: student.studentId,
-        full_name: student.fullName,
-        question_id: questionId,
-        question_text: item.question.text,
-        question_type: item.question.question_type,
-        subskill_name: item.subskillName,
-        reason,
-        reason_label: REVIEW_QUEUE_REASON_LABEL[reason],
-      });
-    }
-  }
-  return items;
 }
 
 interface Narrative {

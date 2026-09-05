@@ -32,7 +32,6 @@ import {
 } from '@/mocks/data/groups-seed';
 import {
   computeAnalytics,
-  computeReviewQueue,
   computeStudentSkills,
   findStudentResult,
   getResults,
@@ -512,13 +511,6 @@ export const teacherHandlers = [
       return validationError({ status: ['This child has not submitted this paper yet.'] });
     }
     return HttpResponse.json(toStudentResponses(assessment, result));
-  }),
-
-  http.get(`${BASE}/assessments/:assessmentId/review-queue/`, ({ params }) => {
-    const assessment = findStored(String(params.assessmentId));
-    if (!assessment) return notFound('That assessment does not exist.');
-    const results = getResults(assessment.id);
-    return HttpResponse.json(results ? computeReviewQueue(results) : []);
   }),
 
   http.get(`${BASE}/assessments/:assessmentId/analytics/`, ({ params, request }) => {
