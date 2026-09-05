@@ -32,7 +32,7 @@ const DOMAIN_ICON: Record<Domain, typeof BookOpenIcon> = {
   numeracy: CalculatorIcon,
 };
 
-function DomainLevelCard({ domain, level }: { domain: Domain; level: FlnLevel }) {
+function DomainLevelCard({ domain, level }: { domain: Domain; level: FlnLevel | null }) {
   const Icon = DOMAIN_ICON[domain];
   return (
     <Card bodyClassName="flex items-center gap-4">
@@ -44,8 +44,14 @@ function DomainLevelCard({ domain, level }: { domain: Domain; level: FlnLevel })
       </span>
       <div>
         <p className="text-koyi-muted text-xs font-semibold uppercase">{DOMAIN_LABEL[domain]}</p>
-        <p className="text-koyi-text font-display text-lg font-bold">{levelLabel(level)}</p>
-        <p className="text-koyi-muted text-xs">{levelCaption(level)}</p>
+        {level !== null ? (
+          <>
+            <p className="text-koyi-text font-display text-lg font-bold">{levelLabel(level)}</p>
+            <p className="text-koyi-muted text-xs">{levelCaption(level)}</p>
+          </>
+        ) : (
+          <p className="text-koyi-text font-display text-lg font-bold">Not yet placed</p>
+        )}
       </div>
     </Card>
   );

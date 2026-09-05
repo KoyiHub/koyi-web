@@ -24,8 +24,9 @@ export type SkillBreakdown = z.infer<typeof skillBreakdownSchema>;
 export const studentSkillsSchema = z.object({
   student_id: z.string(),
   full_name: z.string(),
-  literacy_level: flnLevelSchema,
-  numeracy_level: flnLevelSchema,
+  /** `null` when the child has not yet been placed in this domain. */
+  literacy_level: flnLevelSchema.nullable(),
+  numeracy_level: flnLevelSchema.nullable(),
   last_assessed_at: z.string().nullable(),
   skills: z.array(skillBreakdownSchema),
   /** Compares the last two placements per domain. `down` is a reading, not a failure. */
