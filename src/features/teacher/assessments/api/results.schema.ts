@@ -80,7 +80,8 @@ export const analyticsSchema = z.object({
   participation: z.object({ assigned: z.number(), submitted: z.number() }),
   skill_matrix: z.array(skillMatrixEntrySchema),
   most_missed: z.array(mostMissedEntrySchema),
-  average_percentage: z.string(),
+  /** `null` when nothing has been graded yet — observed live, not shown in the doc's example. */
+  average_percentage: z.string().nullable(),
   warnings: z.array(z.string()),
   narrative: narrativeSchema,
 });
