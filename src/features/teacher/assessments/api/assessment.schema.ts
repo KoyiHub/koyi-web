@@ -134,7 +134,16 @@ export type QuestionOption = z.infer<typeof questionOptionSchema>;
  */
 export const authoredQuestionSchema = z.object({
   id: z.string().optional(),
-  subskill_id: z.string(),
+  // `subskill_id`, `source_question_id` and `answer` have all been observed
+  // absent from the live GET response rather than sent as `null` — the doc's
+  // example always includes them. Each is coerced back to the `null`-shaped
+  // value its own consumers already handle (an empty `subskill_id` resolves
+  // to "Unknown subskill" the same way an unrecognized real id already
+  // does), so nothing downstream needs to learn a new "absent" state.
+  subskill_id: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? ''),
   fln_level: flnLevelSchema,
   question_type: questionTypeSchema,
   layout: questionLayoutSchema.nullable(),
@@ -142,10 +151,16 @@ export const authoredQuestionSchema = z.object({
   description: z.string(),
   /** Decimal string, e.g. "1.00" — the server owns the arithmetic. */
   point: z.string(),
-  source_question_id: z.string().nullable(),
+  source_question_id: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? null),
   contents: z.array(questionContentSchema),
   options: z.array(questionOptionSchema),
-  answer: z.object({ value: z.string() }).nullable(),
+  answer: z
+    .object({ value: z.string() })
+    .nullish()
+    .transform((value) => value ?? null),
 });
 export type AuthoredQuestion = z.infer<typeof authoredQuestionSchema>;
 
