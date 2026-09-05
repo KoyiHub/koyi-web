@@ -95,7 +95,7 @@ export function GroupsPage() {
         }}
         onCreated={(groupId) => {
           setCreateOpen(false);
-          void navigate(paths.teacher.students.groupDetail(groupId));
+          void navigate(paths.teacher.groups.detail(groupId));
         }}
       />
     </div>

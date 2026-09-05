@@ -108,8 +108,11 @@ export const paths = {
     students: {
       list: '/teacher/students',
       detail: (studentId: string) => `/teacher/students/${studentId}`,
-      groups: '/teacher/students/groups',
-      groupDetail: (groupId: string) => `/teacher/students/groups/${groupId}`,
+    },
+
+    groups: {
+      list: '/teacher/groups',
+      detail: (groupId: string) => `/teacher/groups/${groupId}`,
     },
 
     progress: '/teacher/progress',

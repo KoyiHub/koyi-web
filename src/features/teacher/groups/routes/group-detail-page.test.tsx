@@ -9,7 +9,7 @@ import { renderRoute, screen, waitFor, within } from '@/test/test-utils';
  */
 describe('GroupDetailPage', () => {
   it('renders the group heading and criteria', async () => {
-    renderRoute('/teacher/students/groups/grp-word-reading');
+    renderRoute('/teacher/groups/grp-word-reading');
 
     expect(await screen.findByRole('heading', { name: 'Word Reading Focus' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Criteria' })).toBeInTheDocument();
@@ -17,7 +17,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('shows current members, distinguishing matched from added', async () => {
-    renderRoute('/teacher/students/groups/grp-word-reading');
+    renderRoute('/teacher/groups/grp-word-reading');
     await screen.findByRole('heading', { name: 'Word Reading Focus' });
 
     const roster = screen
@@ -30,7 +30,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('removes a current member', async () => {
-    const { user } = renderRoute('/teacher/students/groups/grp-word-reading');
+    const { user } = renderRoute('/teacher/groups/grp-word-reading');
     await screen.findByRole('heading', { name: 'Word Reading Focus' });
 
     const roster = screen
@@ -45,7 +45,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('generates a lesson plan when none exists yet', async () => {
-    const { user } = renderRoute('/teacher/students/groups/grp-word-reading');
+    const { user } = renderRoute('/teacher/groups/grp-word-reading');
     await screen.findByRole('heading', { name: 'Word Reading Focus' });
 
     await screen.findByText('No plan has been generated yet.');
@@ -56,7 +56,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('renders a fallback plan normally, not as an error', async () => {
-    const { user } = renderRoute('/teacher/students/groups/grp-subtraction-support');
+    const { user } = renderRoute('/teacher/groups/grp-subtraction-support');
     await screen.findByRole('heading', { name: 'Subtraction Support' });
 
     await screen.findByText('No plan has been generated yet.');
@@ -69,7 +69,7 @@ describe('GroupDetailPage', () => {
   });
 
   it('shows a safe not-found state for an unknown group ID', async () => {
-    renderRoute('/teacher/students/groups/does-not-exist');
+    renderRoute('/teacher/groups/does-not-exist');
 
     expect(await screen.findByRole('alert')).toHaveTextContent('That group does not exist.');
   });

@@ -35,7 +35,7 @@ export function GroupCard({ group }: GroupCardProps) {
       </dl>
 
       <Link
-        to={paths.teacher.students.groupDetail(group.id)}
+        to={paths.teacher.groups.detail(group.id)}
         className="text-koyi-primary mt-auto flex h-11 items-center text-sm font-semibold hover:underline"
       >
         View Details{' '}

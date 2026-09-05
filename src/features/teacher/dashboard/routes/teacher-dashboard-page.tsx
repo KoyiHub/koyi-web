@@ -184,7 +184,7 @@ export function TeacherDashboardPage() {
 
                     {dashboard.data.insight.group_id && (
                       <Link
-                        to={paths.teacher.students.groupDetail(dashboard.data.insight.group_id)}
+                        to={paths.teacher.groups.detail(dashboard.data.insight.group_id)}
                         className="text-koyi-primary mt-5 flex h-11 w-full items-center justify-center gap-2 rounded-md bg-white text-sm font-bold transition-colors hover:bg-white/90"
                       >
                         View lesson plan

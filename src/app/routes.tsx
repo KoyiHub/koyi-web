@@ -486,31 +486,31 @@ export const routes: RouteObject[] = [
                     }),
                   },
                   {
-                    path: 'groups',
-                    children: [
-                      {
-                        index: true,
-                        lazy: async () => ({
-                          Component: (await import('@/features/teacher/groups/routes/groups-page'))
-                            .GroupsPage,
-                        }),
-                      },
-                      {
-                        path: ':groupId',
-                        lazy: async () => ({
-                          Component: (
-                            await import('@/features/teacher/groups/routes/group-detail-page')
-                          ).GroupDetailPage,
-                        }),
-                      },
-                    ],
-                  },
-                  {
                     path: ':studentId',
                     lazy: async () => ({
                       Component: (
                         await import('@/features/teacher/students/routes/student-profile-page')
                       ).StudentProfilePage,
+                    }),
+                  },
+                ],
+              },
+              {
+                path: 'groups',
+                children: [
+                  {
+                    index: true,
+                    lazy: async () => ({
+                      Component: (await import('@/features/teacher/groups/routes/groups-page'))
+                        .GroupsPage,
+                    }),
+                  },
+                  {
+                    path: ':groupId',
+                    lazy: async () => ({
+                      Component: (
+                        await import('@/features/teacher/groups/routes/group-detail-page')
+                      ).GroupDetailPage,
                     }),
                   },
                 ],

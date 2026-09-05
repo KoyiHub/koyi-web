@@ -30,7 +30,7 @@ export const teacherNav: AppNav = {
     { label: 'Dashboard', to: paths.teacher.dashboard, end: false, Icon: GridIcon },
     { label: 'Assessment', to: paths.teacher.assessments.list, end: false, Icon: ClipboardIcon },
     { label: 'Students', to: paths.teacher.students.list, end: false, Icon: UserGroupIcon },
-    { label: 'Groups', to: paths.teacher.students.groups, end: false, Icon: LayersIcon },
+    { label: 'Groups', to: paths.teacher.groups.list, end: false, Icon: LayersIcon },
     { label: 'Progress', to: paths.teacher.progress, end: false, Icon: TrendingUpIcon },
   ],
   footer: [

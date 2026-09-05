@@ -27,7 +27,7 @@ const RESOURCE_TIER_LABEL = { minimal: 'Minimal', basic: 'Basic', equipped: 'Equ
 
 const backLink = (
   <Link
-    to={paths.teacher.students.groups}
+    to={paths.teacher.groups.list}
     className="text-koyi-primary flex h-11 w-fit items-center text-sm font-semibold"
   >
     <span aria-hidden="true" className="mr-1">
@@ -312,7 +312,7 @@ export function GroupDetailPage() {
           onClick={() => {
             archive.mutate(groupId, {
               onSuccess: () => {
-                void navigate(paths.teacher.students.groups);
+                void navigate(paths.teacher.groups.list);
               },
             });
           }}

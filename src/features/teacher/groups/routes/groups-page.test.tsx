@@ -8,13 +8,13 @@ import { renderRoute, screen } from '@/test/test-utils';
  */
 describe('GroupsPage', () => {
   it('renders the Groups Overview heading', async () => {
-    renderRoute('/teacher/students/groups');
+    renderRoute('/teacher/groups');
 
     expect(await screen.findByRole('heading', { name: 'Groups Overview' })).toBeInTheDocument();
   });
 
   it('renders the seeded groups with their size and resource tier', async () => {
-    renderRoute('/teacher/students/groups');
+    renderRoute('/teacher/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
     expect(await screen.findByRole('heading', { name: 'Word Reading Focus' })).toBeInTheDocument();
@@ -22,7 +22,7 @@ describe('GroupsPage', () => {
   });
 
   it('flags a group that has got small', async () => {
-    renderRoute('/teacher/students/groups');
+    renderRoute('/teacher/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
     const thinHeading = await screen.findByRole('heading', { name: 'Subtraction Support' });
@@ -31,7 +31,7 @@ describe('GroupsPage', () => {
   });
 
   it('opens the create-group dialog', async () => {
-    const { user } = renderRoute('/teacher/students/groups');
+    const { user } = renderRoute('/teacher/groups');
     await screen.findByRole('heading', { name: 'Groups Overview' });
 
     await user.click(screen.getByRole('button', { name: 'Create New Group' }));

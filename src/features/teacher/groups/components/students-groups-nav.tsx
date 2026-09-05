@@ -26,7 +26,7 @@ export function StudentsGroupsNav() {
       <NavLink to={paths.teacher.students.list} end className={linkClasses}>
         Students
       </NavLink>
-      <NavLink to={paths.teacher.students.groups} className={linkClasses}>
+      <NavLink to={paths.teacher.groups.list} className={linkClasses}>
         Groups
       </NavLink>
     </nav>
