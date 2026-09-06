@@ -4,105 +4,26 @@ import { Link } from 'react-router';
 import { InitialsAvatar } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { ErrorState } from '@/components/ui/error-state';
-import {
-  AlertCircleIcon,
-  ArrowLeftIcon,
-  ArrowRightIcon,
-  CheckCircleIcon,
-  TrendingUpIcon,
-} from '@/components/ui/icons';
+import { ArrowLeftIcon, ArrowRightIcon, CheckCircleIcon, UsersIcon } from '@/components/ui/icons';
 import { PageHeader } from '@/components/ui/page-header';
 import { PageSpinner } from '@/components/ui/page-spinner';
 import { StatBar } from '@/components/ui/stat-bar';
 import { paths } from '@/config/paths';
-import {
-  BAND_BAR_CLASS,
-  BAND_CHIP_CLASS,
-  BAND_LABEL,
-  formatChange,
-  SUBJECT_LABEL,
-} from '@/features/teacher/api/format';
 import { DataTable } from '@/features/teacher/components/data-table';
 import { StatCard } from '@/features/teacher/components/stat-card';
-import type { TrendPoint } from '@/features/teacher/dashboard/api/dashboard.schema';
 import { classPerformanceQuery } from '@/features/teacher/dashboard/api/queries';
-import { cn } from '@/lib/utils/cn';
+import { DOMAIN_LABEL, levelDistributionRows, levelLabel } from '@/lib/fln/level';
 
-const SKILL_COLUMNS = [
-  { key: 'skill', label: 'Skill area' },
-  { key: 'average', label: 'Class average', align: 'right' as const },
-  { key: 'change', label: 'Change', align: 'right' as const },
-  { key: 'below', label: 'Below benchmark', align: 'right' as const },
-];
-
-/** Green when a figure moved up, red when it moved down, grey when it held. */
-function changeClass(change: number): string {
-  if (change > 0) return 'text-koyi-band-strong-ink';
-  if (change < 0) return 'text-koyi-band-struggling-ink';
-  return 'text-koyi-muted';
-}
-
-/**
- * The term's checkpoints as a column chart.
- *
- * Hand-drawn from the numbers the API returned rather than pulled from a chart
- * library: five bars need no dependency, and the table underneath carries the
- * same values for anyone who cannot see the bars.
- */
-function TrendChart({ points }: { points: TrendPoint[] }) {
-  return (
-    <div>
-      <ol className="flex h-48 items-end gap-3" aria-hidden="true">
-        {points.map((point) => (
-          <li key={point.id} className="flex h-full flex-1 flex-col justify-end gap-2">
-            <p className="text-koyi-text text-center text-xs font-bold">{point.average_score}%</p>
-            <div
-              className="bg-koyi-primary/85 hover:bg-koyi-primary w-full rounded-t-md transition-colors"
-              style={{ height: `${String(point.average_score)}%` }}
-            />
-          </li>
-        ))}
-      </ol>
-
-      <ol className="mt-3 flex gap-3">
-        {points.map((point) => (
-          <li key={point.id} className="text-koyi-muted flex-1 text-center text-xs">
-            {point.label}
-          </li>
-        ))}
-      </ol>
-
-      <table className="sr-only">
-        <caption>Class average and participation at each checkpoint this term</caption>
-        <thead>
-          <tr>
-            <th scope="col">Checkpoint</th>
-            <th scope="col">Class average</th>
-            <th scope="col">Participation</th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((point) => (
-            <tr key={point.id}>
-              <th scope="row">{point.label}</th>
-              <td>{point.average_score}%</td>
-              <td>{point.participation_rate}%</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
+const DOMAINS = ['literacy', 'numeracy'] as const;
 
 /**
  * The full class report, opened from the dashboard's distribution card.
  *
- * What the dashboard card shows is where the class stands today. This screen
- * answers the question that follows — whether that is better or worse than it
- * was — so every figure here is paired with its movement since the baseline.
- * Nothing is averaged, banded or compared in the browser; the API sends both
- * the value and the change.
+ * No doc anchor exists for this endpoint (flagged in `refactor-plan.md`), but
+ * the page still has to obey §9 like everything else: no bare percentage, no
+ * strong/weak band, no term framing, and literacy/numeracy never collapse
+ * into one figure. Rebuilt on the same level-distribution + movement
+ * vocabulary the real school overview and student skills endpoints use.
  */
 export function ClassPerformancePage() {
   const performance = useQuery(classPerformanceQuery());
@@ -132,118 +53,115 @@ export function ClassPerformancePage() {
         <>
           <PageHeader
             title="Class performance"
-            subtitle={`${performance.data.class_name} · ${performance.data.term_label} · measured against ${performance.data.baseline_label}`}
+            subtitle={`${performance.data.class_name} · ${performance.data.measured_since}`}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <StatCard
-              label="Class average"
-              value={`${String(performance.data.class_average)}%`}
-              caption={`${formatChange(performance.data.class_average_change)} points since ${performance.data.baseline_label}`}
-              direction={
-                performance.data.class_average_change > 0
-                  ? 'up'
-                  : performance.data.class_average_change < 0
-                    ? 'down'
-                    : 'flat'
-              }
-              Icon={TrendingUpIcon}
+              label="Total students"
+              value={performance.data.total_students}
+              Icon={UsersIcon}
             />
             <StatCard
-              label="Participation"
-              value={`${String(performance.data.participation_rate)}%`}
-              caption={`${String(performance.data.assessed_count)} of ${String(performance.data.total_students)} children assessed`}
+              label="Assessed"
+              value={performance.data.assessed_count}
               Icon={CheckCircleIcon}
               chipClassName="bg-koyi-band-strong-soft text-koyi-band-strong-ink"
             />
-            <StatCard
-              label="Not yet assessed"
-              value={performance.data.total_students - performance.data.assessed_count}
-              caption="Children with no result this term"
-              Icon={AlertCircleIcon}
-              chipClassName="bg-koyi-band-struggling-soft text-koyi-band-struggling-ink"
-            />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Card
-              title="Where the class sits now"
-              subtitle={`Movement since ${performance.data.baseline_label}`}
-              className="lg:col-span-2"
-            >
-              <div className="space-y-5">
-                {performance.data.movement.map((band) => (
-                  <div key={band.band}>
-                    <StatBar
-                      label={band.label}
-                      valueLabel={`${String(band.students)} students · ${String(band.percentage)}%`}
-                      percentage={band.percentage}
-                      toneClassName={BAND_BAR_CLASS[band.band]}
-                    />
-                    <p className={cn('mt-1 text-xs font-semibold', changeClass(band.change))}>
-                      {formatChange(band.change)} children since the baseline
-                    </p>
+          <div className="grid gap-4 xl:grid-cols-2">
+            {DOMAINS.map((domain) => {
+              const rows = levelDistributionRows(
+                performance.data.level_distribution.levels[domain],
+              );
+              const max = Math.max(1, ...rows.map((row) => row.students));
+              const movement = performance.data.movement.find((entry) => entry.domain === domain);
+
+              return (
+                <Card key={domain} title={`${DOMAIN_LABEL[domain]} — level distribution`}>
+                  <div className="space-y-3">
+                    {rows.map((row) => (
+                      <StatBar
+                        key={row.level}
+                        label={levelLabel(row.level)}
+                        valueLabel={`${String(row.students)} ${row.students === 1 ? 'child' : 'children'}`}
+                        percentage={(row.students / max) * 100}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
-            </Card>
 
-            <Card title="Term trend" subtitle="Class average at each checkpoint">
-              <TrendChart points={performance.data.trend} />
-            </Card>
+                  <p className="text-koyi-muted mt-4 text-xs">
+                    {performance.data.level_distribution.unplaced[domain]}{' '}
+                    {performance.data.level_distribution.unplaced[domain] === 1
+                      ? 'child has'
+                      : 'children have'}{' '}
+                    not been reached by an assessment yet.
+                  </p>
+
+                  {movement && (
+                    <p className="text-koyi-muted border-koyi-border mt-3 border-t pt-3 text-xs">
+                      Since the last check: {movement.moved_up} moved up a level,{' '}
+                      {movement.moved_down} moved down, {movement.unchanged} unchanged,{' '}
+                      {movement.newly_placed} placed for the first time.
+                    </p>
+                  )}
+                </Card>
+              );
+            })}
           </div>
 
-          <Card
-            title="Performance by skill area"
-            subtitle="Sorted by where the class needs the most support"
-          >
-            <DataTable
-              caption="Each skill area with the class average, its change since the baseline and how many children sit below the benchmark"
-              columns={SKILL_COLUMNS}
-              minWidthClassName="min-w-160"
+          {performance.data.skills.length > 0 && (
+            <Card
+              title="Skill × level matrix"
+              subtitle="How the class spreads across each skill's levels — not an average."
             >
-              {performance.data.skills.map((skill) => (
-                <tr key={skill.id}>
-                  <td className="px-5 py-4">
-                    <p className="text-koyi-text font-bold">{skill.skill}</p>
-                    <p className="text-koyi-muted text-xs">{SUBJECT_LABEL[skill.subject]}</p>
-                  </td>
-
-                  <td className="px-5 py-4 text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <div
-                        aria-hidden="true"
-                        className="bg-koyi-surface h-2 w-24 overflow-hidden rounded-full"
-                      >
-                        <div
-                          className="bg-koyi-primary h-full rounded-full"
-                          style={{ width: `${String(skill.average_score)}%` }}
-                        />
+              <DataTable
+                caption="Each skill's level spread across the class, and who needs it taught next"
+                columns={[
+                  { key: 'skill', label: 'Skill' },
+                  { key: 'levels', label: 'Level spread' },
+                  { key: 'support', label: 'Needs this next', align: 'right' as const },
+                ]}
+                minWidthClassName="min-w-160"
+              >
+                {performance.data.skills.map((skill) => (
+                  <tr key={skill.id}>
+                    <td className="px-5 py-4">
+                      <p className="text-koyi-text font-bold">{skill.skill}</p>
+                      <p className="text-koyi-muted text-xs">{DOMAIN_LABEL[skill.domain]}</p>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        {Object.entries(skill.levels)
+                          .sort(([a], [b]) => Number(a) - Number(b))
+                          .map(([level, count]) => (
+                            <span
+                              key={level}
+                              className="bg-koyi-surface text-koyi-text rounded-full px-2.5 py-1 text-xs font-medium"
+                            >
+                              L{level}: {count}
+                            </span>
+                          ))}
                       </div>
-                      <span className="text-koyi-text w-10 font-bold">{skill.average_score}%</span>
-                    </div>
-                  </td>
-
-                  <td className={cn('px-5 py-4 text-right font-bold', changeClass(skill.change))}>
-                    {formatChange(skill.change)}
-                  </td>
-
-                  <td className="text-koyi-text px-5 py-4 text-right">
-                    {skill.students_below_benchmark}
-                  </td>
-                </tr>
-              ))}
-            </DataTable>
-          </Card>
+                    </td>
+                    <td className="text-koyi-text px-5 py-4 text-right font-bold">
+                      {skill.students_needing_support}
+                    </td>
+                  </tr>
+                ))}
+              </DataTable>
+            </Card>
+          )}
 
           {performance.data.most_improved.length > 0 && (
             <Card
-              title="Most improved"
-              subtitle={`Children who moved up a level since ${performance.data.baseline_label}`}
+              title="Moved up a level"
+              subtitle={`Since the last check — ${performance.data.measured_since}`}
             >
               <ul className="grid gap-3 sm:grid-cols-2">
                 {performance.data.most_improved.map((student) => (
-                  <li key={student.student_id}>
+                  <li key={`${student.student_id}-${student.domain}`}>
                     <Link
                       to={paths.teacher.students.detail(student.student_id)}
                       className="border-koyi-border hover:border-koyi-primary hover:bg-koyi-surface flex items-center gap-3 rounded-md border p-3 transition-colors"
@@ -252,32 +170,19 @@ export function ClassPerformancePage() {
 
                       <div className="min-w-0 flex-1">
                         <p className="text-koyi-text truncate font-bold">{student.full_name}</p>
-                        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 font-semibold',
-                              BAND_CHIP_CLASS[student.from_band],
-                            )}
-                          >
-                            {BAND_LABEL[student.from_band]}
-                          </span>
-                          <ArrowRightIcon aria-hidden="true" className="text-koyi-muted size-3" />
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 font-semibold',
-                              BAND_CHIP_CLASS[student.to_band],
-                            )}
-                          >
-                            {BAND_LABEL[student.to_band]}
-                          </span>
+                        <p className="text-koyi-muted mt-1 text-xs">
+                          {DOMAIN_LABEL[student.domain]}:{' '}
+                          {student.previous !== null
+                            ? `Level ${String(student.previous)} → `
+                            : 'Not yet placed → '}
+                          Level {student.current}
                         </p>
                       </div>
 
-                      <span
-                        className={cn('shrink-0 text-sm font-bold', changeClass(student.change))}
-                      >
-                        {formatChange(student.change)}
-                      </span>
+                      <ArrowRightIcon
+                        aria-hidden="true"
+                        className="text-koyi-muted size-4 shrink-0"
+                      />
                     </Link>
                   </li>
                 ))}

@@ -202,17 +202,9 @@ export function TeacherDashboardPage() {
               <Card title="Quick actions">
                 <ul className="space-y-3">
                   <li>
-                    {/*
-                      Deliberately inert for now: the live one-to-one assessment
-                      flow is reached from the topbar, and this card's own
-                      destination is not decided yet. Rendered disabled rather
-                      than as a link that goes nowhere, so it never lies about
-                      being clickable.
-                    */}
-                    <button
-                      type="button"
-                      disabled
-                      className="border-koyi-border flex w-full items-center gap-3 rounded-md border p-3 text-left opacity-60"
+                    <Link
+                      to={paths.assessment.entry}
+                      className="border-koyi-border hover:border-koyi-primary hover:bg-koyi-surface flex w-full items-center gap-3 rounded-md border p-3 text-left transition-colors"
                     >
                       <span
                         aria-hidden="true"
@@ -224,9 +216,12 @@ export function TeacherDashboardPage() {
                         <span className="text-koyi-text block text-sm font-bold">
                           Start assessment
                         </span>
-                        <span className="text-koyi-muted block text-xs">Coming soon</span>
+                        <span className="text-koyi-muted block text-xs">
+                          Sit a child down and run their paper
+                        </span>
                       </span>
-                    </button>
+                      <ArrowRightIcon aria-hidden="true" className="text-koyi-muted size-4" />
+                    </Link>
                   </li>
 
                   <li>

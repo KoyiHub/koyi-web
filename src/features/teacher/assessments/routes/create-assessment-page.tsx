@@ -192,7 +192,7 @@ function DetailsStep({
     <div className="border-koyi-border rounded-koyi-md space-y-4 border p-5">
       <TextField
         label="Name"
-        placeholder="Term 1 baseline"
+        placeholder="Reading and numbers baseline"
         value={name}
         onChange={(event) => {
           setName(event.target.value);

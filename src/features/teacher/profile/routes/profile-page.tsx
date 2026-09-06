@@ -32,14 +32,9 @@ export function ProfilePage() {
     <div className="mx-auto max-w-2xl">
       <div className="mb-6 flex items-center justify-between gap-4">
         <h1 className="text-koyi-text text-xl font-semibold">Teacher Profile</h1>
-        <div className="flex gap-2">
-          <Button variant="secondary" disabled title="Coming soon">
-            Edit Profile
-          </Button>
-          <Button variant="ghost" onClick={handleLogout} isLoading={logout.isPending}>
-            Log Out
-          </Button>
-        </div>
+        <Button variant="ghost" onClick={handleLogout} isLoading={logout.isPending}>
+          Log Out
+        </Button>
       </div>
 
       <section className="rounded-koyi-lg border-koyi-border bg-koyi-card border p-6">
