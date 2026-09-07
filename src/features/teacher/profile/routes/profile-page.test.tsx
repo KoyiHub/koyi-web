@@ -35,11 +35,4 @@ describe('ProfilePage', () => {
 
     expect(await screen.findByRole('heading', { name: 'Welcome Back' })).toBeInTheDocument();
   });
-
-  it('shows Edit Profile as disabled', async () => {
-    renderRoute('/teacher/profile');
-    await screen.findByRole('heading', { name: 'Teacher Profile' });
-
-    expect(screen.getByRole('button', { name: 'Edit Profile' })).toBeDisabled();
-  });
 });

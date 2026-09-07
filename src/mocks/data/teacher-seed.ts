@@ -48,7 +48,6 @@ export type PerformanceBand = 'strong' | 'intermediate' | 'struggling';
 export type LearningLevel = PerformanceBand | 'beginner';
 
 export const CLASS_NAME = 'Primary 4 — Class A';
-export const TERM_LABEL = 'Term 1 · 2026/2027';
 
 export const bandLabels: Record<LearningLevel, string> = {
   strong: 'Strong',

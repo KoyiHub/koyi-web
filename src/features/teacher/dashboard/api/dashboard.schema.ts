@@ -1,10 +1,7 @@
 import { z } from 'zod';
 
-import {
-  assessmentSubjectSchema,
-  paginatedSchema,
-  performanceBandSchema,
-} from '@/features/teacher/api/shared.schema';
+import { paginatedSchema } from '@/features/teacher/api/shared.schema';
+import { domainSchema, flnLevelSchema } from '@/lib/api/contracts';
 
 /**
  * `GET /v1/teacher/dashboard/` — `frontend-integration.md` §5.1, matched
@@ -142,63 +139,64 @@ export type Insights = z.infer<typeof insightsSchema>;
 
 /* -------------------------------------------------------------------------- */
 /* Class performance — no doc anchor (the per-skill grid is                 */
-/* `analytics.skill_matrix`, scoped to one assessment). Left exactly as     */
-/* built per the same scope decision.                                       */
+/* `analytics.skill_matrix`, scoped to one assessment). Left as known-fake   */
+/* per the original scope decision, but rebuilt level-first (Phase 7's §9   */
+/* sweep): the pre-refactor shape modelled a bare class-average percentage, */
+/* strong/intermediate/struggling bands and a raw score trend line — all    */
+/* forbidden. This mirrors the same level-distribution + movement          */
+/* vocabulary already used by the real school overview and student skills  */
+/* endpoints, with literacy and numeracy always kept independent.          */
 /* -------------------------------------------------------------------------- */
 
-/** One skill's class-wide average, with the movement since the previous assessment. */
+/** Every level keyed 1–5, even at zero, per domain. */
+export const classLevelDistributionSchema = z.object({
+  levels: z.object({
+    literacy: z.record(z.string(), z.number()),
+    numeracy: z.record(z.string(), z.number()),
+  }),
+  /** Children with no result yet in that domain — not folded into level 1. */
+  unplaced: z.object({ literacy: z.number(), numeracy: z.number() }),
+});
+export type ClassLevelDistribution = z.infer<typeof classLevelDistributionSchema>;
+
+/** How many children moved, per domain, since the last check — a headcount, never a percentage. */
+export const classMovementSchema = z.object({
+  domain: domainSchema,
+  moved_up: z.number(),
+  moved_down: z.number(),
+  unchanged: z.number(),
+  newly_placed: z.number(),
+});
+export type ClassMovement = z.infer<typeof classMovementSchema>;
+
+/** One skill's level spread across the class — a grid, never an average score. */
 export const skillPerformanceSchema = z.object({
   id: z.string(),
   skill: z.string(),
-  subject: assessmentSubjectSchema,
-  average_score: z.number(),
-  /** Percentage points since the last comparable assessment; negative means a drop. */
-  change: z.number(),
-  students_below_benchmark: z.number(),
+  domain: domainSchema,
+  levels: z.record(z.string(), z.number()),
+  /** At the skill's own lowest probed level — the children it would teach next. */
+  students_needing_support: z.number(),
 });
 export type SkillPerformance = z.infer<typeof skillPerformanceSchema>;
 
-/** A point on the class trend line: one completed assessment. */
-export const trendPointSchema = z.object({
-  id: z.string(),
-  label: z.string(),
-  average_score: z.number(),
-  participation_rate: z.number(),
-  completed_on: z.string(),
-});
-export type TrendPoint = z.infer<typeof trendPointSchema>;
-
-/** How many children moved band since the baseline. The story a term is judged on. */
-export const bandMovementSchema = z.object({
-  band: performanceBandSchema,
-  label: z.string(),
-  students: z.number(),
-  percentage: z.number(),
-  /** Net change in headcount since the baseline assessment. */
-  change: z.number(),
-});
-export type BandMovement = z.infer<typeof bandMovementSchema>;
-
 export const classPerformanceSchema = z.object({
   class_name: z.string(),
-  term_label: z.string(),
+  /** e.g. "since the last assessment" — no term or date-window framing. */
+  measured_since: z.string(),
   assessed_count: z.number(),
   total_students: z.number(),
-  class_average: z.number(),
-  class_average_change: z.number(),
-  participation_rate: z.number(),
-  baseline_label: z.string(),
-  movement: z.array(bandMovementSchema),
+  level_distribution: classLevelDistributionSchema,
+  movement: z.array(classMovementSchema),
   skills: z.array(skillPerformanceSchema),
-  trend: z.array(trendPointSchema),
-  /** Children who moved up a band since baseline — the counterpart to the attention list. */
+  /** Children who moved up a level since the last check — the counterpart to the attention list. */
   most_improved: z.array(
     z.object({
       student_id: z.string(),
       full_name: z.string(),
-      from_band: performanceBandSchema,
-      to_band: performanceBandSchema,
-      change: z.number(),
+      domain: domainSchema,
+      previous: flnLevelSchema.nullable(),
+      current: flnLevelSchema,
     }),
   ),
 });
